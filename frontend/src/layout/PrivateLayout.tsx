@@ -5,8 +5,7 @@ import { APP_CONSTANT } from "@/shared/constants/app";
 import { useEffect, useMemo } from "react";
 import { TopBarAndSideBarLayout } from "./TopBarAndSideBarLayout";
 import { ADMIN_SIDEBAR_ITEMS } from "./constants/adminSidebar";
-import { TEACHER_SIDEBAR_ITEMS } from "./constants/teacherSidebar";
-import { STUDENT_SIDEBAR_TOP, STUDENT_SIDEBAR_BOTTOM } from "./constants/studentSidebar";
+import { EMPLOYEE_SIDEBAR_ITEMS } from "./constants/employeeSidebar";
 import type { LinkToPage } from "@/utils/type";
 
 export type SidebarConfig = {
@@ -18,16 +17,14 @@ export function getSidebarConfig(role: string | undefined): SidebarConfig {
   switch (role) {
     case "admin":
       return { items: ADMIN_SIDEBAR_ITEMS };
-    case "teacher":
-      return { items: TEACHER_SIDEBAR_ITEMS };
-    case "student":
-      return { items: STUDENT_SIDEBAR_TOP, secondaryItems: STUDENT_SIDEBAR_BOTTOM };
+    case "employee":
+      return { items: EMPLOYEE_SIDEBAR_ITEMS };
     default:
-      return { items: STUDENT_SIDEBAR_TOP, secondaryItems: STUDENT_SIDEBAR_BOTTOM };
+      return { items: EMPLOYEE_SIDEBAR_ITEMS };
   }
 }
 
-/** @deprecated Use getSidebarConfig for two-section support. Returns flat list. */
+/** Returns flat list of sidebar items (for layouts that need a single array). */
 export function getSidebarItems(role: string | undefined): Array<LinkToPage> {
   const config = getSidebarConfig(role);
   return config.secondaryItems ? [...config.items, ...config.secondaryItems] : config.items;

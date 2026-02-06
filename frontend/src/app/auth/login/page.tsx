@@ -1,9 +1,7 @@
 "use client";
 
 import { useLoginMutation } from "@/store/api/authApiSlice";
-import { useLazyGetStudentProfileMeQuery } from "@/store/api/studentApiSlice";
-import { useLazyGetTeacherProfileMeQuery } from "@/store/api/teacherApiSlice";
-import { loginSuccess, setProfileId } from "@/store/features/auth/authSlice";
+import { loginSuccess } from "@/store/features/auth/authSlice";
 import type { LoginFormValues } from "@/yup/loginValidationSchema";
 import { loginValidationSchema } from "@/yup/loginValidationSchema";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -11,7 +9,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAppDispatch } from "@/store/hooks";
-import Link from "next/link";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -19,8 +16,6 @@ export default function LoginPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const [login] = useLoginMutation();
-  const [getStudentProfileMe] = useLazyGetStudentProfileMeQuery();
-  const [getTeacherProfileMe] = useLazyGetTeacherProfileMeQuery();
 
   const {
     register,
@@ -38,47 +33,9 @@ export default function LoginPage() {
       dispatch(loginSuccess({ currentUser: response, isAuthenticated: true }));
       const role = response.user?.role;
 
-      // Admin: go to admin dashboard
-      if (role === "admin") {
+      // Admin or Employee: go to admin dashboard (employee dashboard can be added later)
+      if (role === "admin" || role === "employee") {
         router.push("/admin/dashboard");
-        return;
-      }
-
-      // Teacher: profile-gated — no profile → create first; else go to teacher dashboard
-      if (role === "teacher") {
-        try {
-          const profile = await getTeacherProfileMe().unwrap();
-          const profileId = (profile as { id?: string })?.id;
-          if (profileId) dispatch(setProfileId(profileId));
-          router.push("/teacher/dashboard");
-        } catch (e) {
-          if ((e as { status?: number })?.status === 404) {
-            router.push("/teacher/profile/create");
-          } else {
-            setErrorMessage(
-              (e as { data?: { message?: string } })?.data?.message || "Something went wrong. Please try again."
-            );
-          }
-        }
-        return;
-      }
-
-      // Student: profile-gated — no profile → create first; else go to student dashboard
-      if (role === "student") {
-        try {
-          const profile = await getStudentProfileMe().unwrap();
-          const profileId = (profile as { id?: string })?.id;
-          if (profileId) dispatch(setProfileId(profileId));
-          router.push("/student/dashboard");
-        } catch (e) {
-          if ((e as { status?: number })?.status === 404) {
-            router.push("/student/profile/create");
-          } else {
-            setErrorMessage(
-              (e as { data?: { message?: string } })?.data?.message || "Something went wrong. Please try again."
-            );
-          }
-        }
         return;
       }
 
@@ -95,14 +52,14 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-4.5rem)]">
-      {/* Left: placeholder (image or gradient) */}
+      {/* Left: branding */}
       <div
         className="hidden sm:flex flex-1 bg-gradient-to-br from-[#242D3D] to-[#354053] items-center justify-center"
         aria-hidden
       >
         <div className="text-white/80 text-center px-8">
-          <h2 className="text-2xl font-semibold mb-2">Course Portal</h2>
-          <p className="text-sm">Sign in to manage your courses and learning.</p>
+          <h2 className="text-2xl font-semibold mb-2">CRM</h2>
+          <p className="text-sm">Sign in to manage departments and employees.</p>
         </div>
       </div>
 
@@ -159,10 +116,7 @@ export default function LoginPage() {
           </button>
 
           <p className="text-sm text-gray-500 text-center mt-4">
-            If you&apos;re not an existing user{" "}
-            <Link href="/auth/signup" className="text-[#242D3D] font-medium hover:underline">
-              Sign Up
-            </Link>
+            Employees are added by your admin. Contact them for access.
           </p>
         </form>
       </div>

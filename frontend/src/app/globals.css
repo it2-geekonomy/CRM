@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* Relative path avoids module resolution from repo root (C:\...\CRM) */
+@import "../../node_modules/tailwindcss/index.css";
 
 :root {
   --background: #ffffff;

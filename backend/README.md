@@ -2,32 +2,15 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+**CRM Backend** – NestJS API for a CRM with two user types: **Admin** and **Employee**. Employees belong to **departments** and are created only by admins.
+
+- **Roles:** `admin`, `employee`
+- **Modules:** Users, Auth, Roles, Admin (profiles), Departments
+- **Tech:** NestJS, TypeORM, PostgreSQL, JWT, Swagger
 
 ## Quick Start (For New Developers)
-
-Follow these steps to set up the project from scratch:
 
 1. **Install dependencies:**
    ```bash
@@ -38,23 +21,25 @@ Follow these steps to set up the project from scratch:
    ```bash
    cp .env.example .env
    ```
+   Edit `.env` if needed (database name, port, etc.).
 
-3. **Start PostgreSQL database (Docker):**
+3. **Start PostgreSQL (Docker):**
    ```powershell
    # PowerShell (Windows)
-   docker run --name course-portal-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=course_portal -p 5433:5432 -d postgres:latest
+   docker run --name crm-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=crm -p 5434:5432 -d postgres:latest
    ```
    ```bash
    # Bash/Linux/Mac
-   docker run --name course-portal-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=course_portal -p 5433:5432 -d postgres:latest
+   docker run --name crm-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=crm -p 5434:5432 -d postgres:latest
    ```
+   Use the same port and DB name as in your `.env` (e.g. `DB_PORT=5434`, `DB_NAME=crm`).
 
 4. **Run migrations (create tables):**
    ```bash
    pnpm migration:run
    ```
 
-5. **Seed database (populate initial data):**
+5. **Seed database (initial admin + employee):**
    ```bash
    pnpm seed:all
    ```
@@ -64,45 +49,50 @@ Follow these steps to set up the project from scratch:
    pnpm run start:dev
    ```
 
+API base: **http://localhost:8080**  
+Swagger docs: **http://localhost:8080/api**
+
+---
+
 ## Project setup
 
 ```bash
-$ pnpm install
+pnpm install
 ```
 
-## Database Setup
+## Database setup
 
-Run PostgreSQL database using Docker:
+### 1. Run PostgreSQL (Docker)
 
-**For PowerShell (Windows):**
+**PowerShell (Windows):**
 ```powershell
-docker run --name course-portal-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=course_portal -p 5433:5432 -d postgres:latest
+docker run --name crm-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=crm -p 5434:5432 -d postgres:latest
 ```
 
-**For Bash/Linux/Mac:**
+**Bash/Linux/Mac:**
 ```bash
-docker run --name course-portal-db \
+docker run --name crm-db \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=course_portal \
-  -p 5433:5432 \
+  -e POSTGRES_DB=crm \
+  -p 5434:5432 \
   -d postgres:latest
 ```
 
-Or using docker-compose (create `docker-compose.yml` in the backend directory):
+Or **docker-compose** (create `docker-compose.yml` in the backend directory):
 
 ```yaml
 version: '3.8'
 services:
   db:
     image: postgres:latest
-    container_name: course-portal-db
+    container_name: crm-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: course_portal
+      POSTGRES_DB: crm
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -110,61 +100,58 @@ volumes:
   postgres_data:
 ```
 
-Then run:
+Then:
 ```bash
 docker-compose up -d
 ```
 
-### 2. Configure Environment Variables
+### 2. Environment variables
 
-Copy the `.env.example` file to `.env`:
+Copy `.env.example` to `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-Or on Windows PowerShell:
+On Windows PowerShell:
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Update the `.env` file with your database credentials if needed (default values should work if you used the Docker command above).
+Set `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME` to match your PostgreSQL setup.
 
-### 3. Run Migrations (Create Tables)
-
-Run all migrations to create the database tables:
+### 3. Run migrations (create tables)
 
 ```bash
 pnpm migration:run
 ```
 
-This will create all the necessary tables:
-- Users
-- Roles
-- Admin Profiles
-- Teacher Profiles
-- Student Profiles
-- Courses
+This creates:
 
-### 4. Seed Database (Populate Initial Data)
+- **users** – email, password, role (admin/employee)
+- **roles** – admin, employee
+- **admin_profiles** – admin display name, bio, etc.
+- **departments** – name, code, description
 
-Run all seeders to populate the database with initial data:
+### 4. Seed database (initial data)
 
 ```bash
 pnpm seed:all
 ```
 
-This will seed:
-- Users
-- Teacher profiles
+Seeds:
 
-**Note:** You can also run individual seeders:
+- **Users:** `admin@crm.com` and `employee@crm.com` (default password: `password123`)
+
+Run a single seeder:
+
 ```bash
-pnpm seed:users              # Seed users only
-pnpm seed:teacher-profile    # Seed teacher profiles only
+pnpm seed:users   # Seed users only
 ```
 
-### Migration Commands Reference
+---
+
+## Migration commands
 
 ```bash
 # Run all pending migrations
@@ -180,67 +167,56 @@ pnpm migration:generate typeOrm/migrations/MigrationName
 pnpm migration:create typeOrm/migrations/MigrationName
 ```
 
-## Compile and run the project
+---
+
+## Run the project
 
 ```bash
 # development
-$ pnpm run start
+pnpm run start
 
-# watch mode
-$ pnpm run start:dev
+# watch mode (recommended for dev)
+pnpm run start:dev
 
-# production mode
-$ pnpm run start:prod
+# production
+pnpm run start:prod
 ```
+
+---
 
 ## Run tests
 
 ```bash
 # unit tests
-$ pnpm run test
+pnpm run test
 
 # e2e tests
-$ pnpm run test:e2e
+pnpm run test:e2e
 
-# test coverage
-$ pnpm run test:cov
+# coverage
+pnpm run test:cov
 ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## API overview (CRM)
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+| Area        | Description |
+|------------|-------------|
+| **Auth**   | `POST /auth/login` – JWT login (email + password). |
+| **Users**  | User CRUD (admin creates users; no public signup). |
+| **Roles**  | `GET /roles` – list roles (admin, employee). |
+| **Admin**  | Admin profile CRUD (name, bio, isActive). |
+| **Departments** | Full CRUD – name, code, description. |
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
+Swagger UI: **http://localhost:8080/api** (use JWT for protected routes).
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
 ## Resources
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- [NestJS Documentation](https://docs.nestjs.com)
+- [TypeORM Migrations](https://typeorm.io/migrations)
 
 ## License
 

@@ -7,11 +7,11 @@ import { PublicLayout } from "./PublicLayout";
 
 export function CurrentLayout({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useIsAuthenticated();
-  const { currentUser, profileId } = useAppSelector((s) => s.auth);
+  const { currentUser } = useAppSelector((s) => s.auth);
   const role = currentUser?.user?.role;
 
-  // Sidebar only when: logged in AND (admin OR has profile id for student/teacher)
-  const showSidebar = isAuthenticated && (role === "admin" || !!profileId);
+  // Sidebar when logged in as admin or employee (CRM: no profile gate)
+  const showSidebar = isAuthenticated && (role === "admin" || role === "employee");
 
   if (!showSidebar) {
     return <PublicLayout>{children}</PublicLayout>;

@@ -65,12 +65,33 @@ async function seedUsers() {
       isVerified: true,
     });
 
-    await userRepository.save([adminUser, employeeUser]);
+    const projectManagerUser = userRepository.create({
+      email: 'manager@crm.com',
+      passwordHash: hashedPassword,
+      roleId: employeeRole.id,
+      isVerified: true,
+    });
+
+    const projectLeadUser = userRepository.create({
+      email: 'lead@crm.com',
+      passwordHash: hashedPassword,
+      roleId: employeeRole.id,
+      isVerified: true,
+    });
+
+    await userRepository.save([
+      adminUser,
+      employeeUser,
+      projectManagerUser,
+      projectLeadUser,
+    ]);
 
     console.log('✅ Seeder completed successfully!');
     console.log('\n📋 Created users:');
     console.log('   👤 Admin:    admin@crm.com / password123');
     console.log('   👤 Employee: employee@crm.com / password123');
+    console.log('👤 Manager:  manager@crm.com / password123');
+    console.log('👤 Lead:     lead@crm.com / password123');
     console.log('\n⚠️  Remember to change passwords in production!');
   } catch (error) {
     console.error('❌ Error running seeder:', error);

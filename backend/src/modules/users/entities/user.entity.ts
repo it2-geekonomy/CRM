@@ -6,9 +6,11 @@ import {
   UpdateDateColumn,
   Index,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
+import { Project } from '../../../projects/entities/project.entity';
 
 @Entity('users')
 @Index(['email'], { unique: true })
@@ -37,4 +39,13 @@ export class User {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
   updatedAt: Date;
+
+  @OneToMany(() => Project, (project) => project.projectManager)
+  managedProjects: Project[];
+
+  @OneToMany(() => Project, (project) => project.projectLead)
+  ledProjects: Project[];
+
+  @OneToMany(() => Project, (project) => project.creator)
+  createdProjects: Project[];
 }

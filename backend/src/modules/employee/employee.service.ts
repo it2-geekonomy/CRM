@@ -9,6 +9,7 @@ import { Department } from '../department/entities/department.entity';
 import { RolesService } from '../roles/roles.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { EmployeeQueryDto } from './dto/employee-query.dto';
 
 @Injectable()
 export class EmployeeService {
@@ -70,12 +71,54 @@ export class EmployeeService {
     });
   }
 
-  findAll() {
-    return this.employeeRepo.find({
-      where: { isActive: true },
-      relations: ['user', 'department'],
-      order: { createdAt: 'DESC' },
-    });
+  async findAll(query: EmployeeQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+    } = query;
+
+    const qb = this.employeeRepo
+      .createQueryBuilder('employee')
+      .leftJoinAndSelect('employee.user', 'user')
+      .leftJoinAndSelect('employee.department', 'department')
+      .where('employee.isActive = :isActive', { isActive: true });
+
+    if (search) {
+      qb.andWhere(
+        '(employee.name ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const allowedSortFields = [
+      'createdAt',
+      'name',
+      'designation',
+      'dateOfJoining',
+    ];
+
+    if (allowedSortFields.includes(sortBy)) {
+      qb.orderBy(`employee.${sortBy}`, sortOrder);
+    } else {
+      qb.orderBy('employee.createdAt', 'DESC');
+    }
+
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   findOne(id: number) {

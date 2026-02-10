@@ -17,6 +17,7 @@ export function setupSwagger(app: INestApplication): void {
     .addTag('roles', 'Roles (admin, employee)')
     .addTag('admin', 'Admin profile management endpoints')
     .addTag('departments', 'Department management endpoints')
+    .addTag('employees', 'Employee Management endpoints')
     .addBearerAuth(
       {
         type: 'http',

@@ -9,9 +9,24 @@ const ACCEPTED_TYPES = ".pdf,.doc,.docx,.zip,.png,.jpg,.jpeg,.gif,.webp,image/*"
 
 type FileEntry = { file: File; objectUrl?: string };
 
+const DEFAULT_PROJECT_NAME = "ABC Corp Website Redesign";
+const DEFAULT_PROJECT_CODE = "ABC-WEB-001";
+const DEFAULT_CLIENT = "ABC Corporation";
+const DEFAULT_PROJECT_TYPE = "Website Design & Development";
+const DEFAULT_DESCRIPTION = "Complete website redesign including homepage, 5 internal pages, responsive design, and CMS integration.";
+
 export default function ProjectConfigurationPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [projectName, setProjectName] = useState(DEFAULT_PROJECT_NAME);
+  const [projectCode, setProjectCode] = useState(DEFAULT_PROJECT_CODE);
+  const [client, setClient] = useState(DEFAULT_CLIENT);
+  const [projectType, setProjectType] = useState(DEFAULT_PROJECT_TYPE);
+  const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
+  const [startDate, setStartDate] = useState("2026-02-04");
+  const [endDate, setEndDate] = useState("2026-05-15");
+  const [estimatedHours, setEstimatedHours] = useState(320);
+  const [hourlyRate, setHourlyRate] = useState("$150");
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -82,14 +97,16 @@ export default function ProjectConfigurationPage() {
   const saveProject = (status: "Draft" | "Active") => {
     const newProject = {
       id: Date.now(),
-      projectName: "ABC Corp Website Redesign",
-      client: "ABC Corporation",
-      projectType: "Website Design & Development",
+      projectName: projectName.trim() || "Untitled Project",
+      projectCode: projectCode.trim(),
+      client: client.trim() || DEFAULT_CLIENT,
+      projectType: projectType.trim() || DEFAULT_PROJECT_TYPE,
+      description: description.trim(),
       status,
-      startDate: "2026-02-04",
-      endDate: "2026-05-15",
-      estimatedHours: 320,
-      hourlyRate: "$150",
+      startDate,
+      endDate,
+      estimatedHours: Number(estimatedHours) || 320,
+      hourlyRate: hourlyRate.trim() || "$150",
     };
     const existing = JSON.parse(localStorage.getItem("projects") ?? "[]");
     localStorage.setItem("projects", JSON.stringify([...existing, newProject]));
@@ -137,7 +154,8 @@ export default function ProjectConfigurationPage() {
                 </label>
                 <input
                   type="text"
-                  defaultValue="ABC Corp Website Redesign"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
                   className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
                 />
               </div>
@@ -149,7 +167,8 @@ export default function ProjectConfigurationPage() {
                 </label>
                 <input
                   type="text"
-                  defaultValue="ABC-WEB-001"
+                  value={projectCode}
+                  onChange={(e) => setProjectCode(e.target.value)}
                   className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
                 />
                 <p className="text-xs text-gray-400 mt-1">
@@ -162,9 +181,13 @@ export default function ProjectConfigurationPage() {
                 <label className="text-sm font-medium text-gray-700">
                   Client <span className="text-red-500">*</span>
                 </label>
-                <select className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500">
-                  <option>ABC Corporation</option>
-                  <option>XYZ Corp</option>
+                <select
+                  value={client}
+                  onChange={(e) => setClient(e.target.value)}
+                  className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="ABC Corporation">ABC Corporation</option>
+                  <option value="XYZ Corp">XYZ Corp</option>
                 </select>
               </div>
   
@@ -173,10 +196,14 @@ export default function ProjectConfigurationPage() {
                 <label className="text-sm font-medium text-gray-700">
                   Project Type
                 </label>
-                <select className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500">
-                  <option>Website Design & Development</option>
-                  <option>Mobile App Development</option>
-                  <option>Branding</option>
+                <select
+                  value={projectType}
+                  onChange={(e) => setProjectType(e.target.value)}
+                  className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="Website Design & Development">Website Design & Development</option>
+                  <option value="Mobile App Development">Mobile App Development</option>
+                  <option value="Branding">Branding</option>
                 </select>
               </div>
   
@@ -187,7 +214,8 @@ export default function ProjectConfigurationPage() {
                 </label>
                 <textarea
                   rows={4}
-                  defaultValue="Complete website redesign including homepage, 5 internal pages, responsive design, and CMS integration."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none resize-none"
                 />
               </div>
@@ -216,7 +244,8 @@ export default function ProjectConfigurationPage() {
       <div className="relative mt-2">
         <input
           type="date"
-          defaultValue="2026-02-04"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
           className="w-full px-4 py-3 pr-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
         />
         
@@ -231,7 +260,8 @@ export default function ProjectConfigurationPage() {
       <div className="relative mt-2">
         <input
           type="date"
-          defaultValue="2026-05-15"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
           className="w-full px-4 py-3 pr-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
         />
         
@@ -245,7 +275,8 @@ export default function ProjectConfigurationPage() {
       </label>
       <input
         type="number"
-        defaultValue="320"
+        value={estimatedHours}
+        onChange={(e) => setEstimatedHours(Number(e.target.value) || 0)}
         className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
       />
     </div>
@@ -257,7 +288,8 @@ export default function ProjectConfigurationPage() {
       </label>
       <input
         type="text"
-        defaultValue="$150"
+        value={hourlyRate}
+        onChange={(e) => setHourlyRate(e.target.value)}
         className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
       />
     </div>

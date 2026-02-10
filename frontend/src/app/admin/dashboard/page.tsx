@@ -1,6 +1,7 @@
 "use client";
 
 import { useAppSelector } from "@/store/hooks";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const SEARCH_FILTERS = ["All", "Projects", "Clients", "Resources", "Leads", "Sales"];
@@ -12,6 +13,7 @@ function getDisplayName(email: string | undefined): string {
 }
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const [activeBtn, setActiveBtn] = useState("My Active Projects");
   const [searchFilter, setSearchFilter] = useState<string | null>(null);
   const user = useAppSelector((s) => s.auth.currentUser?.user);
@@ -49,7 +51,12 @@ export default function AdminDashboardPage() {
                 <button
                   key={item}
                   type="button"
-                  onClick={() => setSearchFilter(item)}
+                  onClick={() => {
+                    setSearchFilter(item);
+                    if (item === "Projects") {
+                      router.push("/admin/dashboard/projects");
+                    }
+                  }}
                   className={`px-5 py-3 text-base rounded-lg transition-colors ${
                     searchFilter === item
                       ? "bg-white shadow text-gray-900"

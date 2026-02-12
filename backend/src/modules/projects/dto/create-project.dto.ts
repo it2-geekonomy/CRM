@@ -8,8 +8,8 @@ import {
     IsString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ProjectStatus } from '../../shared/enum/project-status.enum';
-import { ProjectType } from '../../shared/enum/project-type.enum';
+import { ProjectStatus } from '../../../shared/enum/project-status.enum';
+import { ProjectType } from '../../../shared/enum/project-type.enum';
 
 export class CreateProjectDto {
     @ApiProperty({ example: 'ABC Corp Website Redesign' })

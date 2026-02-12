@@ -8,10 +8,10 @@ import {
     ManyToOne,
     JoinColumn,
 } from 'typeorm';
-import { ProjectStatus } from '../../shared/enum/project-status.enum';
-import { ProjectType } from '../../shared/enum/project-type.enum';
-import { AdminProfile } from '../../modules/admin/entities/admin-profile.entity';
-import { EmployeeProfile } from '../../modules/employee/entities/employee-profile.entity';
+import { ProjectStatus } from '../../../shared/enum/project-status.enum';
+import { ProjectType } from '../../../shared/enum/project-type.enum';
+import { AdminProfile } from '../../admin/entities/admin-profile.entity';
+import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
 
 @Entity('projects')
 export class Project {

@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { Task } from './task.entity';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
-import { TaskStatus } from '../enums/task-status.enum';
+import { TaskStatus } from 'src/shared/enum/task/task-status.enum';
 
 @Entity('task_activity')
 export class TaskActivity {

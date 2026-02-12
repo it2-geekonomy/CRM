@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Department } from '../../department/entities/department.entity';
-import { Project } from '../../../projects/entities/project.entity';
+import { Project } from '../../projects/entities/project.entity';
 @Entity('employee_profiles')
 export class EmployeeProfile {
     @PrimaryGeneratedColumn('uuid')

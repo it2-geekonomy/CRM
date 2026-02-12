@@ -9,7 +9,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Project } from '../../../projects/entities/project.entity';
+import { Project } from '../../projects/entities/project.entity';
 @Entity('admin_profiles')
 export class AdminProfile {
   @PrimaryGeneratedColumn('uuid')

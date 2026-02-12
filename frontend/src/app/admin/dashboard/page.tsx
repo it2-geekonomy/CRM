@@ -1,12 +1,23 @@
 "use client";
 
+import { useAppSelector } from "@/store/hooks";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const SEARCH_FILTERS = ["All", "Projects", "Clients", "Resources", "Leads", "Sales"];
 
+function getDisplayName(email: string | undefined): string {
+  if (!email) return "User";
+  const part = email.split("@")[0];
+  return part ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : "User";
+}
+
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const [activeBtn, setActiveBtn] = useState("My Active Projects");
   const [searchFilter, setSearchFilter] = useState<string | null>(null);
+  const user = useAppSelector((s) => s.auth.currentUser?.user);
+  const displayName = (user as { name?: string } | undefined)?.name ?? getDisplayName(user?.email);
   const buttons = [
     "My Active Projects",
     "Due This Week",
@@ -21,7 +32,7 @@ export default function AdminDashboardPage() {
         {/* Top Card */}
         <div className="bg-white rounded-2xl border border-gray-200 p-8">
           <h2 className="text-2xl font-semibold text-gray-900">
-            Good morning, Arjun
+            Good morning, {displayName}
           </h2>
           <p className="text-base text-gray-500 mt-2">
             Search across projects, clients, resources, leads, and sales
@@ -40,7 +51,12 @@ export default function AdminDashboardPage() {
                 <button
                   key={item}
                   type="button"
-                  onClick={() => setSearchFilter(item)}
+                  onClick={() => {
+                    setSearchFilter(item);
+                    if (item === "Projects") {
+                      router.push("/admin/dashboard/projects");
+                    }
+                  }}
                   className={`px-5 py-3 text-base rounded-lg transition-colors ${
                     searchFilter === item
                       ? "bg-white shadow text-gray-900"

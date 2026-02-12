@@ -8,8 +8,8 @@ import {
     ManyToOne,
     JoinColumn,
 } from 'typeorm';
-import { ProjectStatus } from '../../../shared/enum/project-status.enum';
-import { ProjectType } from '../../../shared/enum/project-type.enum';
+import { ProjectStatus } from '../../../shared/project/project-status.enum';
+import { ProjectType } from '../../../shared/project/project-type.enum';
 import { AdminProfile } from '../../admin/entities/admin-profile.entity';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
 

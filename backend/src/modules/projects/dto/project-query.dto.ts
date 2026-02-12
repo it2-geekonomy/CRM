@@ -1,8 +1,8 @@
 import { IsOptional, IsString, IsEnum, IsInt, Min, IsUUID, IsDateString, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ProjectStatus } from '../../../shared/enum/project-status.enum';
-import { ProjectType } from '../../../shared/enum/project-type.enum';
+import { ProjectStatus } from '../../../shared/project/project-status.enum';
+import { ProjectType } from '../../../shared/project/project-type.enum';
 
 export class ProjectQueryDto {
   @ApiPropertyOptional()

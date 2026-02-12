@@ -8,9 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
-import { TaskStatus } from '../enums/task-status.enum';
-
-
+import { TaskStatus } from 'src/shared/enum/task/task-status.enum';
 @Entity('tasks')
 export class Task {
   @PrimaryGeneratedColumn('uuid')

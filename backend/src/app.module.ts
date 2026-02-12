@@ -8,7 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { DepartmentModule } from './modules/department/department.module';
-import { ProjectsModule } from './projects/projects.module';
+import { ProjectsModule } from './modules/projects/projects.module';
 import { EmployeeModule } from './modules/employee/employee.module';
 
 @Module({

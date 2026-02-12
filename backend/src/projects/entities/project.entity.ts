@@ -8,9 +8,10 @@ import {
     ManyToOne,
     JoinColumn,
 } from 'typeorm';
-import { User } from '../../modules/users/entities/user.entity';
 import { ProjectStatus } from '../../shared/enum/project-status.enum';
 import { ProjectType } from '../../shared/enum/project-type.enum';
+import { AdminProfile } from '../../modules/admin/entities/admin-profile.entity';
+import { EmployeeProfile } from '../../modules/employee/entities/employee-profile.entity';
 
 @Entity('projects')
 export class Project {
@@ -47,16 +48,17 @@ export class Project {
     @Column({ name: 'project_manager_id', type: 'uuid' })
     projectManagerId: string;
 
-    @ManyToOne(() => User, (user) => user.managedProjects, { onDelete: 'RESTRICT' })
+    @ManyToOne(() => AdminProfile, (admin) => admin.managedProjects, { onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'project_manager_id' })
-    projectManager: User;
+    projectManager: AdminProfile;
 
     @Column({ name: 'project_lead_id', type: 'uuid' })
     projectLeadId: string;
 
-    @ManyToOne(() => User, (user) => user.ledProjects, { onDelete: 'RESTRICT' })
+    // Changed from EmployeeProfile to Employee
+    @ManyToOne(() => EmployeeProfile, (emp) => emp.ledProjects, { onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'project_lead_id' })
-    projectLead: User;
+    projectLead: EmployeeProfile;
 
     @Column({ name: 'require_time_tracking', type: 'boolean', default: false })
     requireTimeTracking: boolean;
@@ -73,9 +75,9 @@ export class Project {
     @Column({ name: 'created_by', type: 'uuid' })
     createdBy: string;
 
-    @ManyToOne(() => User, (user) => user.createdProjects, { onDelete: 'RESTRICT' })
+    @ManyToOne(() => AdminProfile, (admin) => admin.createdProjects, { onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'created_by' })
-    creator: User;
+    creator: AdminProfile;
 
     @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
     createdAt: Date;

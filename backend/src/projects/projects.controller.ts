@@ -9,6 +9,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,6 +22,7 @@ import {
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { ProjectQueryDto } from './dto/project-query.dto';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -43,8 +45,8 @@ export class ProjectsController {
   @Get()
   @ApiOperation({ summary: 'Get all projects' })
   @ApiResponse({ status: 200, description: 'List of all projects' })
-  findAll() {
-    return this.projectsService.findAll();
+  findAll(@Query() queryDto: ProjectQueryDto) {
+    return this.projectsService.findAll(queryDto);
   }
 
   @Get(':id')

@@ -6,9 +6,10 @@ import {
   UpdateDateColumn,
   OneToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-
+import { Project } from '../../../projects/entities/project.entity';
 @Entity('admin_profiles')
 export class AdminProfile {
   @PrimaryGeneratedColumn('uuid')
@@ -35,4 +36,10 @@ export class AdminProfile {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
   updatedAt: Date;
+
+  @OneToMany(() => Project, (project: Project) => project.projectManager)
+  managedProjects: Project[];
+
+  @OneToMany(() => Project, (project: Project) => project.creator)
+  createdProjects: Project[];
 }

@@ -9,6 +9,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { DepartmentModule } from './modules/department/department.module';
 import { ProjectsModule } from './projects/projects.module';
+import { EmployeeModule } from './modules/employee/employee.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ProjectsModule } from './projects/projects.module';
     RolesModule,
     DepartmentModule,
     ProjectsModule,
+    EmployeeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

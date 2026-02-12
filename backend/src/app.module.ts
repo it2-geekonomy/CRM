@@ -10,6 +10,7 @@ import { RolesModule } from './modules/roles/roles.module';
 import { DepartmentModule } from './modules/department/department.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { EmployeeModule } from './modules/employee/employee.module';
+import { TaskModule } from './modules/task/task.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { EmployeeModule } from './modules/employee/employee.module';
     DepartmentModule,
     ProjectsModule,
     EmployeeModule,
+    TaskModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -17,6 +17,7 @@ import { AdminProfile } from '../modules/admin/entities/admin-profile.entity';
 import { Department } from '../modules/department/entities/department.entity';
 import { EmployeeProfile } from '../modules/employee/entities/employee-profile.entity';
 import { Project } from '../projects/entities/project.entity';
+import { Task } from '../modules/task/entities/task.entity';
 
 // Export all entities as an array
 
@@ -27,4 +28,5 @@ export const models = [
   Department,
   EmployeeProfile,
   Project,
+  Task,
 ];

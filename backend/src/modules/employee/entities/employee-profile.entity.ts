@@ -7,14 +7,15 @@ import {
     ManyToOne,
     OneToOne,
     JoinColumn,
+    OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Department } from '../../department/entities/department.entity';
-
+import { Project } from '../../../projects/entities/project.entity';
 @Entity('employee_profiles')
 export class EmployeeProfile {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @OneToOne(() => User)
     @JoinColumn()
@@ -68,4 +69,7 @@ export class EmployeeProfile {
 
     @UpdateDateColumn({ name: 'updated_at' })
     updatedAt: Date;
+
+    @OneToMany(() => Project, (project) => project.projectLead)
+    ledProjects: Project[];
 }

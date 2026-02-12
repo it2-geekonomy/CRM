@@ -121,14 +121,14 @@ export class EmployeeService {
     };
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return this.employeeRepo.findOne({
       where: { id, isActive: true },
       relations: ['user', 'department'],
     });
   }
 
-  async update(id: number, dto: UpdateEmployeeDto) {
+  async update(id: string, dto: UpdateEmployeeDto) {
     const employee = await this.employeeRepo.findOne({
       where: { id },
       relations: ['department'],
@@ -152,7 +152,7 @@ export class EmployeeService {
     return this.employeeRepo.save(employee);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const result = await this.employeeRepo.update(
       { id, isActive: true },
       { isActive: false },

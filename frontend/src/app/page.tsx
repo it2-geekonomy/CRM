@@ -1,6 +1,7 @@
 "use client";
 
 import { useIsAuthenticated } from "@/hooks/auth";
+import { useAppSelector } from "@/store/hooks";
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -8,13 +9,13 @@ import { useRouter } from "next/navigation";
 export default function HomePage() {
   const isAuthenticated = useIsAuthenticated();
   const router = useRouter();
+  const role = useAppSelector((s) => s.auth.currentUser?.user?.role);
 
-  // Redirect authenticated users to their dashboard
+  // Redirect authenticated users to their dashboard by role
   useEffect(() => {
     if (!isAuthenticated) return;
-    // Admin and Employee both use admin area for now (employee dashboard can be added later)
-    router.replace("/admin/dashboard");
-  }, [isAuthenticated, router]);
+    router.replace(role === "admin" ? "/admin/dashboard" : "/employee/dashboard/projects");
+  }, [isAuthenticated, role, router]);
 
   if (isAuthenticated) {
     return (

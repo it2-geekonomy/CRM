@@ -1,7 +1,7 @@
 import type { LinkToPage } from "@/utils/type";
-import { DashboardIcon } from "../components/icons";
+import { BookIcon } from "../components/icons";
 
-/** CRM Employee sidebar (minimal: dashboard only for now) */
+/** CRM Employee sidebar: Projects only (employee lands on Projects page) */
 export const EMPLOYEE_SIDEBAR_ITEMS: LinkToPage[] = [
-  { title: "Dashboard", path: "/admin/dashboard", icon: DashboardIcon },
+  { title: "Projects", path: "/employee/dashboard/projects", icon: BookIcon },
 ];

@@ -39,7 +39,8 @@ export default function LoginPage() {
           isAuthenticated: true,
         })
       );
-      router.push("/admin/dashboard");
+      const role = response?.user?.role;
+      router.push(role === "admin" ? "/admin/dashboard" : "/employee/dashboard/projects");
     } catch (err: unknown) {
       const e = err as { status?: number; data?: { message?: string } };
       const msg =

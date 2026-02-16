@@ -1,4 +1,7 @@
 import { seedUsers } from './create-users.seeder';
+import { seedDepartments } from './create-departments.seeder';
+import { seedAdminProfiles } from './create-admin-profiles.seeder';
+import { seedEmployeeProfiles } from './create-employee-profiles.seeder';
 
 /**
  * Run all seeders in order.
@@ -8,7 +11,10 @@ import { seedUsers } from './create-users.seeder';
  */
 
 const SEEDERS = [
-  { name: 'Users (admin + employee)', run: seedUsers },
+  { name: 'Users (3 admins: Arjun, Sanketh, Sumukh + 4 employees)', run: seedUsers },
+  { name: 'Departments', run: seedDepartments },
+  { name: 'Admin profiles (3)', run: seedAdminProfiles },
+  { name: 'Employee profiles', run: seedEmployeeProfiles },
 ] as const;
 
 async function seedAll() {

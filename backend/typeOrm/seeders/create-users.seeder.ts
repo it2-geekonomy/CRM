@@ -40,58 +40,43 @@ async function seedUsers() {
       );
     }
 
-    // 2. Skip if users already exist
-    const existingUsers = await userRepository.find();
-    if (existingUsers.length > 0) {
-      console.log('⚠️  Users already exist. Skipping seeder.');
-      return;
-    }
-
     const defaultPassword = 'password123';
     const hashedPassword = await hash(defaultPassword, 10);
 
-    // 3. Create admin and one demo employee user
-    const adminUser = userRepository.create({
-      email: 'admin@crm.com',
-      passwordHash: hashedPassword,
-      roleId: adminRole.id,
-      isVerified: true,
-    });
+    const seedUsersList = [
+      { email: 'arjun@crm.com', roleId: adminRole.id },
+      { email: 'sanketh@crm.com', roleId: adminRole.id },
+      { email: 'sumukh@crm.com', roleId: adminRole.id },
+      { email: 'employee@crm.com', roleId: employeeRole.id },
+      { email: 'manager@crm.com', roleId: employeeRole.id },
+      { email: 'lead@crm.com', roleId: employeeRole.id },
+      { email: 'roshan@crm.com', roleId: employeeRole.id },
+    ] as const;
 
-    const employeeUser = userRepository.create({
-      email: 'employee@crm.com',
-      passwordHash: hashedPassword,
-      roleId: employeeRole.id,
-      isVerified: true,
-    });
+    const existingEmails = new Set(
+      (await userRepository.find({ select: { email: true } })).map((u) => u.email)
+    );
 
-    const projectManagerUser = userRepository.create({
-      email: 'manager@crm.com',
-      passwordHash: hashedPassword,
-      roleId: employeeRole.id,
-      isVerified: true,
-    });
+    const toCreate = seedUsersList.filter((s) => !existingEmails.has(s.email));
+    if (toCreate.length === 0) {
+      console.log('⚠️  All seed users already exist. Skipping.');
+      return;
+    }
 
-    const projectLeadUser = userRepository.create({
-      email: 'lead@crm.com',
-      passwordHash: hashedPassword,
-      roleId: employeeRole.id,
-      isVerified: true,
-    });
+    const newUsers = toCreate.map((s) =>
+      userRepository.create({
+        email: s.email,
+        passwordHash: hashedPassword,
+        roleId: s.roleId,
+        isVerified: true,
+      })
+    );
+    await userRepository.save(newUsers);
 
-    await userRepository.save([
-      adminUser,
-      employeeUser,
-      projectManagerUser,
-      projectLeadUser,
-    ]);
-
-    console.log('✅ Seeder completed successfully!');
-    console.log('\n📋 Created users:');
-    console.log('   👤 Admin:    admin@crm.com / password123');
-    console.log('   👤 Employee: employee@crm.com / password123');
-    console.log('👤 Manager:  manager@crm.com / password123');
-    console.log('👤 Lead:     lead@crm.com / password123');
+    console.log(`✅ Created ${newUsers.length} missing user(s).`);
+    console.log('\n📋 Seed users (password123):');
+    console.log('   👤 Admins: arjun@crm.com, sanketh@crm.com, sumukh@crm.com');
+    console.log('   👤 Employees: employee@crm.com, manager@crm.com, lead@crm.com, roshan@crm.com');
     console.log('\n⚠️  Remember to change passwords in production!');
   } catch (error) {
     console.error('❌ Error running seeder:', error);

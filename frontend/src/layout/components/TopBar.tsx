@@ -7,11 +7,13 @@ import { useRef, useEffect, useState, type MouseEvent } from "react";
 import { MenuIcon, UserCircleIcon } from "./icons";
 
 interface TopBarProps {
-  onSidebarToggle: () => void;
+  onSidebarToggle?: () => void;
+  /** When false, the sidebar menu button is hidden (e.g. when layout has no sidebar). */
+  showSidebarToggle?: boolean;
   userEmail?: string;
 }
 
-export function TopBar({ onSidebarToggle, userEmail }: TopBarProps) {
+export function TopBar({ onSidebarToggle, showSidebarToggle = true, userEmail }: TopBarProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -34,14 +36,18 @@ export function TopBar({ onSidebarToggle, userEmail }: TopBarProps) {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 h-14 md:h-16 flex items-center justify-between px-4 bg-[#242D3D] text-white">
-      <button
-        type="button"
-        onClick={onSidebarToggle}
-        className="p-2 -ml-2 rounded-md hover:bg-white/10 text-white"
-        aria-label="Toggle menu"
-      >
-        <MenuIcon className="w-6 h-6" />
-      </button>
+      {showSidebarToggle ? (
+        <button
+          type="button"
+          onClick={onSidebarToggle}
+          className="p-2 -ml-2 rounded-md hover:bg-white/10 text-white"
+          aria-label="Toggle menu"
+        >
+          <MenuIcon className="w-6 h-6" />
+        </button>
+      ) : (
+        <div className="w-10" />
+      )}
 
       <div className="flex-1" />
 

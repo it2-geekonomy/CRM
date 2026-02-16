@@ -135,7 +135,11 @@ export default function AdminDashboardPage() {
       <h3 className="text-lg font-semibold text-gray-900">
         Today's Schedule
       </h3>
-      <button className="text-green-600 text-sm font-medium hover:underline">
+      <button
+        type="button"
+        onClick={() => router.push("/admin/dashboard/tasks")}
+        className="text-green-600 text-sm font-medium hover:underline"
+      >
         View Calendar
       </button>
     </div>

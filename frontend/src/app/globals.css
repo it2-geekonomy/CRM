@@ -23,3 +23,28 @@ body {
   color: var(--foreground);
   font-family: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
 }
+
+/* React Big Calendar custom styles using Tailwind colors */
+.rbc-today {
+  background-color: rgba(105, 174, 68, 0.15) !important;
+}
+
+.rbc-day-bg.rbc-today {
+  background-color: rgba(105, 174, 68, 0.15) !important;
+}
+
+.rbc-event {
+  background-color: #69AE44 !important;
+  border-color: #69AE44 !important;
+  color: white !important;
+}
+
+.rbc-event:focus,
+.rbc-event.rbc-selected {
+  background-color: #5a9a3a !important;
+  border-color: #5a9a3a !important;
+}
+
+.rbc-event-content {
+  color: white !important;
+}

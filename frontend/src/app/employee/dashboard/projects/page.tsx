@@ -19,9 +19,9 @@ export type Project = {
 
 const QUICK_FILTERS = [
   "My Active Projects",
-  "Completed",
   "Upcoming Projects",
   "Draft",
+  "Completed",
 ];
 
 const todayStr = () => {

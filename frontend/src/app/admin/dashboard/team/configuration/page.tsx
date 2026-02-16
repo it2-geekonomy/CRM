@@ -1,6 +1,73 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+export type TeamMember = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  employeeId: string;
+  dateOfJoining: string;
+  department: string;
+  jobTitle: string;
+  roleType: string;
+  reportingManager: string;
+  experienceLevel: string;
+  location: string;
+  status: "Active" | "Draft";
+};
+
+const DEFAULT_STATUS = "Active";
+
 export default function TeamConfigurationPage() {
+  const router = useRouter();
+  const [firstName, setFirstName] = useState("Rajesh");
+  const [lastName, setLastName] = useState("Kumar");
+  const [email, setEmail] = useState("rajesh.kumar@geekonomy.com");
+  const [phone, setPhone] = useState("+91 98765 43210");
+  const [employeeId, setEmployeeId] = useState("EMP-001");
+  const [dateOfJoining, setDateOfJoining] = useState("2024-01-15");
+  const [department, setDepartment] = useState("Design");
+  const [jobTitle, setJobTitle] = useState("Lead Designer");
+  const [roleType, setRoleType] = useState("Full-time");
+  const [reportingManager, setReportingManager] = useState("Arjun Sindhia");
+  const [experienceLevel, setExperienceLevel] = useState("Senior (5–10 years)");
+  const [location, setLocation] = useState("Mumbai Office");
+  const [status, setStatus] = useState<"Active" | "Draft">(DEFAULT_STATUS);
+
+  const saveAsDraft = () => {
+    saveMember("Draft");
+  };
+
+  const saveMember = (saveStatus?: "Active" | "Draft") => {
+    const member: TeamMember = {
+      id: Date.now(),
+      firstName: firstName.trim() || "Unknown",
+      lastName: lastName.trim() || "Member",
+      email: email.trim() || "",
+      phone: phone.trim(),
+      employeeId: employeeId.trim() || `EMP-${Date.now()}`,
+      dateOfJoining: dateOfJoining || "",
+      department: department || "Design",
+      jobTitle: jobTitle.trim() || "Team Member",
+      roleType: roleType || "Full-time",
+      reportingManager: reportingManager || "",
+      experienceLevel: experienceLevel || "",
+      location: location || "",
+      status: saveStatus ?? status,
+    };
+    const existing = JSON.parse(typeof window !== "undefined" ? localStorage.getItem("teamMembers") ?? "[]" : "[]");
+    localStorage.setItem("teamMembers", JSON.stringify([...existing, member]));
+    router.push("/admin/dashboard/team");
+  };
+
+  const handleCancel = () => {
+    router.push("/admin/dashboard/team");
+  };
+
   return (
     <div className="bg-gray-100 min-h-screen py-10">
       <div className="max-w-[1200px] mx-auto px-8">
@@ -23,8 +90,8 @@ export default function TeamConfigurationPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               Personal Information
             </h2>
-            <span className="px-3 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700">
-              Active
+            <span className={`px-3 py-1 rounded-md text-xs font-medium ${status === "Active" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+              {status}
             </span>
           </div>
 
@@ -70,7 +137,8 @@ export default function TeamConfigurationPage() {
               </label>
               <input
                 type="text"
-                defaultValue="Rajesh"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
                 className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
               />
             </div>
@@ -81,7 +149,8 @@ export default function TeamConfigurationPage() {
               </label>
               <input
                 type="text"
-                defaultValue="Kumar"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
                 className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
               />
             </div>
@@ -92,7 +161,8 @@ export default function TeamConfigurationPage() {
               </label>
               <input
                 type="email"
-                defaultValue="rajesh.kumar@geekonomy.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
               />
             </div>
@@ -103,7 +173,8 @@ export default function TeamConfigurationPage() {
               </label>
               <input
                 type="tel"
-                defaultValue="+91 98765 43210"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
               />
             </div>
@@ -114,7 +185,8 @@ export default function TeamConfigurationPage() {
               </label>
               <input
                 type="text"
-                defaultValue="EMP-001"
+                value={employeeId}
+                onChange={(e) => setEmployeeId(e.target.value)}
                 className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
               />
               <p className="text-xs text-gray-400 mt-1">
@@ -128,7 +200,8 @@ export default function TeamConfigurationPage() {
               </label>
               <input
                 type="date"
-                defaultValue="2024-01-15"
+                value={dateOfJoining}
+                onChange={(e) => setDateOfJoining(e.target.value)}
                 className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
               />
             </div>
@@ -155,7 +228,8 @@ export default function TeamConfigurationPage() {
         Department <span className="text-red-500">*</span>
       </label>
       <select
-        defaultValue="Design"
+        value={department}
+        onChange={(e) => setDepartment(e.target.value)}
         className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white
                    focus:ring-2 focus:ring-green-500 outline-none"
       >
@@ -173,7 +247,8 @@ export default function TeamConfigurationPage() {
       </label>
       <input
         type="text"
-        defaultValue="Lead Designer"
+        value={jobTitle}
+        onChange={(e) => setJobTitle(e.target.value)}
         className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300
                    focus:ring-2 focus:ring-green-500 outline-none"
       />
@@ -185,7 +260,8 @@ export default function TeamConfigurationPage() {
         Role Type
       </label>
       <select
-        defaultValue="Full-time"
+        value={roleType}
+        onChange={(e) => setRoleType(e.target.value)}
         className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white
                    focus:ring-2 focus:ring-green-500 outline-none"
       >
@@ -202,7 +278,8 @@ export default function TeamConfigurationPage() {
         Reporting Manager
       </label>
       <select
-        defaultValue="Arjun Sindhia"
+        value={reportingManager}
+        onChange={(e) => setReportingManager(e.target.value)}
         className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white
                    focus:ring-2 focus:ring-green-500 outline-none"
       >
@@ -218,7 +295,8 @@ export default function TeamConfigurationPage() {
         Experience Level
       </label>
       <select
-        defaultValue="Senior (5–10 years)"
+        value={experienceLevel}
+        onChange={(e) => setExperienceLevel(e.target.value)}
         className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white
                    focus:ring-2 focus:ring-green-500 outline-none"
       >
@@ -235,7 +313,8 @@ export default function TeamConfigurationPage() {
         Location
       </label>
       <select
-        defaultValue="Mumbai Office"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
         className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white
                    focus:ring-2 focus:ring-green-500 outline-none"
       >
@@ -572,6 +651,7 @@ export default function TeamConfigurationPage() {
   {/* Cancel */}
   <button
     type="button"
+    onClick={handleCancel}
     className="
       px-6 py-2.5 rounded-xl
       border border-gray-300
@@ -585,6 +665,7 @@ export default function TeamConfigurationPage() {
   {/* Save as Draft */}
   <button
     type="button"
+    onClick={saveAsDraft}
     className="
       px-6 py-2.5 rounded-xl
       border border-gray-300
@@ -598,6 +679,7 @@ export default function TeamConfigurationPage() {
   {/* Save Team Member */}
   <button
     type="button"
+    onClick={() => saveMember("Active")}
     className="
       px-6 py-2.5 rounded-xl
       bg-green-600 text-white font-medium

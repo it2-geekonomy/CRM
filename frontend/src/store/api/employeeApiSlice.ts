@@ -66,7 +66,15 @@ export const employeeApiSlice = apiSlice.injectEndpoints({
             ]
           : [{ type: "Employee", id: "LIST" }],
     }),
+    getEmployee: builder.query<Employee, string>({
+      query: (id) => ({ url: `/employees/${id}` }),
+      providesTags: (_result, _err, id) => [{ type: "Employee", id }],
+    }),
   }),
 });
 
-export const { useGetEmployeesQuery, useLazyGetEmployeesQuery } = employeeApiSlice;
+export const {
+  useGetEmployeesQuery,
+  useLazyGetEmployeesQuery,
+  useGetEmployeeQuery,
+} = employeeApiSlice;

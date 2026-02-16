@@ -47,7 +47,7 @@ export default function EmployeeTaskCalendarPage() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-semibold text-gray-900">Task Calendar</h1>
           <div className="flex gap-4">
-            <button type="button" onClick={() => router.push("/employee/dashboard/projects")} className="px-4 py-2 border border-[#69AE44] rounded-lg bg-[#69AE44]/5 text-gray-700 hover:bg-[#69AE44]/10">
+            <button type="button" onClick={() => router.push("/employee/dashboard")} className="px-4 py-2 border border-[#69AE44] rounded-lg bg-[#69AE44]/5 text-gray-700 hover:bg-[#69AE44]/10">
               My View
             </button>
             <button className="px-5 py-2.5 rounded-xl bg-[#69AE44] text-white hover:bg-[#5a9a3a]">+ Add Task</button>

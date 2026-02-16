@@ -44,13 +44,14 @@ export function PrivateLayout({ children }: { children: React.ReactNode }) {
     document.title = APP_CONSTANT.AppClientName;
   }, []);
 
-  const isEmployee = currentUser?.user?.role === "employee";
+  const role = currentUser?.user?.role;
+  const showSidebar = role === "admin";
 
   return (
     <TopBarAndSideBarLayout
       sidebarItems={sidebarConfig.items}
       sidebarSecondaryItems={sidebarConfig.secondaryItems}
-      hideSidebar={isEmployee}
+      showSidebar={showSidebar}
       userEmail={userEmail}
     >
       {children}

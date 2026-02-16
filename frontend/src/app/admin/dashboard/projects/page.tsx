@@ -1,38 +1,63 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import {
+  useGetProjectsQuery,
+  type ProjectApi,
+  type ProjectStatus,
+} from "@/store/api/projectApiSlice";
 
+/** Local type for list display (API projectId + display fields) */
 export type Project = {
-  id: number;
+  id: string;
   projectName: string;
   projectCode?: string;
-  client: string;
   projectType: string;
-  description?: string;
   status: string;
   startDate: string;
   endDate: string;
-  estimatedHours: number;
-  hourlyRate: string;
 };
 
 const QUICK_FILTERS = ["My Active Projects", "Due This Week", "My Clients", "Open Deals"];
 
+function toListProject(p: ProjectApi): Project {
+  const start = typeof p.startDate === "string" ? p.startDate : (p.startDate as unknown as string)?.slice?.(0, 10) ?? "";
+  const end = typeof p.endDate === "string" ? p.endDate : (p.endDate as unknown as string)?.slice?.(0, 10) ?? "";
+  return {
+    id: p.projectId,
+    projectName: p.projectName,
+    projectCode: p.projectCode,
+    projectType: p.projectType,
+    status: p.status,
+    startDate: start,
+    endDate: end,
+  };
+}
+
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [quickFilter, setQuickFilter] = useState<string>("My Active Projects");
   const router = useRouter();
+  const [quickFilter, setQuickFilter] = useState<string>("My Active Projects");
+  const [searchInput, setSearchInput] = useState("");
 
-  useEffect(() => {
-    const raw = localStorage.getItem("projects");
-    const savedProjects: Project[] = JSON.parse(raw ?? "[]");
-    setProjects(savedProjects);
-  }, []);
+  const queryParams = useMemo(() => {
+    const params: { status?: ProjectStatus; search?: string; limit: number; page: number } = {
+      limit: 100,
+      page: 1,
+    };
+    if (quickFilter === "My Active Projects") params.status = "Active";
+    else if (quickFilter === "Draft") params.status = "Draft";
+    if (searchInput.trim()) params.search = searchInput.trim();
+    return params;
+  }, [quickFilter, searchInput]);
 
-  const activeCount = projects.filter((p) => p.status === "Active").length;
-  const draftCount = projects.filter((p) => p.status === "Draft").length;
+  const { data, isLoading, isError, error } = useGetProjectsQuery(queryParams);
+
+  const projects = useMemo(() => (data?.data ?? []).map(toListProject), [data]);
+  const activeCount = data?.data?.filter((p) => p.status === "Active").length ?? 0;
+  const draftCount = data?.data?.filter((p) => p.status === "Draft").length ?? 0;
+  const totalCount = data?.meta?.total ?? projects.length;
 
   return (
     <div className="bg-gray-100 min-h-screen py-10">
@@ -82,6 +107,8 @@ export default function ProjectsPage() {
             <input
               type="text"
               placeholder="Search projects..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
             />
             <button
@@ -116,7 +143,7 @@ export default function ProjectsPage() {
           <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
             <p className="text-base text-gray-500">Active Projects</p>
             <h3 className="text-3xl font-semibold text-gray-900 mt-3">{activeCount}</h3>
-            <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">{projects.length} total</p>
+            <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">{totalCount} total</p>
           </div>
           <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
             <p className="text-base text-gray-500">Draft Projects</p>
@@ -125,7 +152,7 @@ export default function ProjectsPage() {
           </div>
           <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
             <p className="text-base text-gray-500">Total Projects</p>
-            <h3 className="text-3xl font-semibold text-gray-900 mt-3">{projects.length}</h3>
+            <h3 className="text-3xl font-semibold text-gray-900 mt-3">{totalCount}</h3>
             <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">All time</p>
           </div>
           <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
@@ -138,45 +165,48 @@ export default function ProjectsPage() {
        
         {/* Projects List - Container Box */}
         <div className="custom-scrollbar bg-white rounded-2xl border border-gray-200 p-6 max-h-[600px] overflow-y-auto">
-          {projects.length === 0 && (
+          {isLoading && (
             <div className="p-8 text-center text-gray-500">
-              No projects created yet
+              Loading projects…
+            </div>
+          )}
+          {isError && (
+            <div className="p-8 text-center text-red-600">
+              Failed to load projects. {(error as { data?: { message?: string } })?.data?.message ?? "Please try again."}
+            </div>
+          )}
+          {!isLoading && !isError && projects.length === 0 && (
+            <div className="p-8 text-center text-gray-500">
+              No projects found
             </div>
           )}
 
-          {projects.length > 0 && (
+          {!isLoading && !isError && projects.length > 0 && (
             <div className="space-y-3">
-              {projects.map((project, index) => (
+              {projects.map((project) => (
                 <Link
-                  key={project.id ?? index}
+                  key={project.id}
                   href={`/admin/dashboard/projects/${project.id}`}
                   className="block relative bg-white rounded-xl border border-gray-200 p-5 hover:border-green-500 transition-all group"
                 >
-                  {/* Green Left Accent Bar */}
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-xl group-hover:bg-green-600"></div>
-                  
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-xl group-hover:bg-green-600" />
                   <div className="flex items-start justify-between gap-4 pl-4">
                     <div className="min-w-0 flex-1">
-                      {/* Time/Date Info - Top */}
                       <p className="text-sm text-gray-500 mb-1">
-                        {project.startDate} - {project.endDate}
+                        {project.startDate} – {project.endDate}
                       </p>
-                      
-                      {/* Title - Bold */}
                       <h2 className="text-base font-semibold text-gray-900 mb-1.5">
                         {project.projectName}
                       </h2>
-                      
-                      {/* Details - Bottom */}
                       <p className="text-sm text-gray-500">
-                        {project.projectCode || "ABC-WEB-001"} • {project.client} • {project.projectType}
+                        {project.projectCode || "—"} • {project.projectType}
                       </p>
                     </div>
-                    
-                    {/* Status Tag - Top Right */}
                     <span className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium ${
                       project.status === "Active"
                         ? "bg-green-100 text-green-700"
+                        : project.status === "Completed"
+                        ? "bg-blue-100 text-blue-700"
                         : "bg-yellow-100 text-yellow-700"
                     }`}>
                       {project.status}

@@ -14,8 +14,8 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Course Portal",
-  description: "Course Portal",
+  title: "CRM",
+  description: "CRM",
 };
 
 export default function RootLayout({

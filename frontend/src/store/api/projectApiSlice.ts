@@ -54,13 +54,13 @@ export type ProjectApi = {
   [key: string]: unknown;
 };
 
+/** Backend meta shape (totalItems, currentPage, totalPages) */
 export type ProjectsResponse = {
   data: ProjectApi[];
   meta: {
-    total: number;
-    page: number;
-    limit: number;
+    totalItems: number;
     totalPages: number;
+    currentPage: number;
   };
 };
 

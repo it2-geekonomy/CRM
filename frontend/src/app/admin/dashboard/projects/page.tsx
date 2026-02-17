@@ -3,36 +3,18 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-export type Project = {
-  id: number;
-  projectName: string;
-  projectCode?: string;
-  client: string;
-  projectType: string;
-  description?: string;
-  status: string;
-  startDate: string;
-  endDate: string;
-  estimatedHours: number;
-  hourlyRate: string;
-};
+import { useGetProjectsQuery, type ProjectApi } from "@/store/api/projectApiSlice";
 
 const QUICK_FILTERS = ["My Active Projects", "Due This Week", "My Clients", "Open Deals"];
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
   const [quickFilter, setQuickFilter] = useState<string>("My Active Projects");
   const router = useRouter();
+  const { data: projectsData, isLoading, isError } = useGetProjectsQuery({ page: 1, limit: 50 });
 
-  useEffect(() => {
-    const raw = localStorage.getItem("projects");
-    const savedProjects: Project[] = JSON.parse(raw ?? "[]");
-    setProjects(savedProjects);
-  }, []);
-
-  const activeCount = projects.filter((p) => p.status === "Active").length;
-  const draftCount = projects.filter((p) => p.status === "Draft").length;
+  const activeCount = projectsData?.data.filter((p: ProjectApi) => p.status === "Active").length ?? 0;
+  const draftCount = projectsData?.data.filter((p: ProjectApi) => p.status === "Draft").length ?? 0;
+  const totalCount = projectsData?.meta?.totalItems ?? 0;
 
   return (
     <div className="bg-gray-100 min-h-screen py-10">
@@ -116,7 +98,7 @@ export default function ProjectsPage() {
           <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
             <p className="text-base text-gray-500">Active Projects</p>
             <h3 className="text-3xl font-semibold text-gray-900 mt-3">{activeCount}</h3>
-            <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">{projects.length} total</p>
+            <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">{totalCount} total</p>
           </div>
           <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
             <p className="text-base text-gray-500">Draft Projects</p>
@@ -125,7 +107,7 @@ export default function ProjectsPage() {
           </div>
           <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
             <p className="text-base text-gray-500">Total Projects</p>
-            <h3 className="text-3xl font-semibold text-gray-900 mt-3">{projects.length}</h3>
+            <h3 className="text-3xl font-semibold text-gray-900 mt-3">{totalCount}</h3>
             <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">All time</p>
           </div>
           <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
@@ -138,18 +120,24 @@ export default function ProjectsPage() {
        
         {/* Projects List - Container Box */}
         <div className="custom-scrollbar bg-white rounded-2xl border border-gray-200 p-6 max-h-[600px] overflow-y-auto">
-          {projects.length === 0 && (
+          {isLoading && (
+            <div className="p-8 text-center text-gray-500">Loading projects…</div>
+          )}
+          {isError && (
+            <div className="p-8 text-center text-red-600">Failed to load projects.</div>
+          )}
+          {!isLoading && !isError && (!projectsData?.data?.length) && (
             <div className="p-8 text-center text-gray-500">
-              No projects created yet
+              No projects yet. Create your first project to get started.
             </div>
           )}
 
-          {projects.length > 0 && (
+          {!isLoading && !isError && projectsData?.data && projectsData.data.length > 0 && (
             <div className="space-y-3">
-              {projects.map((project, index) => (
+              {projectsData.data.map((project: ProjectApi, index: number) => (
                 <Link
-                  key={project.id ?? index}
-                  href={`/admin/dashboard/projects/${project.id}`}
+                  key={project.projectId ?? index}
+                  href={`/admin/dashboard/projects/${project.projectId}`}
                   className="block relative bg-white rounded-xl border border-gray-200 p-5 hover:border-green-500 transition-all group"
                 >
                   {/* Green Left Accent Bar */}
@@ -169,7 +157,7 @@ export default function ProjectsPage() {
                       
                       {/* Details - Bottom */}
                       <p className="text-sm text-gray-500">
-                        {project.projectCode || "ABC-WEB-001"} • {project.client} • {project.projectType}
+                        {project.projectCode || "—"} • {project.projectType}
                       </p>
                     </div>
                     

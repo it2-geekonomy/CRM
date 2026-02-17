@@ -24,7 +24,7 @@ export function SideBar({ items, secondaryItems, onClose, variant = "persistent"
     >
       <div className="py-6 px-6">
         <a href="/" className="text-white font-semibold text-lg">
-          Course Portal
+          CRM
         </a>
       </div>
       <div className="flex-1 overflow-y-auto flex flex-col">
@@ -37,7 +37,7 @@ export function SideBar({ items, secondaryItems, onClose, variant = "persistent"
         )}
       </div>
       <footer className="py-4 text-center text-white/80 text-sm">
-        Copyright © {new Date().getFullYear()} Course Portal
+        Copyright © {new Date().getFullYear()} CRM
       </footer>
     </aside>
   );

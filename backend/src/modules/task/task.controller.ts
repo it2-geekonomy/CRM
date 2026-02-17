@@ -9,6 +9,8 @@ import {
     HttpCode,
     HttpStatus,
     Req,
+    Query,
+    UseGuards,
 } from '@nestjs/common';
 import {
     ApiTags,
@@ -19,11 +21,11 @@ import {
     ApiBearerAuth,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
-
-
 import { TaskService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { GetCalendarDto } from './dto/get-calendar.dto';
+import { AuthGuard } from '../auth/guards/auth.guard';
 
 @ApiTags('tasks')
 @ApiBearerAuth('JWT-auth')
@@ -54,6 +56,16 @@ export class TaskController {
     @ApiResponse({ status: 200, description: 'List of tasks' })
     findAll() {
         return this.taskService.findAll();
+    }
+
+    @Get('calendar')
+    @UseGuards(AuthGuard)
+    @ApiOperation({ summary: 'Get tasks for calendar view' })
+    @ApiBearerAuth('JWT-auth')
+    getCalendar(@Query() query: GetCalendarDto, @Req() req: any) {
+        const userId = req.user.sub;
+        const userRole = req.user.role;
+        return this.taskService.findCalendar(query, userId, userRole);
     }
 
     // ================= GET TASK BY ID =================

@@ -1,44 +1,54 @@
-import {
-  IsString,
-  IsOptional,
-  IsDateString,
-  IsUUID,
-  IsEnum,
-} from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TaskStatus } from 'src/shared/enum/task/task-status.enum';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { TaskStatus } from '../../../shared/enum/task/task-status.enum';
+
 export class CreateTaskDto {
-  @ApiProperty()
+  @ApiProperty({
+    example: 'Prepare CRM Dashboard',
+    description: 'Name/title of the task',
+  })
   @IsString()
   taskName: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({
+    example: 'Create dashboard UI and integrate APIs',
+    description: 'Detailed description of the task',
+  })
   @IsString()
-  taskDescription?: string;
+  taskDescription: string;
 
-  @ApiProperty()
-  @IsDateString()
+  @ApiProperty({
+    example: '2026-02-13',
+    description: 'Task start date (YYYY-MM-DD)',
+  })
+  @IsString()
   startDate: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: '10:00',
+    description: 'Task start time (HH:mm)',
+  })
   @IsString()
   startTime: string;
 
-  @ApiProperty()
-  @IsDateString()
+  @ApiProperty({
+    example: '2026-02-15',
+    description: 'Task end date (YYYY-MM-DD)',
+  })
+  @IsString()
   endDate: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: '18:00',
+    description: 'Task end time (HH:mm)',
+  })
   @IsString()
   endTime: string;
 
-  @ApiPropertyOptional({ enum: TaskStatus })
-  @IsOptional()
-  @IsEnum(TaskStatus)
-  taskStatus?: TaskStatus;
-
-  @ApiProperty()
+  @ApiProperty({
+    example: '85504988-efda-4928-a980-bba3f92e4fa6',
+    description: 'Employee ID to whom the task is assigned',
+  })
   @IsUUID()
   assignedToId: string;
 }

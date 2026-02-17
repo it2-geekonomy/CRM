@@ -70,19 +70,12 @@ export class ProjectsController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Archive project' })
+  @HttpCode(HttpStatus.OK) // Changed to OK to allow returning a confirmation message
+  @ApiOperation({ summary: 'Delete project' })
   @ApiParam({ name: 'id', type: 'string', description: 'Project UUID' })
-  @ApiResponse({ status: 200, description: 'Project archived successfully' })
+  @ApiResponse({ status: 200, description: 'Project permanently deleted' })
+  @ApiResponse({ status: 404, description: 'Project not found' })
   remove(@Param('id') id: string) {
     return this.projectsService.remove(id);
-  }
-
-  @Patch(':id/restore')
-  @ApiOperation({ summary: 'Restore an archived project' })
-  @ApiParam({ name: 'id', type: 'string', description: 'Project UUID' })
-  @ApiResponse({ status: 200, description: 'Project restored successfully' })
-  restore(@Param('id') id: string) {
-    return this.projectsService.restore(id);
   }
 }

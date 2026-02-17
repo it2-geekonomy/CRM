@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Task } from './entities/task.entity';
+import { TaskActivity } from './entities/task-activity.entity';
+import { EmployeeProfile } from '../employee/entities/employee-profile.entity';
 import { TaskService } from './task.service';
 import { TaskController } from './task.controller';
-import { EmployeeProfile } from 'src/modules/employee/entities/employee-profile.entity';
 import { AuthModule } from '../auth/auth.module';
 import { Project } from '../projects/entities/project.entity';
 
@@ -12,6 +13,7 @@ import { Project } from '../projects/entities/project.entity';
   imports: [
     TypeOrmModule.forFeature([
       Task,
+      TaskActivity, 
       EmployeeProfile,
       Project,
     ]),

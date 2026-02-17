@@ -1,107 +1,121 @@
 import {
-    Controller,
-    Get,
-    Post,
-    Patch,
-    Delete,
-    Param,
-    Body,
-    HttpCode,
-    HttpStatus,
-    Req,
-    Query,
-    UseGuards,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Req,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
-    ApiTags,
-    ApiOperation,
-    ApiResponse,
-    ApiParam,
-    ApiBody,
-    ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
+
 import { TaskService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { CreateTaskStatusDto } from './dto/create-task-status.dto';
 import { GetCalendarDto } from './dto/get-calendar.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 
-@ApiTags('tasks')
+@ApiTags('Tasks')
 @ApiBearerAuth('JWT-auth')
 @Controller('tasks')
 export class TaskController {
-    constructor(private readonly taskService: TaskService) { }
+  constructor(private readonly taskService: TaskService) {}
 
-    // ================= CREATE TASK =================
-    @Post()
-    @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Create a new task' })
-    @ApiResponse({ status: 201, description: 'Task successfully created' })
-    @ApiResponse({ status: 400, description: 'Bad request / validation failed' })
-    @ApiBody({ type: CreateTaskDto })
-    create(
-        @Body() dto: CreateTaskDto,
-        @Req() req: Request,
-    ) {
-        // JWT payload injected by AuthGuard
-        const user = req.user as { id: string };
+  @Post()
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a new task' })
+  @ApiResponse({ status: 201, description: 'Task created successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
+  @ApiBody({ type: CreateTaskDto })
+  create(@Body() dto: CreateTaskDto, @Req() req: Request) {
+    return this.taskService.create(dto, (req as any).user.id);
+  }
 
-        return this.taskService.create(dto, user.id);
-    }
+  @Get()
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get all tasks' })
+  @ApiResponse({ status: 200, description: 'List of all tasks' })
+  findAll() {
+    return this.taskService.findAll();
+  }
 
-    // ================= GET ALL TASKS =================
-    @Get()
-    @ApiOperation({ summary: 'Get all tasks' })
-    @ApiResponse({ status: 200, description: 'List of tasks' })
-    findAll() {
-        return this.taskService.findAll();
-    }
+  @Get('calendar')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get tasks for calendar view' })
+  getCalendar(@Query() query: GetCalendarDto, @Req() req: Request) {
+    const user = (req as any).user;
+    return this.taskService.findCalendar(query, user.sub, user.role);
+  }
 
-    @Get('calendar')
-    @UseGuards(AuthGuard)
-    @ApiOperation({ summary: 'Get tasks for calendar view' })
-    @ApiBearerAuth('JWT-auth')
-    getCalendar(@Query() query: GetCalendarDto, @Req() req: any) {
-        const userId = req.user.sub;
-        const userRole = req.user.role;
-        return this.taskService.findCalendar(query, userId, userRole);
-    }
+  @Get(':id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get task by ID' })
+  @ApiParam({ name: 'id', type: 'string', description: 'Task UUID' })
+  @ApiResponse({ status: 200, description: 'Task found' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  findOne(@Param('id') id: string) {
+    return this.taskService.findOne(id);
+  }
 
-    // ================= GET TASK BY ID =================
-    @Get(':id')
-    @ApiOperation({ summary: 'Get task by ID' })
-    @ApiParam({
-        name: 'id',
-        type: 'string',
-        description: 'Task ID (UUID)',
-    })
-    @ApiResponse({ status: 200, description: 'Task found' })
-    @ApiResponse({ status: 404, description: 'Task not found' })
-    findOne(@Param('id') id: string) {
-        return this.taskService.findOne(id);
-    }
+  @Patch(':id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Update task details' })
+  @ApiParam({ name: 'id', type: 'string', description: 'Task UUID' })
+  @ApiResponse({ status: 200, description: 'Task updated successfully' })
+  @ApiBody({ type: UpdateTaskDto })
+  update(@Param('id') id: string, @Body() dto: UpdateTaskDto) {
+    return this.taskService.update(id, dto);
+  }
 
-    // ================= UPDATE TASK =================
-    @Patch(':id')
-    @ApiOperation({ summary: 'Update task details' })
-    @ApiResponse({ status: 200, description: 'Task successfully updated' })
-    @ApiResponse({ status: 404, description: 'Task not found' })
-    @ApiBody({ type: UpdateTaskDto })
-    update(
-        @Param('id') id: string,
-        @Body() dto: UpdateTaskDto,
-    ) {
-        return this.taskService.update(id, dto);
-    }
+  @Patch(':id/status')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Change task status' })
+  @ApiParam({ name: 'id', type: 'string', description: 'Task UUID' })
+  @ApiBody({ type: CreateTaskStatusDto })
+  changeTaskStatus(
+    @Param('id') taskId: string,
+    @Body() dto: CreateTaskStatusDto,
+    @Req() req: Request,
+  ) {
+    const user = (req as any).user;
 
-    // ================= DELETE TASK =================
-    @Delete(':id')
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Delete task' })
-    @ApiResponse({ status: 200, description: 'Task deleted successfully' })
-    @ApiResponse({ status: 404, description: 'Task not found' })
-    remove(@Param('id') id: string) {
-        return this.taskService.remove(id);
-    }
+    return this.taskService.changeStatus(
+      taskId,
+      dto.newStatus,
+      user.employeeId,
+      dto.changeReason,
+    );
+  }
+
+  @Get(':id/activity')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get task activity log' })
+  @ApiParam({ name: 'id', type: 'string', description: 'Task UUID' })
+  getActivity(@Param('id') taskId: string) {
+    return this.taskService.getTaskActivity(taskId);
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete task' })
+  @ApiParam({ name: 'id', type: 'string', description: 'Task UUID' })
+  remove(@Param('id') id: string) {
+    return this.taskService.remove(id);
+  }
 }

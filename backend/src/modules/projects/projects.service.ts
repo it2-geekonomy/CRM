@@ -61,7 +61,6 @@ export class ProjectsService {
       search,
       fromDate,
       toDate,
-      isArchived,
       page,
       limit,
       sortOrder,
@@ -69,6 +68,7 @@ export class ProjectsService {
     const skip = (page - 1) * limit;
 
     const query = this.projectRepository.createQueryBuilder('project');
+    
     if (status) query.andWhere('project.status = :status', { status });
 
     if (projectType)
@@ -87,13 +87,9 @@ export class ProjectsService {
 
     if (toDate) query.andWhere('project.endDate <= :toDate', { toDate });
 
-    if (isArchived) {
-      query.withDeleted().andWhere('project.deletedAt IS NOT NULL');
-    } else {
-      query.andWhere('project.deletedAt IS NULL');
-    }
     query.orderBy('project.createdAt', sortOrder).skip(skip).take(limit);
     const [items, total] = await query.getManyAndCount();
+    
     return {
       data: items,
       meta: {
@@ -141,22 +137,13 @@ export class ProjectsService {
     const project = await this.projectRepository.findOne({
       where: { projectId: id },
     });
+    
     if (!project) {
       throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
     }
-    await this.projectRepository.softDelete(id);
-    return { message: 'Project archived successfully' };
-  }
 
-  async restore(id: string) {
-    const project = await this.projectRepository.findOne({
-      where: { projectId: id },
-      withDeleted: true,
-    });
-    if (!project) {
-      throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
-    }
-    await this.projectRepository.restore(id);
-    return { message: 'Project restored successfully' };
+    await this.projectRepository.delete(id);
+    
+    return { message: 'Project permanently deleted' };
   }
 }

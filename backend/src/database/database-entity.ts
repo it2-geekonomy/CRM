@@ -20,6 +20,8 @@ import { EmployeeProfile } from '../modules/employee/entities/employee-profile.e
 import { Task } from '../modules/task/entities/task.entity';
 
 import { Project } from '../modules/projects/entities/project.entity';
+import { TaskActivity } from '../modules/task/entities/task-activity.entity';
+
 
 
 // Export all entities as an array
@@ -32,4 +34,5 @@ export const models = [
   EmployeeProfile,
   Project,
   Task,
+  TaskActivity
 ];

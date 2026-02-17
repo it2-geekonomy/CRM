@@ -26,9 +26,6 @@ export class Project {
     @Column({ name: 'project_code', type: 'varchar', length: 50, unique: true })
     projectCode: string;
 
-    // @Column({ name: 'client_id', type: 'uuid' })
-    // clientId: string;
-
     @Column({ name: 'project_type', type: 'enum', enum: ProjectType })
     projectType: ProjectType;
 
@@ -57,7 +54,6 @@ export class Project {
     @Column({ name: 'project_lead_id', type: 'uuid' })
     projectLeadId: string;
 
-    // Changed from EmployeeProfile to Employee
     @ManyToOne(() => EmployeeProfile, (emp) => emp.ledProjects, { onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'project_lead_id' })
     projectLead: EmployeeProfile;
@@ -71,9 +67,6 @@ export class Project {
     @Column({ name: 'enable_client_portal', type: 'boolean', default: false })
     enableClientPortal: boolean;
 
-    // @Column({ name: 'is_archived', type: 'boolean', default: false })
-    // isArchived: boolean;
-
     @Column({ name: 'created_by', type: 'uuid' })
     createdBy: string;
 
@@ -86,9 +79,6 @@ export class Project {
 
     @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
     updatedAt: Date;
-
-    // @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
-    // deletedAt?: Date;
 
     @OneToMany(() => Task, (task) => task.project)
     tasks: Task[];

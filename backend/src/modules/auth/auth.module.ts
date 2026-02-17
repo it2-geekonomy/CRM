@@ -26,11 +26,12 @@ import { UsersModule } from '../users/users.module';
   controllers: [AuthController],
   providers: [
     AuthService,
+    AuthGuard,
     {
       provide: APP_GUARD, // Register AuthGuard as global guard
       useClass: AuthGuard,
     },
   ],
-  exports: [AuthService], // Export AuthService for use in other modules
+  exports: [AuthService,AuthGuard, JwtModule], // Export AuthService for use in other modules
 })
 export class AuthModule {}

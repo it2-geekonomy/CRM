@@ -6,6 +6,8 @@ import { TaskActivity } from './entities/task-activity.entity';
 import { EmployeeProfile } from '../employee/entities/employee-profile.entity';
 import { TaskService } from './task.service';
 import { TaskController } from './task.controller';
+import { AuthModule } from '../auth/auth.module';
+import { Project } from '../projects/entities/project.entity';
 
 @Module({
   imports: [
@@ -13,7 +15,9 @@ import { TaskController } from './task.controller';
       Task,
       TaskActivity, 
       EmployeeProfile,
+      Project,
     ]),
+    AuthModule,
   ],
   controllers: [TaskController],
   providers: [TaskService],

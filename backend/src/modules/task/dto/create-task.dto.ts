@@ -1,21 +1,28 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
-import { TaskStatus } from '../../../shared/enum/task/task-status.enum';
+import {
+  IsString,
+  IsOptional,
+  IsUUID,
+  IsEnum,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { TaskStatus } from 'src/shared/enum/task/task-status.enum';
 
 export class CreateTaskDto {
+
   @ApiProperty({
-    example: 'Prepare CRM Dashboard',
-    description: 'Name/title of the task',
+    example: 'Complete Project Documentation',
+    description: 'The title of the task',
   })
   @IsString()
   taskName: string;
 
-  @ApiProperty({
-    example: 'Create dashboard UI and integrate APIs',
-    description: 'Detailed description of the task',
+  @ApiPropertyOptional({
+    example: 'Finish the final draft of the API documentation and share it with the team.',
+    description: 'Detailed explanation of the task',
   })
+  @IsOptional()
   @IsString()
-  taskDescription: string;
+  taskDescription?: string;
 
   @ApiProperty({
     example: '2026-02-13',
@@ -45,10 +52,25 @@ export class CreateTaskDto {
   @IsString()
   endTime: string;
 
+  @ApiPropertyOptional({
+    enum: TaskStatus,
+    example: TaskStatus.IN_PROGRESS,
+  })
+  @IsOptional()
+  @IsEnum(TaskStatus)
+  taskStatus?: TaskStatus;
+
   @ApiProperty({
-    example: '85504988-efda-4928-a980-bba3f92e4fa6',
-    description: 'Employee ID to whom the task is assigned',
+    example: 'c560166a-6c8e-4acb-a100-6e2498520ef7',
+    description: 'The UUID of the employee to whom the task is assigned',
   })
   @IsUUID()
   assignedToId: string;
+
+  @ApiProperty({
+    example: 'e492a68f-4f1e-4b1e-8e0d-5f82cb25f6c3',
+    description: 'The UUID of the project this task belongs to',
+  })
+  @IsUUID()
+  projectId: string;
 }

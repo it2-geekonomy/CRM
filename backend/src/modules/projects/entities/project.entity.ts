@@ -7,11 +7,13 @@ import {
     DeleteDateColumn,
     ManyToOne,
     JoinColumn,
+    OneToMany,
 } from 'typeorm';
-import { ProjectStatus } from '../../../shared/project/project-status.enum';
-import { ProjectType } from '../../../shared/project/project-type.enum';
+import { ProjectStatus } from '../../../shared/enum/project/project-status.enum';
+import { ProjectType } from '../../../shared/enum/project/project-type.enum';
 import { AdminProfile } from '../../admin/entities/admin-profile.entity';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
+import { Task } from '../../task/entities/task.entity';
 
 @Entity('projects')
 export class Project {
@@ -87,4 +89,7 @@ export class Project {
 
     @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
     deletedAt?: Date;
+
+    @OneToMany(() => Task, (task) => task.project)
+    tasks: Task[];
 }

@@ -71,8 +71,8 @@ export class Project {
     @Column({ name: 'enable_client_portal', type: 'boolean', default: false })
     enableClientPortal: boolean;
 
-    @Column({ name: 'is_archived', type: 'boolean', default: false })
-    isArchived: boolean;
+    // @Column({ name: 'is_archived', type: 'boolean', default: false })
+    // isArchived: boolean;
 
     @Column({ name: 'created_by', type: 'uuid' })
     createdBy: string;
@@ -87,8 +87,8 @@ export class Project {
     @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
     updatedAt: Date;
 
-    @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
-    deletedAt?: Date;
+    // @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
+    // deletedAt?: Date;
 
     @OneToMany(() => Task, (task) => task.project)
     tasks: Task[];

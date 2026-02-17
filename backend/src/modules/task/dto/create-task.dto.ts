@@ -52,14 +52,6 @@ export class CreateTaskDto {
   @IsString()
   endTime: string;
 
-  @ApiPropertyOptional({
-    enum: TaskStatus,
-    example: TaskStatus.IN_PROGRESS,
-  })
-  @IsOptional()
-  @IsEnum(TaskStatus)
-  taskStatus?: TaskStatus;
-
   @ApiProperty({
     example: 'c560166a-6c8e-4acb-a100-6e2498520ef7',
     description: 'The UUID of the employee to whom the task is assigned',

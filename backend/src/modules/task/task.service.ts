@@ -2,16 +2,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  DataSource,
-  Repository,
-  MoreThanOrEqual,
-  LessThanOrEqual,
-  FindOptionsWhere,
-} from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -26,109 +19,105 @@ export class TaskService {
   constructor(
     @InjectRepository(Task)
     private readonly taskRepo: Repository<Task>,
-
     @InjectRepository(EmployeeProfile)
     private readonly employeeRepo: Repository<EmployeeProfile>,
-
     @InjectRepository(TaskActivity)
     private readonly taskActivityRepo: Repository<TaskActivity>,
-
     private readonly dataSource: DataSource,
   ) {}
 
+  private baseTaskQuery() {
+    return this.taskRepo
+      .createQueryBuilder('task')
+      .leftJoin('task.assignedTo', 'assignedTo')
+      .leftJoin('task.assignedBy', 'assignedBy')
+      .leftJoin('task.project', 'project')
+      .select([
+        'task.id',
+        'task.taskName',
+        'task.taskStatus',
+        'task.startDate',
+        'task.startTime',
+        'task.endDate',
+        'task.endTime',
+        'task.createdAt',
+        'task.updatedAt',
+        'assignedTo.id',
+        'assignedTo.name',
+        'assignedTo.designation',
+        'assignedBy.id',
+        'assignedBy.name',
+        'project.projectId',
+        'project.projectName',
+      ]);
+  }
+
   async create(dto: CreateTaskDto, userId: string) {
-    const [assignedTo, assignedBy] = await Promise.all([
-      this.employeeRepo.findOne({ where: { id: dto.assignedToId } }),
-      this.employeeRepo.findOne({
-        where: { user: { id: userId } },
-        relations: ['user'],
-      }),
-    ]);
+    return this.dataSource.transaction(async (manager) => {
+      const [assignedTo, assignedBy, project] = await Promise.all([
+        manager.findOne(EmployeeProfile, { where: { id: dto.assignedToId } }),
+        manager.findOne(EmployeeProfile, { where: { user: { id: userId } } }),
+        manager.findOne('Project', { where: { projectId: dto.projectId } }),
+      ]);
 
-    if (!assignedTo || !assignedBy) {
-      throw new BadRequestException('Invalid employee reference');
-    }
 
-    const task = this.taskRepo.create({
-      ...dto,
-      assignedTo,
-      assignedBy,
-      project: { id: dto.projectId } as any,
-    });
+      if (!assignedTo) throw new BadRequestException('Invalid assignedTo ID');
+      if (!assignedBy) throw new BadRequestException('Invalid assignedBy ID');
+      if (!project) throw new BadRequestException('Invalid project ID');
 
-    const savedTask = await this.taskRepo.save(task);
-
-    return {
-      id: savedTask.id,
-      taskName: savedTask.taskName,
-      taskStatus: savedTask.taskStatus,
-      createdAt: savedTask.createdAt,
-    };
-  }
-
-  async findCalendar(query: GetCalendarDto, userId: string, userRole: string) {
-    try {
-      const { year, month, employeeId } = query;
-      const where: FindOptionsWhere<Task> = {};
-
-      if (userRole === 'employee') {
-        where.assignedTo = { user: { id: userId } } as any;
-      } else if (userRole === 'admin' && employeeId) {
-        where.assignedTo = { id: employeeId } as any;
-      }
-
-      if (year && month) {
-        const monthStart = new Date(Number(year), Number(month) - 1, 1, 0, 0, 0);
-        const monthEnd = new Date(Number(year), Number(month), 0, 23, 59, 59);
-        where.startDate = LessThanOrEqual(monthEnd) as any;
-        where.endDate = MoreThanOrEqual(monthStart) as any;
-      }
-
-      return await this.taskRepo.find({
-        where,
-        relations: ['assignedTo', 'assignedBy', 'project'],
-        order: {
-          startDate: 'ASC',
-          startTime: 'ASC',
-        },
+      const task = manager.create(Task, {
+        ...dto,
+        assignedTo,
+        assignedBy,
+        project,
       });
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Could not retrieve calendar data.`,
-      );
-    }
-  }
 
-  async findAll(): Promise<Task[]> {
-    return this.taskRepo.find({
-      relations: ['assignedTo', 'assignedBy', 'project'],
-      order: { createdAt: 'DESC' },
+      const savedTask = await manager.save(task);
+
+      return {
+        id: savedTask.id,
+        taskName: savedTask.taskName,
+        taskStatus: savedTask.taskStatus,
+        createdAt: savedTask.createdAt,
+      };
     });
   }
 
-  async findOne(id: string): Promise<Task> {
-    const task = await this.taskRepo.findOne({
-      where: { id },
-      relations: ['assignedTo', 'assignedBy', 'project'],
-    });
+  async findAll() {
+    return this.baseTaskQuery().orderBy('task.createdAt', 'DESC').getRawMany();
+  }
 
-    if (!task) {
-      throw new NotFoundException('Task not found');
-    }
+  async findOne(id: string) {
+    const task = await this.baseTaskQuery()
+      .where('task.id = :id', { id })
+      .getRawOne();
 
+    if (!task) throw new NotFoundException('Task not found');
     return task;
   }
 
-  async update(id: string, dto: UpdateTaskDto) {
-    const task = await this.taskRepo.findOne({ where: { id } });
+  async findCalendar(query: GetCalendarDto, userId: string, userRole: string) {
+    const qb = this.baseTaskQuery();
 
-    if (!task) {
-      throw new NotFoundException('Task not found');
+    if (userRole === 'employee') {
+      qb.andWhere('assignedTo.id = :userId', { userId });
+    } else if (userRole === 'admin' && query.employeeId) {
+      qb.andWhere('assignedTo.id = :empId', { empId: query.employeeId });
     }
 
-    this.taskRepo.merge(task, dto);
-    const updated = await this.taskRepo.save(task);
+    if (query.year && query.month) {
+      const start = new Date(Number(query.year), Number(query.month) - 1, 1, 0, 0, 0);
+      const end = new Date(Number(query.year), Number(query.month), 0, 23, 59, 59);
+      qb.andWhere('task.startDate <= :end AND task.endDate >= :start', { start, end });
+    }
 
+    return qb.orderBy('task.startDate', 'ASC')
+      .addOrderBy('task.startTime', 'ASC')
+      .getRawMany();
+  }
+
+  async update(id: string, dto: UpdateTaskDto) {
+    const updated = await this.taskRepo.save({ id, ...dto });
     return {
       id: updated.id,
       taskName: updated.taskName,
@@ -137,41 +126,22 @@ export class TaskService {
     };
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string) {
     const result = await this.taskRepo.delete(id);
-
-    if (!result.affected) {
-      throw new NotFoundException('Task not found');
-    }
+    if (!result.affected) throw new NotFoundException('Task not found');
   }
 
-  async changeStatus(
-    taskId: string,
-    newStatus: TaskStatus,
-    changedById: string,
-    reason?: string,
-  ) {
+  async changeStatus(taskId: string, newStatus: TaskStatus, changedById: string, reason?: string) {
     return this.dataSource.transaction(async (manager) => {
       const task = await manager.findOne(Task, { where: { id: taskId } });
-      if (!task) {
-        throw new NotFoundException('Task not found');
-      }
+      if (!task) throw new NotFoundException('Task not found');
+      if (task.taskStatus === newStatus) throw new BadRequestException(`Task already in ${newStatus}`);
 
-      if (task.taskStatus === newStatus) {
-        throw new BadRequestException(`Task already in ${newStatus}`);
-      }
-
-      const employee = await manager.findOne(EmployeeProfile, {
-        where: { id: changedById },
-      });
-      if (!employee) {
-        throw new BadRequestException('Invalid employee');
-      }
+      const employee = await manager.findOne(EmployeeProfile, { where: { id: changedById } });
+      if (!employee) throw new BadRequestException('Invalid employee');
 
       const oldStatus = task.taskStatus;
       task.taskStatus = newStatus;
-
-      await manager.save(task);
 
       const activity = manager.create(TaskActivity, {
         task,
@@ -181,27 +151,21 @@ export class TaskService {
         changeReason: reason,
       });
 
-      await manager.save(activity);
+      await manager.save([task, activity]);
 
       return {
         taskId: task.id,
         oldStatus,
         newStatus,
         changedAt: activity.changedAt,
-        changedBy: {
-          id: employee.id,
-          name: employee.name,
-        },
+        changedBy: { id: employee.id, name: employee.name },
       };
     });
   }
-
+  
   async getTaskActivity(taskId: string) {
     const exists = await this.taskRepo.exist({ where: { id: taskId } });
-
-    if (!exists) {
-      throw new NotFoundException('Task not found');
-    }
+    if (!exists) throw new NotFoundException('Task not found');
 
     return this.taskActivityRepo.find({
       where: { task: { id: taskId } },
@@ -212,11 +176,7 @@ export class TaskService {
         newStatus: true,
         changeReason: true,
         changedAt: true,
-        changedBy: {
-          id: true,
-          name: true,
-          designation: true,
-        },
+        changedBy: { id: true, name: true, designation: true },
       },
       order: { changedAt: 'ASC' },
     });

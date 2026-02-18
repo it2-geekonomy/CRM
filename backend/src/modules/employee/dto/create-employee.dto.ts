@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, IsDateString } from 'class-validator';
+import { IsEmail, IsOptional, IsString, IsDateString, IsUUID } from 'class-validator';
 
 export class CreateEmployeeDto {
   @ApiProperty({ example: 'employee1@company.com' })
@@ -42,6 +42,6 @@ export class CreateEmployeeDto {
     example: '368b74cc-5534-4911-884f-74ebe856d54a',
     description: 'Department UUID',
   })
-  @IsNotEmpty()
+  @IsUUID()
   departmentId: string;
 }

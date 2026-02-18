@@ -12,18 +12,20 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Department } from '../../department/entities/department.entity';
 import { Project } from '../../projects/entities/project.entity';
+
 @Entity('employee_profiles')
 export class EmployeeProfile {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @OneToOne(() => User)
-    @JoinColumn()
+    @OneToOne(() => User, (user) => user.employeeProfile, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'user_id' })
     user: User;
 
-    @ManyToOne(() => Department, department => department.employees, {
+    @ManyToOne(() => Department, (department) => department.employees, {
         nullable: false,
     })
+    @JoinColumn({ name: 'department_id' })
     department: Department;
 
     @Column({ type: 'varchar', length: 255 })
@@ -32,13 +34,14 @@ export class EmployeeProfile {
     @Column({ type: 'varchar', length: 20, nullable: true })
     phone: string | null;
 
-    @Column({ type: 'varchar', length: 20, nullable: true })
+    @Column({ name: 'alternate_phone', type: 'varchar', length: 20, nullable: true })
     alternatePhone: string | null;
 
     @Column({ type: 'varchar', length: 100 })
     designation: string;
 
     @Column({
+        name: 'employment_type',
         type: 'enum',
         enum: ['FULL_TIME', 'INTERN', 'CONTRACT'],
         default: 'FULL_TIME',
@@ -46,22 +49,23 @@ export class EmployeeProfile {
     employmentType: string;
 
     @Column({
+        name: 'employment_status',
         type: 'enum',
         enum: ['ACTIVE', 'INACTIVE', 'ON_NOTICE', 'EXITED'],
         default: 'ACTIVE',
     })
     employmentStatus: string;
 
-    @Column({ type: 'date' })
+    @Column({ name: 'date_of_joining', type: 'date' })
     dateOfJoining: Date;
 
-    @Column({ type: 'date', nullable: true })
+    @Column({ name: 'date_of_exit', type: 'date', nullable: true })
     dateOfExit: Date | null;
 
     @Column({ type: 'varchar', length: 100 })
     location: string;
 
-    @Column({ default: true })
+    @Column({ name: 'is_active', default: true })
     isActive: boolean;
 
     @CreateDateColumn({ name: 'created_at' })

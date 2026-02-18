@@ -1,33 +1,24 @@
 import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
 export class CreateUserDto {
-  @ApiProperty({
-    description: 'User email address',
-    example: 'admin@courseportal.com',
-    type: String,
-  })
+  @ApiProperty({ example: 'manager@company.com' })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({
-    description: 'User password (minimum 6 characters)',
-    example: 'password123',
-    minLength: 6,
-    type: String,
-  })
+  @ApiProperty({ example: 'SecurePass123!', minLength: 6 })
   @IsString()
   @MinLength(6)
   @IsNotEmpty()
   password: string;
 
-  @ApiPropertyOptional({
-    description: 'Role ID (UUID from roles table). Omit to use default student role when creating.',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    type: String,
-  })
+  @ApiPropertyOptional({ example: '550e8400-e29b-41d4-a716-446655440000' })
   @IsUUID()
   @IsOptional()
   roleId?: string;
+
+  @ApiPropertyOptional({ example: '9647aa46-4052-4999-8984-0568e90ba9c5' })
+  @IsUUID()
+  @IsOptional()
+  departmentId?: string;
 }

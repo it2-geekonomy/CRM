@@ -165,6 +165,11 @@ export default function TaskDetailPage() {
     }
   }, []);
 
+  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = e.target.value as TaskStatus;
+    setTask((prev) => (prev ? { ...prev, status: newStatus } : null));
+  }, []);
+
   if (!taskId || !projectId) {
     return (
       <div className="bg-gray-100 min-h-screen py-10 flex items-center justify-center">
@@ -200,85 +205,92 @@ export default function TaskDetailPage() {
     <div className="bg-gray-100 flex flex-col overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
       {/* Fixed: Navbar (breadcrumbs + header) */}
       <div className="shrink-0 bg-gray-100 pt-6 pb-4">
-        <div className="max-w-[1200px] mx-auto px-8 w-full">
-          {/* Breadcrumbs */}
-          <div className="mb-4 text-sm">
-            <Link href="/admin/dashboard" className="text-gray-600 hover:text-gray-900">
-              Dashboard
-            </Link>
-            <span className="text-gray-400 mx-2">/</span>
-            <Link href="/admin/dashboard/projects" className="text-gray-600 hover:text-gray-900">
-              Projects
-            </Link>
-            <span className="text-gray-400 mx-2">/</span>
-            <Link
-              href={`/admin/dashboard/projects/${projectId}`}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              {projectName}
-            </Link>
-            <span className="text-gray-400 mx-2">/</span>
-            <span className="text-green-600">{task.description}</span>
-          </div>
-
-          {/* Task Header */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div className="min-w-0 flex-1">
+        <div className="mx-auto px-8 w-full overflow-x-auto scrollbar-hide">
+          <div className="min-w-[900px] max-w-[1600px]">
+            {/* Task Header - column layout with horizontal scroll */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-4">
+              <div className="flex items-center justify-between gap-4 mb-2">
                 <Link
                   href={`/admin/dashboard/projects/${projectId}`}
-                  className="text-sm text-green-600 hover:text-green-700 mb-2 inline-block"
+                  className="text-sm text-green-600 hover:text-green-700 shrink-0 inline-flex items-center gap-1"
                 >
-                  ← {projectName}
+                  <span>←</span>
+                  <span>{projectName}</span>
                 </Link>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{task.description}</h1>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-gray-500">
-                  <span>Feb 15, 2026 • 09:00 AM</span>
-                  <span>–</span>
-                  <span>Feb 21, 2026 • 06:00 PM</span>
-                  <span className="hidden sm:inline text-gray-300">|</span>
-                  <span>Assigned To: {task.assignee.name}</span>
-                  <span className="hidden sm:inline text-gray-300">|</span>
-                  <span>Assigned By: Arjun Sindhia</span>
+                
+              </div>
+              <h1 className="text-lg font-bold text-gray-900 mb-2">{task.description}</h1>
+
+              {/* Data row with labels */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-x-6 gap-y-1.5 mb-2 text-sm">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Project</p>
+                  <p className="text-green-600 font-medium mt-0.5">{projectName}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Task</p>
+                  <p className="text-gray-900 mt-0.5">{task.description}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Start Date & Time</p>
+                  <p className="text-gray-900 mt-0.5">Feb 15, 2026 – 09:00 AM</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">End Date & Time</p>
+                  <p className="text-gray-900 mt-0.5">Feb 21, 2026 – 06:00 PM</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assigned To</p>
+                  <p className="text-gray-900 mt-0.5">{task.assignee.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assigned By</p>
+                  <p className="text-gray-900 mt-0.5">Arjun Sindhia</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</p>
+                  <p className="mt-0.5">
+                    <span className={`inline-block px-3 py-1 rounded-lg text-xs font-medium ${getStatusStyles(task.status)}`}>
+                      {task.status}
+                    </span>
+                  </p>
                 </div>
               </div>
-              <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto">
-                <span className={`px-3 py-1 rounded-lg text-sm font-medium w-fit ${getStatusStyles(task.status)}`}>
-                  {task.status}
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={handleFileChange}
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif,.fig,.sketch"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddFilesClick}
-                    className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 hover:bg-gray-50 whitespace-nowrap flex-1 sm:flex-initial min-w-0"
-                  >
-                    Add Files
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsActivityLogOpen(true)}
-                    className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 hover:bg-gray-50 whitespace-nowrap flex-1 sm:flex-initial min-w-0"
-                  >
-                    Activity Log
-                  </button>
-                  <select
-                    className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 bg-white min-w-0 flex-1 sm:flex-initial"
-                    defaultValue={task.status}
-                  >
-                    <option value="Open">Open</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Closed">Closed</option>
-                    <option value="On-Hold">On-Hold</option>
-                  </select>
-                </div>
+
+              {/* Action buttons - right aligned */}
+              <div className="flex flex-wrap justify-end gap-2 pt-1.5 border-t border-gray-100">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif,.fig,.sketch"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddFilesClick}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 whitespace-nowrap"
+                >
+                  Add Files
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsActivityLogOpen(true)}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 whitespace-nowrap"
+                >
+                  Activity Log
+                </button>
+                <select
+                  className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 bg-white hover:bg-gray-50"
+                  value={task.status}
+                  onChange={handleStatusChange}
+                >
+                  <option value="Open">Open</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Closed">Closed</option>
+                  <option value="On-Hold">On-Hold</option>
+                </select>
               </div>
             </div>
           </div>
@@ -286,9 +298,9 @@ export default function TaskDetailPage() {
       </div>
 
       {/* Fixed: Checklist | Scrollable: Task Timeline */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0 gap-6 max-w-[1200px] mx-auto px-8 w-full pb-6 overflow-hidden">
-        {/* Left - Checklist (fixed, no scroll) */}
-        <div className="flex shrink-0 w-full lg:w-[380px] flex-col">
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 gap-6 max-w-[1600px] mx-auto px-8 w-full pb-6 overflow-hidden">
+        {/* Left - Checklist */}
+        <div className="flex shrink-0 w-full lg:w-[480px] flex-col">
           <div className="scrollbar-hide bg-white rounded-2xl border border-gray-200 p-6 overflow-y-auto flex-1 min-h-0">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Checklist</h2>
@@ -366,7 +378,7 @@ export default function TaskDetailPage() {
         </div>
 
         {/* Right - Task Timeline (scrollable, green scrollbar) */}
-        <div className="scrollbar-green flex-1 min-w-0 overflow-y-auto">
+        <div className="scrollbar-hide flex-1 min-w-0 overflow-y-auto">
           <div className="bg-white rounded-2xl border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Task Timeline</h2>
 

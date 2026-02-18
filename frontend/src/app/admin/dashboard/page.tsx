@@ -16,6 +16,7 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const [activeBtn, setActiveBtn] = useState("My Active Projects");
   const [searchFilter, setSearchFilter] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const user = useAppSelector((s) => s.auth.currentUser?.user);
   const displayName = (user as { name?: string } | undefined)?.name ?? getDisplayName(user?.email);
   const buttons = [
@@ -43,6 +44,15 @@ export default function AdminDashboardPage() {
             <input
               type="text"
               placeholder="What are you looking for?"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const q = searchQuery.trim();
+                  if (q) router.push(`/admin/dashboard/projects?search=${encodeURIComponent(q)}`);
+                  else router.push("/admin/dashboard/projects");
+                }
+              }}
               className="flex-1 px-5 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
             />
 
@@ -68,7 +78,15 @@ export default function AdminDashboardPage() {
               ))}
             </div>
 
-            <button className="bg-green-600 text-white px-8 py-4 rounded-xl text-base font-medium hover:bg-green-700">
+            <button
+              type="button"
+              onClick={() => {
+                const q = searchQuery.trim();
+                if (q) router.push(`/admin/dashboard/projects?search=${encodeURIComponent(q)}`);
+                else router.push("/admin/dashboard/projects");
+              }}
+              className="bg-green-600 text-white px-8 py-4 rounded-xl text-base font-medium hover:bg-green-700"
+            >
               Search
             </button>
           </div>

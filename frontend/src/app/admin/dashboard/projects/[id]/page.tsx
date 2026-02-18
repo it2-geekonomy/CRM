@@ -146,17 +146,20 @@ export default function ProjectDetailPage() {
     <div className="bg-gray-100 flex flex-col overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
       {/* Fixed: Top Header + Breadcrumbs */}
       <div className="shrink-0 bg-gray-100 pt-6 pb-4">
-        <div className="max-w-[1200px] mx-auto px-8">
-          {/* Top Header - Tabs and Project Summary */}
+        <div className="max-w-[1600px] mx-auto px-8">
+          {/* Top Header - Single row with icons */}
           <div className="mb-4 pb-2 border-b border-gray-200">
-          <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-6 flex-nowrap overflow-x-auto scrollbar-hide">
             <button
               type="button"
               onClick={() => setActiveTab("Project Info")}
-              className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors relative shrink-0 ${
                 activeTab === "Project Info" ? "text-green-600" : "text-gray-700 hover:text-gray-900"
               }`}
             >
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
               Project Info
               {activeTab === "Project Info" && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600" style={{ bottom: "-2px" }} />
@@ -165,7 +168,7 @@ export default function ProjectDetailPage() {
             <button
               type="button"
               onClick={() => setIsCreateTaskOpen(true)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-2"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 shrink-0"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -175,7 +178,7 @@ export default function ProjectDetailPage() {
             <button
               type="button"
               onClick={() => toast.success("Task duplicated")}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-2"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 shrink-0"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -183,7 +186,7 @@ export default function ProjectDetailPage() {
               Duplicate Task
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <span className="text-sm text-gray-500">Status:</span>
               <span
                 className={`px-3 py-1 rounded-lg text-xs font-medium ${
@@ -201,32 +204,49 @@ export default function ProjectDetailPage() {
             <button
               type="button"
               onClick={() => setActiveTab("Project Documents")}
-              className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-                activeTab === "Project Documents" ? "text-green-600" : "text-gray-700 hover:text-gray-900"
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors relative shrink-0 rounded-lg border ${
+                activeTab === "Project Documents"
+                  ? "text-green-600 border-gray-300 bg-white"
+                  : "text-gray-700 hover:text-gray-900 border-transparent"
               }`}
             >
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
               Project Documents
               {activeTab === "Project Documents" && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600" style={{ bottom: "-2px" }} />
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 rounded-b-lg" style={{ bottom: "-2px" }} />
               )}
             </button>
 
-            <div className="flex items-center gap-6 flex-wrap ml-auto">
+            <div className="flex items-center gap-6 flex-nowrap ml-auto shrink-0">
               <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
                 <span className="text-sm text-gray-500">Owner:</span>
-                <span className="text-sm font-medium text-gray-900">—</span>
+                <span className="text-sm font-medium text-gray-900">Arjun Sindhia</span>
               </div>
               <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
                 <span className="text-sm text-gray-500">Start:</span>
                 <span className="text-sm font-medium text-gray-900">{formatDate(project.startDate)}</span>
               </div>
               <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
                 <span className="text-sm text-gray-500">End:</span>
                 <span className="text-sm font-medium text-gray-900">{formatDate(project.endDate)}</span>
               </div>
               <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
                 <span className="text-sm text-gray-500">Client:</span>
-                <span className="text-sm font-medium text-gray-900">—</span>
+                <span className="text-sm font-medium text-gray-900">ABC Corporation</span>
               </div>
             </div>
           </div>
@@ -248,8 +268,8 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Scrollable: Content */}
-      <div className="scrollbar-green flex-1 min-h-0 overflow-y-auto">
-        <div className="max-w-[1200px] mx-auto px-8 pb-10">
+      <div className="scrollbar-hide flex-1 min-h-0 overflow-y-auto">
+        <div className="max-w-[1600px] mx-auto px-8 pb-10">
           {activeTab === "Project Documents" ? (
           <ProjectDocuments />
         ) : (

@@ -23,7 +23,7 @@ export class ProjectQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()
-  managerId?: string; // Synchronized with service destructuring
+  managerId?: string; 
 
   @ApiPropertyOptional({ description: 'Filter projects starting from this date' })
   @IsOptional()
@@ -34,12 +34,6 @@ export class ProjectQueryDto {
   @IsOptional()
   @IsDateString()
   toDate?: string;
-
-  // @ApiPropertyOptional({ default: false })
-  // @IsOptional()
-  // @Type(() => Boolean)
-  // @IsBoolean()
-  // isArchived?: boolean = false;
 
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()

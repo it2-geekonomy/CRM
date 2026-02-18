@@ -70,10 +70,10 @@ export class ProjectsController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.OK) // Changed to OK to allow returning a confirmation message
+  @HttpCode(HttpStatus.OK) 
   @ApiOperation({ summary: 'Delete project' })
   @ApiParam({ name: 'id', type: 'string', description: 'Project UUID' })
-  @ApiResponse({ status: 200, description: 'Project permanently deleted' })
+  @ApiResponse({ status: 200, description: 'Project deleted successfully' })
   @ApiResponse({ status: 404, description: 'Project not found' })
   remove(@Param('id') id: string) {
     return this.projectsService.remove(id);

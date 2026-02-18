@@ -28,12 +28,14 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { CreateTaskStatusDto } from './dto/create-task-status.dto';
 import { GetCalendarDto } from './dto/get-calendar.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
+import { TaskActivity } from './entities/task-activity.entity';
+import { Task } from './entities/task.entity';
 
 @ApiTags('Tasks')
 @ApiBearerAuth('JWT-auth')
 @Controller('tasks')
 export class TaskController {
-  constructor(private readonly taskService: TaskService) {}
+  constructor(private readonly taskService: TaskService) { }
 
   @Post()
   @UseGuards(AuthGuard)
@@ -86,6 +88,7 @@ export class TaskController {
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Change task status' })
   @ApiParam({ name: 'id', type: 'string', description: 'Task UUID' })
+  @ApiResponse({ status: 200, description: 'Status updated successfully' })
   @ApiBody({ type: CreateTaskStatusDto })
   changeTaskStatus(
     @Param('id') taskId: string,
@@ -106,16 +109,23 @@ export class TaskController {
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get task activity log' })
   @ApiParam({ name: 'id', type: 'string', description: 'Task UUID' })
+  @ApiResponse({ status: 200, description: 'Activity log retrieved' })
   getActivity(@Param('id') taskId: string) {
     return this.taskService.getTaskActivity(taskId);
   }
 
   @Delete(':id')
   @UseGuards(AuthGuard)
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK) // Change from NO_CONTENT to OK
   @ApiOperation({ summary: 'Delete task' })
   @ApiParam({ name: 'id', type: 'string', description: 'Task UUID' })
-  remove(@Param('id') id: string) {
-    return this.taskService.remove(id);
+  @ApiResponse({ status: 200, description: 'Task deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  async remove(@Param('id') id: string) {
+    await this.taskService.remove(id);
+    return {
+      statusCode: 200,
+      message: 'Task deleted successfully'
+    };
   }
 }

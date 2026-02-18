@@ -48,3 +48,33 @@ body {
 .rbc-event-content {
   color: white !important;
 }
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Green scrollbar for task timeline */
+.scrollbar-green::-webkit-scrollbar {
+  width: 10px;
+}
+.scrollbar-green::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 10px;
+}
+.scrollbar-green::-webkit-scrollbar-thumb {
+  background: #22c55e;
+  border-radius: 10px;
+  border: 1px solid #f3f4f6;
+}
+.scrollbar-green::-webkit-scrollbar-thumb:hover {
+  background: #16a34a;
+}
+.scrollbar-green {
+  scrollbar-width: thin;
+  scrollbar-color: #22c55e #f3f4f6;
+}

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useGetProjectsQuery,
   type ProjectApi,
@@ -20,7 +20,7 @@ export type Project = {
   endDate: string;
 };
 
-const QUICK_FILTERS = ["My Active Projects", "Due This Week", "My Clients", "Open Deals"];
+const QUICK_FILTERS = ["Active", "Inactive","Pipeline","Completed", "Total"];
 
 function toListProject(p: ProjectApi): Project {
   const start = typeof p.startDate === "string" ? p.startDate : (p.startDate as unknown as string)?.slice?.(0, 10) ?? "";
@@ -38,50 +38,51 @@ function toListProject(p: ProjectApi): Project {
 
 export default function ProjectsPage() {
   const router = useRouter();
-  const [quickFilter, setQuickFilter] = useState<string>("My Active Projects");
+  const searchParams = useSearchParams();
+  const [quickFilter, setQuickFilter] = useState<string>("Active");
   const [searchInput, setSearchInput] = useState("");
+
+  useEffect(() => {
+    const q = searchParams.get("search");
+    if (q != null) setSearchInput(q);
+  }, [searchParams]);
 
   const queryParams = useMemo(() => {
     const params: { status?: ProjectStatus; search?: string; limit: number; page: number } = {
       limit: 100,
       page: 1,
     };
-    if (quickFilter === "My Active Projects") params.status = "Active";
-    else if (quickFilter === "Draft") params.status = "Draft";
-    if (searchInput.trim()) params.search = searchInput.trim();
+    const hasSearch = searchInput.trim().length > 0;
+    // When user is searching, fetch all projects (no status filter) so we can find matches in any status
+    if (!hasSearch) {
+      if (quickFilter === "Active") params.status = "Active";
+      else if (quickFilter === "Inactive") params.status = "Draft";
+      else if (quickFilter === "Completed") params.status = "Completed";
+      else if (quickFilter === "Pipeline") params.status = "Draft";
+    }
+    if (hasSearch) params.search = searchInput.trim();
     return params;
   }, [quickFilter, searchInput]);
 
   const { data, isLoading, isError, error } = useGetProjectsQuery(queryParams);
 
-  const projects = useMemo(() => (data?.data ?? []).map(toListProject), [data]);
+  const allProjects = useMemo(() => (data?.data ?? []).map(toListProject), [data]);
+  const projects = useMemo(() => {
+    const term = searchInput.trim().toLowerCase();
+    if (!term) return allProjects;
+    return allProjects.filter(
+      (p) =>
+        p.projectName.toLowerCase().includes(term) ||
+        (p.projectCode && p.projectCode.toLowerCase().includes(term)) ||
+        (p.projectType && p.projectType.toLowerCase().includes(term))
+    );
+  }, [allProjects, searchInput]);
   const activeCount = data?.data?.filter((p) => p.status === "Active").length ?? 0;
   const draftCount = data?.data?.filter((p) => p.status === "Draft").length ?? 0;
   const totalCount = data?.meta?.total ?? projects.length;
 
   return (
     <div className="bg-gray-100 min-h-screen py-10">
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f3f4f6;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #22c55e;
-          border-radius: 10px;
-          border: 1px solid #f3f4f6;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #16a34a;
-        }
-        .custom-scrollbar {
-          scrollbar-width: thin;
-          scrollbar-color: #22c55e #f3f4f6;
-        }
-      `}</style>
       <div className="max-w-[1200px] mx-auto px-8">
         {/* Projects header – search across projects only */}
          {/* Projects section header */}
@@ -164,7 +165,7 @@ export default function ProjectsPage() {
 
        
         {/* Projects List - Container Box */}
-        <div className="custom-scrollbar bg-white rounded-2xl border border-gray-200 p-6 max-h-[600px] overflow-y-auto">
+        <div className="scrollbar-hide bg-white rounded-2xl border border-gray-200 p-6 max-h-[600px] overflow-y-auto">
           {isLoading && (
             <div className="p-8 text-center text-gray-500">
               Loading projects…

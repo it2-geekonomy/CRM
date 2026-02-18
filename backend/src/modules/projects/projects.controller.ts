@@ -70,7 +70,7 @@ export class ProjectsController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.OK) 
   @ApiOperation({ summary: 'Delete project' })
   @ApiParam({ name: 'id', type: 'string', description: 'Project UUID' })
   @ApiResponse({ status: 200, description: 'Project deleted successfully' })

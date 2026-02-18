@@ -24,7 +24,7 @@ export class TaskService {
     @InjectRepository(TaskActivity)
     private readonly taskActivityRepo: Repository<TaskActivity>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   private baseTaskQuery() {
     return this.taskRepo
@@ -59,6 +59,7 @@ export class TaskService {
         manager.findOne(EmployeeProfile, { where: { user: { id: userId } } }),
         manager.findOne('Project', { where: { projectId: dto.projectId } }),
       ]);
+
 
 
       if (!assignedTo) throw new BadRequestException('Invalid assignedTo ID');
@@ -162,7 +163,7 @@ export class TaskService {
       };
     });
   }
-  
+
   async getTaskActivity(taskId: string) {
     const exists = await this.taskRepo.exist({ where: { id: taskId } });
     if (!exists) throw new NotFoundException('Task not found');

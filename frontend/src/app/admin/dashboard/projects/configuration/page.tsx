@@ -44,7 +44,6 @@ export default function ProjectConfigurationPage() {
   const [startDate, setStartDate] = useState("2026-02-04");
   const [endDate, setEndDate] = useState("2026-05-15");
   const [estimatedHours, setEstimatedHours] = useState(320);
-  const [hourlyRate, setHourlyRate] = useState("$150");
   const [projectManagerId, setProjectManagerId] = useState("");
   const [teamMembers, setTeamMembers] = useState<Employee[]>([]);
   const [addMemberDropdownOpen, setAddMemberDropdownOpen] = useState(false);
@@ -350,19 +349,6 @@ export default function ProjectConfigurationPage() {
         type="number"
         value={estimatedHours}
         onChange={(e) => setEstimatedHours(Number(e.target.value) || 0)}
-        className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
-      />
-    </div>
-
-    {/* Hourly Rate */}
-    <div>
-      <label className="text-sm font-medium text-gray-700">
-        Hourly Rate
-      </label>
-      <input
-        type="text"
-        value={hourlyRate}
-        onChange={(e) => setHourlyRate(e.target.value)}
         className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
       />
     </div>

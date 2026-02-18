@@ -75,6 +75,13 @@ export default function TaskDepartmentList({
       <div className="space-y-4">
         {departments.map((dept) => {
           const isDeptExpanded = expandedDepts[dept.name] ?? true;
+          // Calculate dynamic progress based on completedTaskIds
+          const allTasksInDept = dept.subSections.flatMap((sub) => sub.tasks);
+          const totalTasks = allTasksInDept.length;
+          const completedTasks = allTasksInDept.filter((task) => completedTaskIds.has(task.id)).length;
+          const calculatedProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+          const displayTaskCount = totalTasks || dept.taskCount;
+          const displayProgress = totalTasks > 0 ? calculatedProgress : dept.progress;
           return (
             <div
               key={dept.name}
@@ -93,21 +100,23 @@ export default function TaskDepartmentList({
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-                <div className={`w-4 h-4 ${dept.color} rounded shrink-0`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <h3 className="text-lg font-semibold text-gray-900">{dept.name}</h3>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm text-gray-500">{dept.taskCount} tasks</span>
-                      <span className="text-sm font-medium text-gray-900">{dept.progress}%</span>
-                    </div>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                <div className={`w-9 h-9 ${dept.color} rounded-lg flex items-center justify-center shrink-0`}>
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 flex-1 min-w-0">{dept.name}</h3>
+                <div className="flex items-center gap-3 shrink-0 ml-auto">
+                  <span className="px-2.5 py-1 rounded-full text-sm text-gray-700 bg-gray-100">
+                    {displayTaskCount} tasks
+                  </span>
+                  <div className="w-24 min-w-[80px] max-w-[200px] bg-gray-200 rounded-full h-2.5 overflow-hidden">
                     <div
-                      className={`h-2.5 rounded-full ${dept.progressColor}`}
-                      style={{ width: `${dept.progress}%` }}
+                      className={`h-2.5 rounded-full transition-all duration-300 ${dept.progressColor}`}
+                      style={{ width: `${displayProgress}%` }}
                     />
                   </div>
+                  <span className="text-sm text-gray-500 w-9 text-right">{displayProgress}%</span>
                 </div>
               </button>
 

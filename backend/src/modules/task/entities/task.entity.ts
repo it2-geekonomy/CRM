@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
 import { TaskStatus } from '../../../shared/enum/task/task-status.enum';
+import { Project } from '../../projects/entities/project.entity';
 @Entity('tasks')
 export class Task {
   @PrimaryGeneratedColumn('uuid')
@@ -49,9 +50,14 @@ export class Task {
   @JoinColumn({ name: 'assigned_by_id' })
   assignedBy: EmployeeProfile;
 
+  @ManyToOne(() => Project, (project) => project.tasks, { nullable: false })
+  @JoinColumn({ name: 'project_id' })
+  project: Project;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
   updatedAt: Date;
+
 }

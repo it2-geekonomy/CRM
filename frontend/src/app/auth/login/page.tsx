@@ -40,7 +40,7 @@ export default function LoginPage() {
         })
       );
       const role = response?.user?.role;
-      router.push(role === "admin" ? "/admin/dashboard" : "/employee/dashboard/projects");
+      router.push(role === "admin" ? "/admin/dashboard" : "/employee/dashboard");
     } catch (err: unknown) {
       const e = err as { status?: number; data?: { message?: string } };
       const msg =

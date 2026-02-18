@@ -23,33 +23,41 @@ const DEFAULT_CLIENT = "ABC Corporation";
 const DEFAULT_PROJECT_TYPE = "Website Design & Development";
 const DEFAULT_DESCRIPTION = "Complete website redesign including homepage, 5 internal pages, responsive design, and CMS integration.";
 
+const PROJECT_TYPE_OPTIONS: { value: ProjectType; label: string }[] = [
+  { value: "Website", label: "Website Design & Development" },
+  { value: "App", label: "Mobile App Development" },
+  { value: "CRM", label: "CRM" },
+  { value: "Internal", label: "Internal / Branding" },
+];
+
 export default function ProjectConfigurationPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const addMemberButtonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [projectName, setProjectName] = useState(DEFAULT_PROJECT_NAME);
   const [projectCode, setProjectCode] = useState(DEFAULT_PROJECT_CODE);
   const [client, setClient] = useState(DEFAULT_CLIENT);
-  const [projectType, setProjectType] = useState(DEFAULT_PROJECT_TYPE);
+  const [projectType, setProjectType] = useState<ProjectType>("Website");
   const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
   const [startDate, setStartDate] = useState("2026-02-04");
   const [endDate, setEndDate] = useState("2026-05-15");
   const [estimatedHours, setEstimatedHours] = useState(320);
   const [hourlyRate, setHourlyRate] = useState("$150");
+  const [projectManagerId, setProjectManagerId] = useState("");
+  const [teamMembers, setTeamMembers] = useState<Employee[]>([]);
+  const [addMemberDropdownOpen, setAddMemberDropdownOpen] = useState(false);
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [projectManagerId, setProjectManagerId] = useState<string>("");
-  const [teamMembers, setTeamMembers] = useState<Employee[]>([]);
-  const [addMemberDropdownOpen, setAddMemberDropdownOpen] = useState(false);
-  const addMemberButtonRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { data: employeesData } = useGetEmployeesQuery({ limit: 100 });
   const { data: adminsData } = useGetAdminsQuery();
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
 
   const employees = employeesData?.data ?? [];
-  const admins = adminsData ?? [];
+  const admins = Array.isArray(adminsData) ? adminsData : [];
   const alreadyAddedIds = new Set(teamMembers.map((m) => m.id));
   const availableEmployees = employees.filter((e) => !alreadyAddedIds.has(e.id));
 
@@ -170,9 +178,10 @@ export default function ProjectConfigurationPage() {
       }).unwrap();
       router.push("/admin/dashboard/projects");
     } catch (err: unknown) {
-      const message = err && typeof err === "object" && "data" in err
-        ? (err as { data?: { message?: string } }).data?.message
-        : "Failed to create project.";
+      const message =
+        err && typeof err === "object" && "data" in err
+          ? (err as { data?: { message?: string } }).data?.message
+          : "Failed to create project.";
       alert(message ?? "Failed to create project.");
     }
   };
@@ -255,21 +264,21 @@ export default function ProjectConfigurationPage() {
                 </select>
               </div>
   
-              {/* Project Type */}
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Project Type
-                </label>
-                <select
-                  value={projectType}
-                  onChange={(e) => setProjectType(e.target.value)}
-                  className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="Website Design & Development">Website Design & Development</option>
-                  <option value="Mobile App Development">Mobile App Development</option>
-                  <option value="Branding">Branding</option>
-                </select>
-              </div>
+  {/* Project Type */}
+  <div>
+    <label className="text-sm font-medium text-gray-700">
+      Project Type
+    </label>
+    <select
+      value={projectType}
+      onChange={(e) => setProjectType(e.target.value as ProjectType)}
+      className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
+    >
+      {PROJECT_TYPE_OPTIONS.map((opt) => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  </div>
   
               {/* Project Description */}
               <div className="md:col-span-2">
@@ -362,8 +371,6 @@ export default function ProjectConfigurationPage() {
 </div>
 {/* TEAM ASSIGNMENT SECTION */}
 <div className="bg-white rounded-2xl border border-gray-200 p-8 mt-8">
-  
-  {/* Section Header */}
   <div className="flex items-center justify-between pb-4 border-b relative">
     <h2 className="text-lg font-semibold text-gray-900">
       Team Assignment
@@ -411,7 +418,7 @@ export default function ProjectConfigurationPage() {
   {/* Project Manager */}
   <div className="mt-6">
     <label className="text-sm font-medium text-gray-700">
-      Project Manager
+      Project Manager <span className="text-red-500">*</span>
     </label>
     <select
       value={projectManagerId}
@@ -593,7 +600,7 @@ export default function ProjectConfigurationPage() {
       hover:bg-gray-50 transition disabled:opacity-50
     "
   >
-    {isCreating ? "Saving…" : "Save as Draft"}
+    Save as Draft
   </button>
 
   {/* Create Project */}

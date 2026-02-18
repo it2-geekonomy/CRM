@@ -1,20 +1,59 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useGetProjectsQuery, type ProjectApi } from "@/store/api/projectApiSlice";
+import { useGetProjectsQuery, type ProjectApi, type ProjectStatus } from "@/store/api/projectApiSlice";
 
 const QUICK_FILTERS = ["My Active Projects", "Due This Week", "My Clients", "Open Deals"];
 
-export default function ProjectsPage() {
-  const [quickFilter, setQuickFilter] = useState<string>("My Active Projects");
-  const router = useRouter();
-  const { data: projectsData, isLoading, isError } = useGetProjectsQuery({ page: 1, limit: 50 });
+/** List view shape for a project */
+type ProjectListItem = {
+  id: string;
+  projectName: string;
+  projectCode: string;
+  projectType: string;
+  status: ProjectStatus;
+  startDate: string;
+  endDate: string;
+};
 
-  const activeCount = projectsData?.data.filter((p: ProjectApi) => p.status === "Active").length ?? 0;
-  const draftCount = projectsData?.data.filter((p: ProjectApi) => p.status === "Draft").length ?? 0;
-  const totalCount = projectsData?.meta?.totalItems ?? 0;
+function toListProject(p: ProjectApi): ProjectListItem {
+  const start = typeof p.startDate === "string" ? p.startDate : (p.startDate as unknown as string)?.slice?.(0, 10) ?? "";
+  const end = typeof p.endDate === "string" ? p.endDate : (p.endDate as unknown as string)?.slice?.(0, 10) ?? "";
+  return {
+    id: p.projectId,
+    projectName: p.projectName,
+    projectCode: p.projectCode,
+    projectType: p.projectType,
+    status: p.status,
+    startDate: start,
+    endDate: end,
+  };
+}
+
+export default function ProjectsPage() {
+  const router = useRouter();
+  const [quickFilter, setQuickFilter] = useState<string>("My Active Projects");
+  const [searchInput, setSearchInput] = useState("");
+
+  const queryParams = useMemo(() => {
+    const params: { status?: ProjectStatus; search?: string; limit: number; page: number } = {
+      limit: 100,
+      page: 1,
+    };
+    if (quickFilter === "My Active Projects") params.status = "Active";
+    else if (quickFilter === "Draft") params.status = "Draft";
+    if (searchInput.trim()) params.search = searchInput.trim();
+    return params;
+  }, [quickFilter, searchInput]);
+
+  const { data, isLoading, isError, error } = useGetProjectsQuery(queryParams);
+
+  const projects = useMemo(() => (data?.data ?? []).map(toListProject), [data]);
+  const activeCount = data?.data?.filter((p) => p.status === "Active").length ?? 0;
+  const draftCount = data?.data?.filter((p) => p.status === "Draft").length ?? 0;
+  const totalCount = data?.meta?.totalItems ?? projects.length;
 
   return (
     <div className="bg-gray-100 min-h-screen py-10">
@@ -64,6 +103,8 @@ export default function ProjectsPage() {
             <input
               type="text"
               placeholder="Search projects..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
             />
             <button
@@ -126,45 +167,38 @@ export default function ProjectsPage() {
           {isError && (
             <div className="p-8 text-center text-red-600">Failed to load projects.</div>
           )}
-          {!isLoading && !isError && (!projectsData?.data?.length) && (
+          {!isLoading && !isError && projects.length === 0 && (
             <div className="p-8 text-center text-gray-500">
               No projects yet. Create your first project to get started.
             </div>
           )}
 
-          {!isLoading && !isError && projectsData?.data && projectsData.data.length > 0 && (
+          {!isLoading && !isError && projects.length > 0 && (
             <div className="space-y-3">
-              {projectsData.data.map((project: ProjectApi, index: number) => (
+              {projects.map((project, index) => (
                 <Link
-                  key={project.projectId ?? index}
-                  href={`/admin/dashboard/projects/${project.projectId}`}
+                  key={project.id ?? index}
+                  href={`/admin/dashboard/projects/${project.id}`}
                   className="block relative bg-white rounded-xl border border-gray-200 p-5 hover:border-green-500 transition-all group"
                 >
-                  {/* Green Left Accent Bar */}
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-xl group-hover:bg-green-600"></div>
-                  
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-xl group-hover:bg-green-600" />
                   <div className="flex items-start justify-between gap-4 pl-4">
                     <div className="min-w-0 flex-1">
-                      {/* Time/Date Info - Top */}
                       <p className="text-sm text-gray-500 mb-1">
-                        {project.startDate} - {project.endDate}
+                        {project.startDate} – {project.endDate}
                       </p>
-                      
-                      {/* Title - Bold */}
                       <h2 className="text-base font-semibold text-gray-900 mb-1.5">
                         {project.projectName}
                       </h2>
-                      
-                      {/* Details - Bottom */}
                       <p className="text-sm text-gray-500">
                         {project.projectCode || "—"} • {project.projectType}
                       </p>
                     </div>
-                    
-                    {/* Status Tag - Top Right */}
                     <span className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium ${
                       project.status === "Active"
                         ? "bg-green-100 text-green-700"
+                        : project.status === "Completed"
+                        ? "bg-blue-100 text-blue-700"
                         : "bg-yellow-100 text-yellow-700"
                     }`}>
                       {project.status}

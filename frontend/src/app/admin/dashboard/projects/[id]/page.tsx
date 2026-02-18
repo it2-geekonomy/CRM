@@ -1,24 +1,8 @@
 "use client";
 
-import type { Project } from "../page";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-
-// Dummy project for demo when API/localStorage has no data
-const DUMMY_PROJECT: Project = {
-  id: 0,
-  projectName: "ABC Corp Website Redesign",
-  projectCode: "ABC-WEB-001",
-  client: "ABC Corporation",
-  projectType: "Website Design & Development",
-  description: "Complete website redesign including homepage, 5 internal pages, responsive design, and CMS integration.",
-  status: "Draft",
-  startDate: "2026-02-04",
-  endDate: "2026-05-15",
-  estimatedHours: 320,
-  hourlyRate: "$150",
-};
+import { useGetProjectQuery } from "@/store/api/projectApiSlice";
 
 const DUMMY_TEAM = [
   { initials: "RK", name: "Rajesh Kumar", role: "Lead Designer" },
@@ -26,30 +10,33 @@ const DUMMY_TEAM = [
   { initials: "AV", name: "Amit Verma", role: "Backend Developer" },
 ];
 
+function formatDate(d: string | unknown): string {
+  if (typeof d === "string") return d.slice(0, 10);
+  return "—";
+}
+
 export default function ProjectDetailsPage() {
   const params = useParams();
   const idParam = params?.id;
   const idStr = Array.isArray(idParam) ? idParam?.[0] : idParam;
-  const idFromUrl = idStr != null && idStr !== "" ? Number(idStr) : null;
-  const resolvedId = idFromUrl != null && !Number.isNaN(idFromUrl) ? idFromUrl : 1;
-  const [project, setProject] = useState<Project | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const projectId = idStr ?? "";
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = localStorage.getItem("projects");
-      const projects: Project[] = raw ? JSON.parse(raw) : [];
-      const found = projects.find((p) => Number(p.id) === Number(resolvedId));
-      setProject(found ?? { ...DUMMY_PROJECT, id: resolvedId });
-    } catch {
-      setProject({ ...DUMMY_PROJECT, id: resolvedId });
-    } finally {
-      setLoaded(true);
-    }
-  }, [resolvedId]);
+  const { data: project, isLoading, isError, error } = useGetProjectQuery(projectId, {
+    skip: !projectId,
+  });
 
-  if (!loaded) {
+  if (!projectId) {
+    return (
+      <div className="bg-gray-100 min-h-screen py-10 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Invalid project.</p>
+          <Link href="/admin/dashboard/projects" className="mt-4 inline-block text-green-600 hover:underline">← Back to Projects</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
     return (
       <div className="bg-gray-100 min-h-screen py-10 flex items-center justify-center">
         <div className="text-center">
@@ -59,7 +46,18 @@ export default function ProjectDetailsPage() {
     );
   }
 
-  const displayProject = project ?? { ...DUMMY_PROJECT, id: resolvedId };
+  if (isError || !project) {
+    return (
+      <div className="bg-gray-100 min-h-screen py-10 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">{(error as { data?: { message?: string } })?.data?.message ?? "Project not found."}</p>
+          <Link href="/admin/dashboard/projects" className="mt-4 inline-block text-green-600 hover:underline">← Back to Projects</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const displayProject = project;
 
   return (
     <div className="bg-gray-100 min-h-screen py-10">
@@ -85,7 +83,7 @@ export default function ProjectDetailsPage() {
           <div className="flex items-center justify-between pb-4 border-b">
             <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
             <span className={`px-3 py-1 rounded-lg text-sm font-medium ${
-              displayProject.status === "Active" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+              displayProject.status === "Active" ? "bg-green-100 text-green-700" : displayProject.status === "Completed" ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"
             }`}>
               {displayProject.status}
             </span>
@@ -98,11 +96,6 @@ export default function ProjectDetailsPage() {
             <div>
               <p className="text-sm font-medium text-gray-500">Project Code</p>
               <p className="mt-1 text-gray-900">{displayProject.projectCode || "—"}</p>
-              <p className="text-xs text-gray-400 mt-0.5">Auto-generated if left blank</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Client</p>
-              <p className="mt-1 text-gray-900">{displayProject.client}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Project Type</p>
@@ -110,7 +103,7 @@ export default function ProjectDetailsPage() {
             </div>
             <div className="md:col-span-2">
               <p className="text-sm font-medium text-gray-500">Project Description</p>
-              <p className="mt-1 text-gray-700 whitespace-pre-wrap">{displayProject.description || "—"}</p>
+              <p className="mt-1 text-gray-700 whitespace-pre-wrap">{displayProject.projectDescription || "—"}</p>
             </div>
           </div>
         </div>
@@ -123,19 +116,15 @@ export default function ProjectDetailsPage() {
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <p className="text-sm font-medium text-gray-500">Start Date</p>
-              <p className="mt-1 text-gray-900">{displayProject.startDate}</p>
+              <p className="mt-1 text-gray-900">{formatDate(displayProject.startDate)}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">End Date</p>
-              <p className="mt-1 text-gray-900">{displayProject.endDate}</p>
+              <p className="mt-1 text-gray-900">{formatDate(displayProject.endDate)}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Estimated Hours</p>
-              <p className="mt-1 text-gray-900">{displayProject.estimatedHours}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Hourly Rate</p>
-              <p className="mt-1 text-gray-900">{displayProject.hourlyRate}</p>
+              <p className="mt-1 text-gray-900">{displayProject.estimatedHours ?? "—"}</p>
             </div>
           </div>
         </div>

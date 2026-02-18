@@ -14,7 +14,7 @@ export default function HomePage() {
   // Redirect authenticated users to their dashboard by role
   useEffect(() => {
     if (!isAuthenticated) return;
-    router.replace(role === "admin" ? "/admin/dashboard" : "/employee/dashboard/projects");
+    router.replace(role === "admin" ? "/admin/dashboard" : "/employee/dashboard");
   }, [isAuthenticated, role, router]);
 
   if (isAuthenticated) {

@@ -153,7 +153,11 @@ export default function TaskDepartmentList({
                                   <span className="text-sm text-gray-500 w-6">{idx + 1}</span>
                                   <button
                                     type="button"
-                                    onClick={(e) => onToggleTaskComplete(task.id, e)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      onToggleTaskComplete(task.id, e);
+                                    }}
                                     className="shrink-0 p-0.5 rounded-full hover:ring-2 hover:ring-green-400 hover:ring-offset-1 transition-all focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1"
                                     aria-label={isComplete ? "Mark incomplete" : "Mark complete"}
                                   >

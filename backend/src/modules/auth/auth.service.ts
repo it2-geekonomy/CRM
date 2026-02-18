@@ -13,7 +13,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   /**
    * Sign in (Login) - Validates user credentials and returns JWT token
@@ -21,20 +21,19 @@ export class AuthService {
    * @returns Access token and user data
    */
   async sign(createAuthDto: CreateAuthDto) {
-    // Step 1: Find user by email
-    const user = await this.usersService.getUserByEmail(createAuthDto.email);
+    // Use the new method that includes the passwordHash
+    const user = await this.usersService.getUserByEmailForAuth(createAuthDto.email);
 
     if (!user) {
       throw new HttpException('Invalid email', HttpStatus.BAD_REQUEST);
     }
 
-    // Step 2: Compare provided password with stored hash
+    // user.passwordHash will now be defined, so compare() will work!
     const isMatch = await compare(createAuthDto.password, user.passwordHash);
-    
+
     if (!isMatch) {
       throw new HttpException('Invalid password', HttpStatus.BAD_REQUEST);
     }
-
     // Step 3: Create JWT payload (data stored in token)
     const payload = {
       sub: user.id, // Subject (user ID)

@@ -18,7 +18,7 @@ export class AdminProfile {
   @Column({ type: 'uuid', name: 'user_id', unique: true })
   userId: string;
 
-  @OneToOne(() => User)
+  @OneToOne(() => User, (user) => user.adminProfile, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 

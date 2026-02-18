@@ -20,10 +20,6 @@ export class CreateProjectDto {
     @IsOptional()
     projectCode: string;
 
-    // @ApiProperty({ example: 'uuid-client-id' })
-    // @IsUUID()
-    // clientId: string;
-
     @ApiProperty({
         enum: ProjectType,
         example: ProjectType.WEBSITE,

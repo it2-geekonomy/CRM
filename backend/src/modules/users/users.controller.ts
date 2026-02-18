@@ -25,86 +25,50 @@ import { UpdateUserDto } from './dto/update-user.dto';
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   @Public()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new user (signup)' })
-  @ApiResponse({
-    status: 201,
-    description: 'User successfully created',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request - validation failed',
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Conflict - email already exists',
-  })
+  @ApiOperation({ summary: 'Create a new Admin or Employee' })
+  @ApiResponse({ status: 201, description: 'User successfully created' })
+  @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
+  @ApiResponse({ status: 409, description: 'Conflict - email already exists' })
   @ApiBody({ type: CreateUserDto })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all users' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of all users',
-  })
   @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get all employees and admins' })
+  @ApiResponse({ status: 200, description: 'List of all users' })
   findAll() {
     return this.usersService.findAll();
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a user by ID' })
-  @ApiParam({ name: 'id', type: 'string', description: 'User UUID' })
-  @ApiResponse({
-    status: 200,
-    description: 'User found',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'User not found',
-  })
   @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiParam({ name: 'id', type: 'string', description: 'User UUID' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a user' })
-  @ApiParam({ name: 'id', type: 'string', description: 'User UUID' })
-  @ApiResponse({
-    status: 200,
-    description: 'User successfully updated',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'User not found',
-  })
-  @ApiBody({ type: UpdateUserDto })
   @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update user details' })
+  @ApiBody({ type: UpdateUserDto })
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a user' })
   @ApiParam({ name: 'id', type: 'string', description: 'User UUID' })
-  @ApiResponse({
-    status: 204,
-    description: 'User successfully deleted',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'User not found',
-  })
-  @ApiBearerAuth('JWT-auth')
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }

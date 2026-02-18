@@ -35,12 +35,6 @@ export class ProjectQueryDto {
   @IsDateString()
   toDate?: string;
 
-  // @ApiPropertyOptional({ default: false })
-  // @IsOptional()
-  // @Type(() => Boolean)
-  // @IsBoolean()
-  // isArchived?: boolean = false;
-
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)

@@ -7,6 +7,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useGetProjectQuery } from "@/store/api/projectApiSlice";
 import type { Task, TaskStatus } from "../../_components/taskTypes";
 import { INITIAL_TASK_DEPARTMENTS, getTaskById } from "../../_components/taskData";
+import ActivityLogModal from "../../_components/ActivityLogModal";
+import AddTimestampModal, { type AddTimestampData } from "../../_components/AddTimestampModal";
 
 type ChecklistItem = {
   id: string;
@@ -17,6 +19,8 @@ type ChecklistItem = {
 type Timestamp = {
   id: string;
   dateTime: string;
+  hours?: number;
+  minutes?: number;
   note: string;
 };
 
@@ -89,8 +93,8 @@ export default function TaskDetailPage() {
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [newSubtaskLabel, setNewSubtaskLabel] = useState("");
   const [timestamps, setTimestamps] = useState<Timestamp[]>([]);
-  const [isAddingTimestamp, setIsAddingTimestamp] = useState(false);
-  const [newTimestampNote, setNewTimestampNote] = useState("");
+  const [isAddTimestampModalOpen, setIsAddTimestampModalOpen] = useState(false);
+  const [isActivityLogOpen, setIsActivityLogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -131,23 +135,20 @@ export default function TaskDetailPage() {
     setNewSubtaskLabel("");
   }, []);
 
-  const addTimestamp = useCallback(() => {
-    const now = new Date();
+  const addTimestampFromModal = useCallback((data: AddTimestampData) => {
+    const [y, m, d] = data.date.split("-").map(Number);
+    const date = new Date(y, (m ?? 1) - 1, d ?? 1);
+    const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     setTimestamps((prev) => [
       ...prev,
       {
         id: `ts-${Date.now()}`,
-        dateTime: formatTimestamp(now),
-        note: newTimestampNote.trim(),
+        dateTime: dateStr,
+        hours: data.hours,
+        minutes: data.minutes,
+        note: data.notes,
       },
     ]);
-    setNewTimestampNote("");
-    setIsAddingTimestamp(false);
-  }, [newTimestampNote]);
-
-  const cancelAddingTimestamp = useCallback(() => {
-    setIsAddingTimestamp(false);
-    setNewTimestampNote("");
   }, []);
 
   const handleAddFilesClick = useCallback(() => {
@@ -263,6 +264,7 @@ export default function TaskDetailPage() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setIsActivityLogOpen(true)}
                     className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 hover:bg-gray-50 whitespace-nowrap flex-1 sm:flex-initial min-w-0"
                   >
                     Activity Log
@@ -383,46 +385,13 @@ export default function TaskDetailPage() {
             </div>
 
             <div className="mb-6 border-2 border-dashed border-gray-200 rounded-lg p-6">
-              {isAddingTimestamp ? (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={newTimestampNote}
-                    onChange={(e) => setNewTimestampNote(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") addTimestamp();
-                      if (e.key === "Escape") cancelAddingTimestamp();
-                    }}
-                    placeholder="Add a note (optional)"
-                    autoFocus
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-sm"
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      type="button"
-                      onClick={cancelAddingTimestamp}
-                      className="px-3 py-2 rounded-lg text-sm font-medium border border-gray-300 hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={addTimestamp}
-                      className="px-3 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700"
-                    >
-                      Add Timestamp
-                    </button>
-                  </div>
-                </div>
-              ) : (
                 <button
                   type="button"
-                  onClick={() => setIsAddingTimestamp(true)}
+                  onClick={() => setIsAddTimestampModalOpen(true)}
                   className="w-full text-sm text-gray-500 hover:text-gray-700"
                 >
                   + Add Timestamp
                 </button>
-              )}
               {timestamps.length > 0 && (
                 <div className="mt-4 space-y-2 border-t border-gray-100 pt-4">
                   {timestamps.map((ts) => (
@@ -430,7 +399,12 @@ export default function TaskDetailPage() {
                       key={ts.id}
                       className="flex items-start gap-3 text-left text-sm bg-gray-50 rounded-lg p-3"
                     >
-                      <span className="text-green-600 font-medium shrink-0">{ts.dateTime}</span>
+                      <span className="text-green-600 font-medium shrink-0">
+                        {ts.dateTime}
+                        {(ts.hours != null && ts.hours > 0) || (ts.minutes != null && ts.minutes > 0)
+                          ? ` • ${ts.hours ?? 0}h ${ts.minutes ?? 0}m`
+                          : ""}
+                      </span>
                       {ts.note && <span className="text-gray-600">{ts.note}</span>}
                     </div>
                   ))}
@@ -467,6 +441,12 @@ export default function TaskDetailPage() {
           </div>
         </div>
       </div>
+      <ActivityLogModal isOpen={isActivityLogOpen} onClose={() => setIsActivityLogOpen(false)} />
+      <AddTimestampModal
+        isOpen={isAddTimestampModalOpen}
+        onClose={() => setIsAddTimestampModalOpen(false)}
+        onAdd={addTimestampFromModal}
+      />
     </div>
   );
 }

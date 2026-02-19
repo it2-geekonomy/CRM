@@ -64,7 +64,7 @@ export class DepartmentController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a department' })
   @ApiParam({ name: 'id', type: 'string', description: 'Department UUID' })
   @ApiResponse({ status: 204, description: 'Department deleted' })

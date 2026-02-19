@@ -23,10 +23,11 @@ export class EmployeeProfile {
     user: User;
 
     @ManyToOne(() => Department, (department) => department.employees, {
-        nullable: false,
+        nullable: true,
+        onDelete: 'SET NULL', 
     })
     @JoinColumn({ name: 'department_id' })
-    department: Department;
+    department: Department | null;
 
     @Column({ type: 'varchar', length: 255 })
     name: string;

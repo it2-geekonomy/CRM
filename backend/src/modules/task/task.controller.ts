@@ -30,6 +30,7 @@ import { GetCalendarDto } from './dto/get-calendar.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { TaskActivity } from './entities/task-activity.entity';
 import { Task } from './entities/task.entity';
+import { TaskQueryDto } from './dto/task-query.dto';
 
 @ApiTags('Tasks')
 @ApiBearerAuth('JWT-auth')
@@ -52,9 +53,10 @@ export class TaskController {
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get all tasks' })
   @ApiResponse({ status: 200, description: 'List of all tasks' })
-  findAll() {
-    return this.taskService.findAll();
+  findAll(@Query() query: TaskQueryDto) {
+    return this.taskService.findAll(query);
   }
+
 
   @Get('calendar')
   @UseGuards(AuthGuard)
@@ -116,7 +118,7 @@ export class TaskController {
 
   @Delete(':id')
   @UseGuards(AuthGuard)
-  @HttpCode(HttpStatus.OK) // Change from NO_CONTENT to OK
+  @HttpCode(HttpStatus.OK) 
   @ApiOperation({ summary: 'Delete task' })
   @ApiParam({ name: 'id', type: 'string', description: 'Task UUID' })
   @ApiResponse({ status: 200, description: 'Task deleted successfully' })

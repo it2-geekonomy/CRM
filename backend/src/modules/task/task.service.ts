@@ -14,6 +14,7 @@ import { EmployeeProfile } from 'src/modules/employee/entities/employee-profile.
 import { TaskStatus } from 'src/shared/enum/task/task-status.enum';
 import { TaskActivity } from './entities/task-activity.entity';
 import { GetCalendarDto } from './dto/get-calendar.dto';
+import { TaskQueryDto } from './dto/task-query.dto';
 
 @Injectable()
 export class TaskService {
@@ -90,10 +91,52 @@ export class TaskService {
     }
   }
 
-  async findAll() {
-    return this.baseTaskQuery()
-      .orderBy('task.createdAt', 'DESC')
-      .getRawMany();
+  async findAll(query: TaskQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+    } = query;
+
+    const qb = this.baseTaskQuery();
+
+    if (search) {
+      qb.andWhere(
+        `(task.taskName ILIKE :search 
+        OR assignedTo.name ILIKE :search
+        OR project.projectName ILIKE :search
+        OR task.task_status::text ILIKE :search)`,
+        { search: `%${search}%` },
+      );
+    }
+
+    const sortMap = {
+      createdAt: 'task.createdAt',
+      taskName: 'task.taskName',
+      startDate: 'task.startDate',
+      endDate: 'task.endDate',
+      taskStatus: 'task.taskStatus',
+    };
+
+    const sortColumn = sortMap[sortBy] || 'task.createdAt';
+
+    qb.orderBy(sortColumn, sortOrder);
+
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findOne(id: string) {
@@ -132,10 +175,15 @@ export class TaskService {
   }
 
   async update(id: string, dto: UpdateTaskDto) {
-    const exists = await this.taskRepo.exist({ where: { id } });
-    if (!exists) throw new NotFoundException('Task not found');
+    const task = await this.taskRepo.findOne({ where: { id } });
 
-    const updated = await this.taskRepo.save({ id, ...dto });
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    Object.assign(task, dto);
+
+    const updated = await this.taskRepo.save(task);
 
     return {
       id: updated.id,
@@ -144,6 +192,7 @@ export class TaskService {
       updatedAt: updated.updatedAt,
     };
   }
+
 
   async remove(id: string) {
     const result = await this.taskRepo.delete(id);

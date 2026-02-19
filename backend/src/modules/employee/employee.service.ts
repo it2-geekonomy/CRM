@@ -61,8 +61,8 @@ export class EmployeeService {
 
         const employee = manager.create(EmployeeProfile, {
           user,
-          department,
-          name: dto.name,
+         name, department,
+          name: dto.
           phone: dto.phone ?? null,
           alternatePhone: dto.alternatePhone ?? null,
           designation: dto.designation,
@@ -139,11 +139,17 @@ export class EmployeeService {
     };
   }
 
-  findOne(id: string) {
-    return this.employeeRepo.findOne({
+  async findOne(id: string) {
+    const employee = await this.employeeRepo.findOne({
       where: { id, isActive: true },
       relations: ['user', 'department'],
     });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    return employee;
   }
 
   async update(id: string, dto: UpdateEmployeeDto) {
@@ -160,13 +166,16 @@ export class EmployeeService {
       const department = await this.departmentRepo.findOne({
         where: { id: dto.departmentId },
       });
+
       if (!department) {
         throw new NotFoundException('Department not found');
       }
+
       employee.department = department;
     }
 
     Object.assign(employee, dto);
+
     return this.employeeRepo.save(employee);
   }
 
@@ -177,10 +186,11 @@ export class EmployeeService {
     );
 
     if (result.affected === 0) {
-      throw new NotFoundException('Employee not found or already deleted');
+      throw new NotFoundException(
+        'Employee not found or already deleted',
+      );
     }
 
     return { message: 'Employee deactivated successfully' };
   }
-
 }

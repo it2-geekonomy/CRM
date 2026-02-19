@@ -84,75 +84,72 @@ export class TaskService {
       });
     } catch (err) {
       if (err instanceof BadRequestException) throw err;
-      throw new InternalServerErrorException(err.message || 'Failed to create task');
+      throw new InternalServerErrorException(
+        err.message || 'Failed to create task',
+      );
     }
   }
 
   async findAll() {
-    try {
-      return await this.baseTaskQuery().orderBy('task.createdAt', 'DESC').getRawMany();
-    } catch (err) {
-      throw new InternalServerErrorException(err.message || 'Failed to fetch tasks');
-    }
+    return this.baseTaskQuery()
+      .orderBy('task.createdAt', 'DESC')
+      .getRawMany();
   }
 
   async findOne(id: string) {
-    try {
-      const task = await this.baseTaskQuery().where('task.id = :id', { id }).getRawOne();
-      if (!task) throw new NotFoundException('Task not found');
-      return task;
-    } catch (err) {
-      if (err instanceof NotFoundException) throw err;
-      throw new InternalServerErrorException(err.message || 'Failed to fetch task');
-    }
+    const task = await this.baseTaskQuery()
+      .where('task.id = :id', { id })
+      .getRawOne();
+
+    if (!task) throw new NotFoundException('Task not found');
+
+    return task;
   }
 
   async findCalendar(query: GetCalendarDto, userId: string, userRole: string) {
-    try {
-      const qb = this.baseTaskQuery();
+    const qb = this.baseTaskQuery();
 
-      if (userRole === 'employee') {
-        qb.andWhere('assignedTo.id = :userId', { userId });
-      } else if (userRole === 'admin' && query.employeeId) {
-        qb.andWhere('assignedTo.id = :empId', { empId: query.employeeId });
-      }
-
-      if (query.year && query.month) {
-        const start = new Date(Number(query.year), Number(query.month) - 1, 1, 0, 0, 0);
-        const end = new Date(Number(query.year), Number(query.month), 0, 23, 59, 59);
-        qb.andWhere('task.startDate <= :end AND task.endDate >= :start', { start, end });
-      }
-
-      return await qb
-        .orderBy('task.startDate', 'ASC')
-        .addOrderBy('task.startTime', 'ASC')
-        .getRawMany();
-    } catch (err) {
-      throw new InternalServerErrorException(err.message || 'Failed to fetch calendar tasks');
+    if (userRole === 'employee') {
+      qb.andWhere('assignedTo.id = :userId', { userId });
+    } else if (userRole === 'admin' && query.employeeId) {
+      qb.andWhere('assignedTo.id = :empId', { empId: query.employeeId });
     }
+
+    if (query.year && query.month) {
+      const start = new Date(Number(query.year), Number(query.month) - 1, 1, 0, 0, 0);
+      const end = new Date(Number(query.year), Number(query.month), 0, 23, 59, 59);
+
+      qb.andWhere(
+        'task.startDate <= :end AND task.endDate >= :start',
+        { start, end },
+      );
+    }
+
+    return qb
+      .orderBy('task.startDate', 'ASC')
+      .addOrderBy('task.startTime', 'ASC')
+      .getRawMany();
   }
 
   async update(id: string, dto: UpdateTaskDto) {
-    try {
-      const updated = await this.taskRepo.save({ id, ...dto });
-      return {
-        id: updated.id,
-        taskName: updated.taskName,
-        taskStatus: updated.taskStatus,
-        updatedAt: updated.updatedAt,
-      };
-    } catch (err) {
-      throw new InternalServerErrorException(err.message || 'Failed to update task');
-    }
+    const exists = await this.taskRepo.exist({ where: { id } });
+    if (!exists) throw new NotFoundException('Task not found');
+
+    const updated = await this.taskRepo.save({ id, ...dto });
+
+    return {
+      id: updated.id,
+      taskName: updated.taskName,
+      taskStatus: updated.taskStatus,
+      updatedAt: updated.updatedAt,
+    };
   }
 
   async remove(id: string) {
-    try {
-      const result = await this.taskRepo.delete(id);
-      if (!result.affected) throw new NotFoundException('Task not found');
-    } catch (err) {
-      if (err instanceof NotFoundException) throw err;
-      throw new InternalServerErrorException(err.message || 'Failed to delete task');
+    const result = await this.taskRepo.delete(id);
+
+    if (!result.affected) {
+      throw new NotFoundException('Task not found');
     }
   }
 
@@ -166,9 +163,12 @@ export class TaskService {
       return await this.dataSource.transaction(async (manager) => {
         const task = await manager.findOne(Task, { where: { id: taskId } });
         if (!task) throw new NotFoundException('Task not found');
-        if (task.taskStatus === newStatus) throw new BadRequestException(`Task already in ${newStatus}`);
+        if (task.taskStatus === newStatus)
+          throw new BadRequestException(`Task already in ${newStatus}`);
 
-        const employee = await manager.findOne(EmployeeProfile, { where: { id: changedById } });
+        const employee = await manager.findOne(EmployeeProfile, {
+          where: { id: changedById },
+        });
         if (!employee) throw new BadRequestException('Invalid employee');
 
         const oldStatus = task.taskStatus;
@@ -193,32 +193,35 @@ export class TaskService {
         };
       });
     } catch (err) {
-      if (err instanceof NotFoundException || err instanceof BadRequestException) throw err;
-      throw new InternalServerErrorException(err.message || 'Failed to change task status');
+      if (
+        err instanceof NotFoundException ||
+        err instanceof BadRequestException
+      )
+        throw err;
+
+      throw new InternalServerErrorException(
+        err.message || 'Failed to change task status',
+      );
     }
   }
 
   async getTaskActivity(taskId: string) {
-    try {
-      const exists = await this.taskRepo.exist({ where: { id: taskId } });
-      if (!exists) throw new NotFoundException('Task not found');
+    const exists = await this.taskRepo.exist({ where: { id: taskId } });
+    if (!exists) throw new NotFoundException('Task not found');
 
-      return await this.taskActivityRepo.find({
-        where: { task: { id: taskId } },
-        relations: { changedBy: true },
-        select: {
-          id: true,
-          oldStatus: true,
-          newStatus: true,
-          changeReason: true,
-          changedAt: true,
-          changedBy: { id: true, name: true, designation: true },
-        },
-        order: { changedAt: 'ASC' },
-      });
-    } catch (err) {
-      if (err instanceof NotFoundException) throw err;
-      throw new InternalServerErrorException(err.message || 'Failed to fetch task activity');
-    }
+    return this.taskActivityRepo.find({
+      where: { task: { id: taskId } },
+      relations: { changedBy: true },
+      select: {
+        id: true,
+        oldStatus: true,
+        newStatus: true,
+        changeReason: true,
+        changedAt: true,
+        changedBy: { id: true, name: true, designation: true },
+      },
+      order: { changedAt: 'ASC' },
+    });
   }
 }
+

@@ -61,8 +61,8 @@ export class EmployeeService {
 
         const employee = manager.create(EmployeeProfile, {
           user,
-         name, department,
-          name: dto.
+          department,
+          name: dto.name,
           phone: dto.phone ?? null,
           alternatePhone: dto.alternatePhone ?? null,
           designation: dto.designation,

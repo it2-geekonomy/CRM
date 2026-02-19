@@ -25,7 +25,11 @@ export class UsersService {
   ) { }
 
   async getUserById(id: string): Promise<User> {
-    return this.findOne(id);
+    try {
+      return await this.findOne(id);
+    } catch (err) {
+      throw new InternalServerErrorException(err.message || 'Failed to get user by ID');
+    }
   }
 
   async create(createUserDto: CreateUserDto) {
@@ -45,7 +49,6 @@ export class UsersService {
 
     const roleName = role.name.toLowerCase();
     const passwordHash = await hash(createUserDto.password, 10);
-
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -88,59 +91,80 @@ export class UsersService {
 
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      throw new InternalServerErrorException('Failed to create user and profile');
+      throw new InternalServerErrorException(err.message || 'Failed to create user and profile');
     } finally {
       await queryRunner.release();
     }
   }
 
   async findAll() {
-    return this.userRepository.find({
-      relations: ['role', 'adminProfile', 'employeeProfile'],
-      select: {
-        id: true,
-        email: true,
-        roleId: true,
-        isVerified: true,
-        createdAt: true,
-      }
-    });
+    try {
+      return await this.userRepository.find({
+        relations: ['role', 'adminProfile', 'employeeProfile'],
+        select: {
+          id: true,
+          email: true,
+          roleId: true,
+          isVerified: true,
+          createdAt: true,
+        },
+      });
+    } catch (err) {
+      throw new InternalServerErrorException(err.message || 'Failed to fetch users');
+    }
   }
 
   async findOne(id: string): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id },
-      relations: ['role', 'adminProfile', 'employeeProfile']
-    });
-    if (!user) throw new NotFoundException(`User with ID ${id} not found`);
-    return user;
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id },
+        relations: ['role', 'adminProfile', 'employeeProfile'],
+      });
+      if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+      return user;
+    } catch (err) {
+      if (err instanceof NotFoundException) throw err;
+      throw new InternalServerErrorException(err.message || 'Failed to fetch user');
+    }
   }
 
   async getUserByEmailForAuth(email: string) {
-    return await this.userRepository.findOne({
-      where: { email },
-      select: ['id', 'email', 'passwordHash', 'isVerified', 'createdAt', 'updatedAt'],
-      relations: ['role'],
-    });
+    try {
+      return await this.userRepository.findOne({
+        where: { email },
+        select: ['id', 'email', 'passwordHash', 'isVerified', 'createdAt', 'updatedAt'],
+        relations: ['role'],
+      });
+    } catch (err) {
+      throw new InternalServerErrorException(err.message || 'Failed to get user by email');
+    }
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    const user = await this.findOne(id);
+    try {
+      const user = await this.findOne(id);
+      const updateData: any = { ...updateUserDto };
 
-    const updateData: any = { ...updateUserDto };
+      if (updateUserDto.password) {
+        updateData.passwordHash = await hash(updateUserDto.password, 10);
+        delete updateData.password;
+      }
 
-    if (updateUserDto.password) {
-      updateData.passwordHash = await hash(updateUserDto.password, 10);
-      delete updateData.password;
+      await this.userRepository.save({ ...user, ...updateData });
+      return this.findOne(id);
+
+    } catch (err) {
+      throw new InternalServerErrorException(err.message || 'Failed to update user');
     }
-
-    await this.userRepository.save({ ...user, ...updateData });
-    return this.findOne(id);
   }
 
   async remove(id: string) {
-    const user = await this.findOne(id);
-    await this.userRepository.remove(user);
-    return { message: 'User deleted successfully' };
+    try {
+      const user = await this.findOne(id);
+      await this.userRepository.remove(user);
+      return { message: 'User deleted successfully' };
+    } catch (err) {
+      throw new InternalServerErrorException(err.message || 'Failed to delete user');
+    }
   }
 }

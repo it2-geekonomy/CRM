@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException,InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -29,47 +29,65 @@ export class EmployeeService {
   ) { }
 
   async create(dto: CreateEmployeeDto) {
-    return this.dataSource.transaction(async manager => {
-      const department = await manager.findOne(Department, {
-        where: { id: dto.departmentId },
-      });
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const department = await manager.findOne(Department, {
+          where: { id: dto.departmentId },
+        });
+        if (!department) {
+          throw new NotFoundException('Department not found');
+        }
 
-      if (!department) {
-        throw new NotFoundException('Department not found');
+        const role = await this.rolesService.findByName('employee');
+        if (!role) {
+          throw new NotFoundException('EMPLOYEE role not found');
+        }
+
+        const existingUser = await manager.findOne(User, {
+          where: { email: dto.email },
+        });
+        if (existingUser) {
+          throw new ConflictException('Email already exists');
+        }
+
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+        const user = manager.create(User, {
+          email: dto.email,
+          passwordHash: hashedPassword,
+          role,
+        });
+        await manager.save(user);
+
+        const employee = manager.create(EmployeeProfile, {
+          user,
+         name, department,
+          name: dto.
+          phone: dto.phone ?? null,
+          alternatePhone: dto.alternatePhone ?? null,
+          designation: dto.designation,
+          employmentType: dto.employmentType,
+          employmentStatus: 'ACTIVE',
+          dateOfJoining: new Date(dto.dateOfJoining),
+          location: dto.location,
+          isActive: true,
+        });
+
+        return manager.save(employee);
+      });
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
       }
-
-      const role = await this.rolesService.findByName('employee');
-      if (!role) {
-        throw new NotFoundException('EMPLOYEE role not found');
-      }
-
-      const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-      const user = manager.create(User, {
-        email: dto.email,
-        passwordHash: hashedPassword,
-        role,
+      throw new InternalServerErrorException('Failed to create employee', {
+        cause: error,
       });
-      await manager.save(user);
-
-      const employee = manager.create(EmployeeProfile, {
-        user,
-        department,
-        name: dto.name,
-        phone: dto.phone ?? null,
-        alternatePhone: dto.alternatePhone ?? null,
-        designation: dto.designation,
-        employmentType: dto.employmentType,
-        employmentStatus: 'ACTIVE',
-        dateOfJoining: new Date(dto.dateOfJoining),
-        location: dto.location,
-        isActive: true,
-      });
-
-
-      return manager.save(employee);
-    });
+    }
   }
+
 
   async findAll(query: EmployeeQueryDto) {
     const {
@@ -121,11 +139,17 @@ export class EmployeeService {
     };
   }
 
-  findOne(id: string) {
-    return this.employeeRepo.findOne({
+  async findOne(id: string) {
+    const employee = await this.employeeRepo.findOne({
       where: { id, isActive: true },
       relations: ['user', 'department'],
     });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    return employee;
   }
 
   async update(id: string, dto: UpdateEmployeeDto) {
@@ -142,13 +166,16 @@ export class EmployeeService {
       const department = await this.departmentRepo.findOne({
         where: { id: dto.departmentId },
       });
+
       if (!department) {
         throw new NotFoundException('Department not found');
       }
+
       employee.department = department;
     }
 
     Object.assign(employee, dto);
+
     return this.employeeRepo.save(employee);
   }
 
@@ -159,10 +186,11 @@ export class EmployeeService {
     );
 
     if (result.affected === 0) {
-      throw new NotFoundException('Employee not found or already deleted');
+      throw new NotFoundException(
+        'Employee not found or already deleted',
+      );
     }
 
     return { message: 'Employee deactivated successfully' };
   }
-
 }

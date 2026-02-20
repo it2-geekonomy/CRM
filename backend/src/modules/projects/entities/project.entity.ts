@@ -14,6 +14,8 @@ import { ProjectType } from '../../../shared/enum/project/project-type.enum';
 import { AdminProfile } from '../../admin/entities/admin-profile.entity';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
 import { Task } from '../../task/entities/task.entity';
+import { ProjectDocument } from './project-document.entity';
+
 
 @Entity('projects')
 export class Project {
@@ -82,4 +84,10 @@ export class Project {
 
     @OneToMany(() => Task, (task) => task.project)
     tasks: Task[];
+
+    @OneToMany(() => ProjectDocument, (doc) => doc.project)
+    documents: ProjectDocument[];
+
+    @Column({ name: 'client_name', type: 'varchar', length: 150, nullable: true })
+    clientName: string;
 }

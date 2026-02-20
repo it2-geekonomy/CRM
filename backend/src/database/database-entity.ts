@@ -20,6 +20,7 @@ import { EmployeeProfile } from '../modules/employee/entities/employee-profile.e
 import { Task } from '../modules/task/entities/task.entity';
 
 import { Project } from '../modules/projects/entities/project.entity';
+import { ProjectDocument } from '../modules/projects/entities/project-document.entity';
 import { TaskActivity } from '../modules/task/entities/task-activity.entity';
 
 
@@ -33,6 +34,7 @@ export const models = [
   Department,
   EmployeeProfile,
   Project,
+  ProjectDocument,
   Task,
   TaskActivity
 ];

@@ -31,6 +31,7 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import { TaskActivity } from './entities/task-activity.entity';
 import { Task } from './entities/task.entity';
 import { TaskQueryDto } from './dto/task-query.dto';
+import { CreateTaskChecklistDto } from './dto/create-task-checklist.dto';
 
 @ApiTags('Tasks')
 @ApiBearerAuth('JWT-auth')
@@ -47,6 +48,15 @@ export class TaskController {
   @ApiBody({ type: CreateTaskDto })
   create(@Body() dto: CreateTaskDto, @Req() req: Request) {
     return this.taskService.create(dto, (req as any).user.id);
+  }
+
+  @Post(':taskId/checklist')
+  @ApiOperation({summary: 'Add checklist item to task'})
+  addChecklist(
+    @Param('taskId') taskId: string,
+    @Body() dto: CreateTaskChecklistDto,
+  ) {
+    return this.taskService.addChecklist(taskId, dto.itemName);
   }
 
   @Get()

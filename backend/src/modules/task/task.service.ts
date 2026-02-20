@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository,SelectQueryBuilder } from 'typeorm';
+import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -15,6 +15,7 @@ import { TaskStatus } from 'src/shared/enum/task/task-status.enum';
 import { TaskActivity } from './entities/task-activity.entity';
 import { GetCalendarDto } from './dto/get-calendar.dto';
 import { TaskQueryDto } from './dto/task-query.dto';
+import { TaskChecklist } from './entities/task-checklist.entity';
 
 @Injectable()
 export class TaskService {
@@ -25,6 +26,8 @@ export class TaskService {
     private readonly employeeRepo: Repository<EmployeeProfile>,
     @InjectRepository(TaskActivity)
     private readonly taskActivityRepo: Repository<TaskActivity>,
+    @InjectRepository(TaskChecklist)
+    private readonly checklistRepo: Repository<TaskChecklist>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -292,5 +295,43 @@ export class TaskService {
 
     return this.applyCommonFilters(qb, query);
   }
-}
 
+  async addChecklist(taskId: string, itemName: string) {
+    const task = await this.taskRepo.findOne({
+      where: { id: taskId },
+      relations: [
+        'project',                   
+        'assignedTo',              
+        'assignedTo.department',     
+      ],
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const checklist = this.checklistRepo.create({
+      itemName,
+      task,
+    });
+
+    const savedChecklist = await this.checklistRepo.save(checklist);
+
+    return {
+      id: savedChecklist.id,
+      itemName: savedChecklist.itemName,
+      isCompleted: savedChecklist.isCompleted,
+      createdAt: savedChecklist.createdAt,
+      updatedAt: savedChecklist.updatedAt,
+      task: {
+        id: task.id,
+        taskName: task.taskName,
+        taskStatus: task.taskStatus,
+        startDate: task.startDate,
+        endDate: task.endDate,
+      },
+      projectId: task.project?.projectId,
+      departmentId: task.assignedTo?.department?.id,
+    };
+  }
+}

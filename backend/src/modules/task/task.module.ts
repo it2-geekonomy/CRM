@@ -8,12 +8,14 @@ import { TaskService } from './task.service';
 import { TaskController } from './task.controller';
 import { AuthModule } from '../auth/auth.module';
 import { Project } from '../projects/entities/project.entity';
+import { TaskChecklist } from './entities/task-checklist.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Task,
-      TaskActivity, 
+      TaskActivity,
+      TaskChecklist,
       EmployeeProfile,
       Project,
     ]),

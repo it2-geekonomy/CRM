@@ -21,6 +21,7 @@ import { Task } from '../modules/task/entities/task.entity';
 
 import { Project } from '../modules/projects/entities/project.entity';
 import { TaskActivity } from '../modules/task/entities/task-activity.entity';
+import { TaskChecklist } from '../modules/task/entities/task-checklist.entity';
 
 
 
@@ -34,5 +35,6 @@ export const models = [
   EmployeeProfile,
   Project,
   Task,
-  TaskActivity
+  TaskActivity,
+  TaskChecklist
 ];

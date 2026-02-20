@@ -76,6 +76,17 @@ export class TaskController {
     return this.taskService.findOne(id);
   }
 
+  @Get('project/:projectId')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get tasks by project ID with department filter' })
+  @ApiParam({ name: 'projectId', type: 'string', description: 'Project UUID' })
+  getTasksByProject(
+    @Param('projectId') projectId: string,
+    @Query() query: TaskQueryDto,
+  ) {
+    return this.taskService.getTasksByProject(projectId, query);
+  }
+
   @Patch(':id')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Update task details' })
@@ -118,7 +129,7 @@ export class TaskController {
 
   @Delete(':id')
   @UseGuards(AuthGuard)
-  @HttpCode(HttpStatus.OK) 
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete task' })
   @ApiParam({ name: 'id', type: 'string', description: 'Task UUID' })
   @ApiResponse({ status: 200, description: 'Task deleted successfully' })

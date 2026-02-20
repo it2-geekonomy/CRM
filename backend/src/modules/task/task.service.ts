@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository,SelectQueryBuilder } from 'typeorm';
 
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -54,6 +54,55 @@ export class TaskService {
       ]);
   }
 
+  private async applyCommonFilters(
+    qb: SelectQueryBuilder<Task>,
+    query: TaskQueryDto,
+  ) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+    } = query;
+
+    if (search) {
+      qb.andWhere(
+        `(task.taskName ILIKE :search 
+        OR assignedTo.name ILIKE :search
+        OR project.projectName ILIKE :search
+        OR task.task_status::text ILIKE :search)`,
+        { search: `%${search}%` },
+      );
+    }
+
+    const sortMap = {
+      createdAt: 'task.createdAt',
+      taskName: 'task.taskName',
+      startDate: 'task.startDate',
+      endDate: 'task.endDate',
+      taskStatus: 'task.taskStatus',
+    };
+
+    const sortColumn = sortMap[sortBy] || 'task.createdAt';
+
+    qb.orderBy(sortColumn, sortOrder)
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async create(dto: CreateTaskDto, userId: string) {
     try {
       return await this.dataSource.transaction(async (manager) => {
@@ -92,51 +141,8 @@ export class TaskService {
   }
 
   async findAll(query: TaskQueryDto) {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      sortBy = 'createdAt',
-      sortOrder = 'DESC',
-    } = query;
-
     const qb = this.baseTaskQuery();
-
-    if (search) {
-      qb.andWhere(
-        `(task.taskName ILIKE :search 
-        OR assignedTo.name ILIKE :search
-        OR project.projectName ILIKE :search
-        OR task.task_status::text ILIKE :search)`,
-        { search: `%${search}%` },
-      );
-    }
-
-    const sortMap = {
-      createdAt: 'task.createdAt',
-      taskName: 'task.taskName',
-      startDate: 'task.startDate',
-      endDate: 'task.endDate',
-      taskStatus: 'task.taskStatus',
-    };
-
-    const sortColumn = sortMap[sortBy] || 'task.createdAt';
-
-    qb.orderBy(sortColumn, sortOrder);
-
-    qb.skip((page - 1) * limit).take(limit);
-
-    const [data, total] = await qb.getManyAndCount();
-
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return this.applyCommonFilters(qb, query);
   }
 
   async findOne(id: string) {
@@ -271,6 +277,20 @@ export class TaskService {
       },
       order: { changedAt: 'ASC' },
     });
+  }
+
+  async getTasksByProject(projectId: string, query: TaskQueryDto) {
+    const qb = this.baseTaskQuery()
+      .leftJoin('assignedTo.department', 'department')
+      .where('project.projectId = :projectId', { projectId });
+
+    if (query.departmentId) {
+      qb.andWhere('department.id = :departmentId', {
+        departmentId: query.departmentId,
+      });
+    }
+
+    return this.applyCommonFilters(qb, query);
   }
 }
 

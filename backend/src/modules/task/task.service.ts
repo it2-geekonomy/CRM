@@ -16,6 +16,9 @@ import { TaskActivity } from './entities/task-activity.entity';
 import { GetCalendarDto } from './dto/get-calendar.dto';
 import { TaskQueryDto } from './dto/task-query.dto';
 import { TaskChecklist } from './entities/task-checklist.entity';
+import { TaskFile } from './entities/task-file.entity';
+import { CreateTaskFileDto } from './dto/create-task-file.dto';
+import { FileInterceptor, MulterModule } from '@nestjs/platform-express';
 
 @Injectable()
 export class TaskService {
@@ -28,6 +31,8 @@ export class TaskService {
     private readonly taskActivityRepo: Repository<TaskActivity>,
     @InjectRepository(TaskChecklist)
     private readonly checklistRepo: Repository<TaskChecklist>,
+    @InjectRepository(TaskFile)
+    private readonly taskFileRepo: Repository<TaskFile>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -300,9 +305,9 @@ export class TaskService {
     const task = await this.taskRepo.findOne({
       where: { id: taskId },
       relations: [
-        'project',                   
-        'assignedTo',              
-        'assignedTo.department',     
+        'project',
+        'assignedTo',
+        'assignedTo.department',
       ],
     });
 
@@ -332,6 +337,32 @@ export class TaskService {
       },
       projectId: task.project?.projectId,
       departmentId: task.assignedTo?.department?.id,
+    };
+  }
+
+  async addFile(taskId: string, file: Express.Multer.File, uploadedById: string) {
+    const task = await this.taskRepo.findOne({ where: { id: taskId } });
+    if (!task) throw new NotFoundException('Task not found');
+
+    const uploadedBy = await this.employeeRepo.findOne({ where: { id: uploadedById } });
+    if (!uploadedBy) throw new NotFoundException('Uploader not found');
+
+    const taskFile = this.taskFileRepo.create({
+      task,
+      fileName: file.originalname,
+      fileUrl: `/uploads/${file.filename}`,
+      fileType: file.mimetype,
+      uploadedBy,
+    });
+
+    const savedFile = await this.taskFileRepo.save(taskFile);
+    return {
+      id: savedFile.id,
+      fileName: savedFile.fileName,
+      fileUrl: savedFile.fileUrl,
+      fileType: savedFile.fileType,
+      uploadedByName: uploadedBy.name,
+      uploadedAt: savedFile.uploadedAt,
     };
   }
 }

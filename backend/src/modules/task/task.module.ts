@@ -9,6 +9,8 @@ import { TaskController } from './task.controller';
 import { AuthModule } from '../auth/auth.module';
 import { Project } from '../projects/entities/project.entity';
 import { TaskChecklist } from './entities/task-checklist.entity';
+import { MulterModule } from '@nestjs/platform-express';
+import { TaskFile } from './entities/task-file.entity';
 
 @Module({
   imports: [
@@ -16,10 +18,15 @@ import { TaskChecklist } from './entities/task-checklist.entity';
       Task,
       TaskActivity,
       TaskChecklist,
+      TaskFile,
       EmployeeProfile,
       Project,
     ]),
     AuthModule,
+    MulterModule.register({
+      dest: './uploads',        
+      limits: { fileSize: 25 * 1024 * 1024 }, 
+    }),
   ],
   controllers: [TaskController],
   providers: [TaskService],

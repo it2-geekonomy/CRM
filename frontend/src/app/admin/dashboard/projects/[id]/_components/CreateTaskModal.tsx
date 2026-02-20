@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useGetEmployeesQuery } from "@/store/api/employeeApiSlice";
 import type { CreateTaskFormData, TaskStatus, TaskPriority } from "./taskTypes";
 import {
   DEPARTMENTS,
   TASK_TYPES_BY_DEPARTMENT,
-  ASSIGNEES,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from "./taskTypes";
@@ -16,25 +16,39 @@ type CreateTaskModalProps = {
   onCreateTask: (data: CreateTaskFormData) => void;
 };
 
-const initialForm: CreateTaskFormData = {
+const getInitialForm = (firstEmployeeName?: string): CreateTaskFormData => ({
   taskName: "",
   department: "Sales",
   taskType: "Lead Qualification",
-  assignTo: "Arjun Sindhia",
+  assignTo: firstEmployeeName || "",
   dueDate: "",
   status: "Open",
   priority: "Medium",
-};
+});
 
 export default function CreateTaskModal({
   isOpen,
   onClose,
   onCreateTask,
 }: CreateTaskModalProps) {
-  const [form, setForm] = useState<CreateTaskFormData>(initialForm);
+  // Fetch employees from API
+  const { data: employeesData, isLoading: isLoadingEmployees } = useGetEmployeesQuery({ limit: 100 });
+
+  // Get employees list for dropdown
+  const employees = employeesData?.data || [];
+  const firstEmployeeName = employees.length > 0 ? employees[0].name : "";
+
+  const [form, setForm] = useState<CreateTaskFormData>(getInitialForm(firstEmployeeName));
   const [errors, setErrors] = useState<Partial<Record<keyof CreateTaskFormData, string>>>({});
 
   const taskTypes = TASK_TYPES_BY_DEPARTMENT[form.department] ?? TASK_TYPES_BY_DEPARTMENT.Sales ?? [];
+
+  // Update form when employees load and modal opens
+  useEffect(() => {
+    if (isOpen && employees.length > 0 && (!form.assignTo || !employees.some(emp => emp.name === form.assignTo))) {
+      setForm((prev) => ({ ...prev, assignTo: employees[0].name }));
+    }
+  }, [isOpen, employees, form.assignTo]);
 
   const handleDepartmentChange = useCallback((department: string) => {
     const types = TASK_TYPES_BY_DEPARTMENT[department] ?? [];
@@ -55,13 +69,13 @@ export default function CreateTaskModal({
     if (Object.keys(newErrors).length > 0) return;
 
     onCreateTask(form);
-    setForm(initialForm);
+    setForm(getInitialForm(firstEmployeeName));
     setErrors({});
     onClose();
   };
 
   const handleClose = () => {
-    setForm(initialForm);
+    setForm(getInitialForm(firstEmployeeName));
     setErrors({});
     onClose();
   };
@@ -159,18 +173,36 @@ export default function CreateTaskModal({
             <label htmlFor="assignTo" className="block text-sm font-medium text-gray-700 mb-1">
               Assign To
             </label>
-            <select
-              id="assignTo"
-              value={form.assignTo}
-              onChange={(e) => setForm((p) => ({ ...p, assignTo: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none bg-white"
-            >
-              {ASSIGNEES.map((a) => (
-                <option key={a.id} value={a.name}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
+            {isLoadingEmployees ? (
+              <select
+                id="assignTo"
+                disabled
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-500"
+              >
+                <option>Loading employees...</option>
+              </select>
+            ) : employees.length === 0 ? (
+              <select
+                id="assignTo"
+                disabled
+                className="w-full px-4 py-2.5 rounded-lg border border-red-300 bg-red-50 text-red-500"
+              >
+                <option>No employees available</option>
+              </select>
+            ) : (
+              <select
+                id="assignTo"
+                value={form.assignTo}
+                onChange={(e) => setForm((p) => ({ ...p, assignTo: e.target.value }))}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none bg-white"
+              >
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.name}>
+                    {emp.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div>

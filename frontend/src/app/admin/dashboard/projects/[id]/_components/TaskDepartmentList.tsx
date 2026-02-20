@@ -10,7 +10,7 @@ function getStatusStyles(status: TaskStatus): string {
     case "In Progress":
       return "bg-amber-100 text-amber-700";
     case "On-Hold":
-      return "bg-red-100 text-red-700";
+      return "bg-orange-100 text-orange-700";
     default:
       return "bg-gray-100 text-gray-700";
   }
@@ -152,12 +152,23 @@ export default function TaskDepartmentList({
                                 <Link
                                   key={task.id}
                                   href={`/admin/dashboard/projects/${projectId}/tasks/${task.id}`}
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    // Only prevent navigation if checkbox was clicked
+                                    const target = e.target as HTMLElement;
+                                    const isCheckboxClick = target.closest('button[aria-label*="Mark"]') !== null;
+                                    
+                                    if (isCheckboxClick) {
+                                      e.preventDefault();
+                                      return;
+                                    }
+                                    
+                                    // Save task to sessionStorage for navigation
                                     if (typeof window !== "undefined") {
                                       sessionStorage.setItem("crm_selected_task", JSON.stringify(task));
                                     }
+                                    // Allow Link to navigate normally
                                   }}
-                                  className="w-full flex items-center gap-4 py-3 px-4 rounded-lg text-left transition-colors hover:bg-green-50/50"
+                                  className="w-full flex items-center gap-4 py-3 px-4 rounded-lg text-left transition-colors hover:bg-green-50/50 cursor-pointer group"
                                 >
                                   <span className="text-sm text-gray-500 w-6">{idx + 1}</span>
                                   <button
@@ -167,7 +178,7 @@ export default function TaskDepartmentList({
                                       e.stopPropagation();
                                       onToggleTaskComplete(task.id, e);
                                     }}
-                                    className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full hover:ring-2 hover:ring-green-400 hover:ring-offset-1 transition-all focus:outline-none focus:ring-0"
+                                    className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full hover:ring-2 hover:ring-green-400 hover:ring-offset-1 transition-all focus:outline-none focus:ring-0 z-10 relative"
                                     aria-label={isComplete ? "Mark incomplete" : "Mark complete"}
                                   >
                                     {isComplete ? (

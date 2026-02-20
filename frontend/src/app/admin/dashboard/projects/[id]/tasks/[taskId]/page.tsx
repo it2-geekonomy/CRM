@@ -5,11 +5,23 @@ import { useParams } from "next/navigation";
 import { toast } from "react-toastify";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useGetProjectQuery } from "@/store/api/projectApiSlice";
+import {
+  useGetTaskQuery,
+  useUpdateTaskStatusMutation,
+  useGetChecklistQuery,
+  useCreateChecklistItemMutation,
+  useUpdateChecklistItemMutation,
+  useDeleteChecklistItemMutation,
+  mapFrontendToBackendStatus,
+  type TaskApi,
+  type ChecklistItemApi,
+} from "@/store/api/taskApiSlice";
+import { transformBackendTaskToFrontend } from "../../_utils/taskTransformers";
 import type { Task, TaskStatus } from "../../_components/taskTypes";
-import { INITIAL_TASK_DEPARTMENTS, getTaskById } from "../../_components/taskData";
 import ActivityLogModal from "../../_components/ActivityLogModal";
 import AddTimestampModal, { type AddTimestampData } from "../../_components/AddTimestampModal";
 
+// Frontend checklist item type (matches backend ChecklistItemApi)
 type ChecklistItem = {
   id: string;
   label: string;
@@ -62,9 +74,53 @@ function getStatusStyles(status: TaskStatus): string {
     case "In Progress":
       return "bg-amber-100 text-amber-700";
     case "On-Hold":
-      return "bg-red-100 text-red-700";
+      return "bg-orange-100 text-orange-700";
     default:
       return "bg-gray-100 text-gray-700";
+  }
+}
+
+function formatDateTime(dateStr: string, timeStr?: string): string {
+  if (!dateStr) return "—";
+  try {
+    // Handle ISO timestamp format (e.g., "2026-02-18T18:30:00.000Z")
+    let datePart = dateStr;
+    let extractedTime: string | undefined = timeStr;
+    
+    if (dateStr.includes("T")) {
+      const [dateOnly, timePart] = dateStr.split("T");
+      datePart = dateOnly;
+      if (!extractedTime && timePart) {
+        extractedTime = timePart.split(".")[0]; // Remove milliseconds
+      }
+    }
+    
+    const [year, month, day] = datePart.split("-").map(Number);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const formattedDate = `${months[month - 1]} ${day}, ${year}`;
+    
+    if (extractedTime) {
+      const [hours, minutes] = extractedTime.split(":").map(Number);
+      const period = hours >= 12 ? "PM" : "AM";
+      const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+      const displayMinutes = minutes.toString().padStart(2, "0");
+      return `${formattedDate} – ${displayHours}:${displayMinutes} ${period}`;
+    }
+    
+    return formattedDate;
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatDateOnly(dateStr: string): string {
+  if (!dateStr) return "—";
+  try {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${months[month - 1]} ${day}, ${year}`;
+  } catch {
+    return dateStr;
   }
 }
 
@@ -86,10 +142,33 @@ export default function TaskDetailPage() {
   const projectId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const taskId = Array.isArray(params?.taskId) ? params.taskId[0] : params?.taskId;
 
-  const { data: project } = useGetProjectQuery(projectId ?? "", { skip: !projectId });
+  const { data: project, isLoading: isLoadingProject } = useGetProjectQuery(projectId ?? "", { skip: !projectId });
+  
+  // Fetch task from backend API
+  const {
+    data: backendTaskData,
+    isLoading: isLoadingTask,
+    isError: isTaskError,
+    error: taskError,
+  } = useGetTaskQuery(taskId ?? "", { skip: !taskId });
+
+  // Task status mutation
+  const [updateTaskStatus, { isLoading: isUpdatingStatus }] = useUpdateTaskStatusMutation();
+
+  // Checklist API hooks
+  const {
+    data: checklistData,
+    isLoading: isLoadingChecklist,
+    refetch: refetchChecklist,
+  } = useGetChecklistQuery(taskId ?? "", { skip: !taskId });
+  
+  const [createChecklistItem, { isLoading: isCreatingChecklistItem }] = useCreateChecklistItemMutation();
+  const [updateChecklistItem, { isLoading: isUpdatingChecklistItem }] = useUpdateChecklistItemMutation();
+  const [deleteChecklistItem, { isLoading: isDeletingChecklistItem }] = useDeleteChecklistItemMutation();
 
   const [task, setTask] = useState<Task | null>(null);
-  const [checklist, setChecklist] = useState<ChecklistItem[]>(DEFAULT_CHECKLIST);
+  const [backendTask, setBackendTask] = useState<TaskApi | null>(null);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [newSubtaskLabel, setNewSubtaskLabel] = useState("");
   const [timestamps, setTimestamps] = useState<Timestamp[]>([]);
@@ -97,38 +176,93 @@ export default function TaskDetailPage() {
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Transform backend task data to frontend format
   useEffect(() => {
-    if (!taskId) return;
-    const fromStorage = getTaskFromStorage(taskId);
-    if (fromStorage) {
-      setTask(fromStorage);
-      sessionStorage.removeItem(TASK_STORAGE_KEY);
-      return;
+    if (backendTaskData) {
+      setBackendTask(backendTaskData);
+      const transformedTask = transformBackendTaskToFrontend(backendTaskData);
+      setTask(transformedTask);
+    } else if (taskId) {
+      // Fallback to sessionStorage if API data not available yet
+      const fromStorage = getTaskFromStorage(taskId);
+      if (fromStorage) {
+        setTask(fromStorage);
+        sessionStorage.removeItem(TASK_STORAGE_KEY);
+      }
     }
-    const found = getTaskById(INITIAL_TASK_DEPARTMENTS, taskId);
-    setTask(found);
-  }, [taskId]);
+  }, [backendTaskData, taskId]);
 
-  const toggleChecklistItem = useCallback((id: string) => {
-    setChecklist((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item))
-    );
-  }, []);
+  // Transform backend checklist data to frontend format
+  useEffect(() => {
+    if (checklistData) {
+      const transformed = checklistData.map((item: ChecklistItemApi) => ({
+        id: item.id,
+        label: item.itemName,
+        completed: item.isCompleted,
+      }));
+      setChecklist(transformed);
+    } else if (checklistData && checklistData.length === 0) {
+      // Empty checklist from backend
+      setChecklist([]);
+    }
+  }, [checklistData]);
+
+  const toggleChecklistItem = useCallback(
+    async (id: string) => {
+      if (!taskId) return;
+      
+      const item = checklist.find((i) => i.id === id);
+      if (!item) return;
+
+      // Optimistically update UI
+      setChecklist((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, completed: !i.completed } : i))
+      );
+
+      try {
+        await updateChecklistItem({
+          taskId,
+          itemId: id,
+          body: { isCompleted: !item.completed },
+        }).unwrap();
+      } catch (error: any) {
+        // Revert on error
+        setChecklist((prev) =>
+          prev.map((i) => (i.id === id ? { ...i, completed: item.completed } : i))
+        );
+        toast.error(error?.data?.message || "Failed to update checklist item");
+      }
+    },
+    [taskId, checklist, updateChecklistItem]
+  );
 
   const startAddingSubtask = useCallback(() => {
     setIsAddingSubtask(true);
     setNewSubtaskLabel("");
   }, []);
 
-  const addChecklistItem = useCallback(() => {
-    const label = newSubtaskLabel.trim() || "New subtask";
-    setChecklist((prev) => [
-      ...prev,
-      { id: `c-${Date.now()}`, label, completed: false },
-    ]);
-    setNewSubtaskLabel("");
-    setIsAddingSubtask(false);
-  }, [newSubtaskLabel]);
+  const addChecklistItem = useCallback(async () => {
+    if (!taskId) return;
+    
+    const label = newSubtaskLabel.trim();
+    if (!label) {
+      toast.error("Please enter a checklist item name");
+      return;
+    }
+
+    try {
+      await createChecklistItem({
+        taskId,
+        body: { itemName: label },
+      }).unwrap();
+      
+      setNewSubtaskLabel("");
+      setIsAddingSubtask(false);
+      toast.success("Checklist item added");
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to add checklist item");
+    }
+  }, [taskId, newSubtaskLabel, createChecklistItem]);
 
   const cancelAddingSubtask = useCallback(() => {
     setIsAddingSubtask(false);
@@ -165,10 +299,32 @@ export default function TaskDetailPage() {
     }
   }, []);
 
-  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newStatus = e.target.value as TaskStatus;
-    setTask((prev) => (prev ? { ...prev, status: newStatus } : null));
-  }, []);
+  const handleStatusChange = useCallback(
+    async (e: React.ChangeEvent<HTMLSelectElement>) => {
+      if (!taskId || !task) return;
+      
+      const newStatus = e.target.value as TaskStatus;
+      
+      // Optimistically update UI
+      setTask((prev) => (prev ? { ...prev, status: newStatus } : null));
+      
+      try {
+        // Update status via API
+        const backendStatus = mapFrontendToBackendStatus(newStatus);
+        await updateTaskStatus({
+          id: taskId,
+          body: { newStatus: backendStatus },
+        }).unwrap();
+        
+        toast.success("Task status updated successfully");
+      } catch (error: any) {
+        // Revert on error
+        setTask((prev) => (prev ? { ...prev, status: task.status } : null));
+        toast.error(error?.data?.message || "Failed to update task status");
+      }
+    },
+    [taskId, task, updateTaskStatus]
+  );
 
   if (!taskId || !projectId) {
     return (
@@ -181,11 +337,23 @@ export default function TaskDetailPage() {
     );
   }
 
-  if (!task) {
+  if (isLoadingTask || isLoadingProject || isLoadingChecklist) {
     return (
       <div className="bg-gray-100 min-h-screen py-10 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Task not found</p>
+          <p className="text-gray-600">Loading task details…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isTaskError || !task) {
+    return (
+      <div className="bg-gray-100 min-h-screen py-10 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">
+            {(taskError as { data?: { message?: string } })?.data?.message || "Task not found"}
+          </p>
           <Link
             href={`/admin/dashboard/projects/${projectId}`}
             className="mt-4 inline-block text-green-600 hover:underline"
@@ -233,11 +401,25 @@ export default function TaskDetailPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Start Date & Time</p>
-                  <p className="text-gray-900 mt-0.5">Feb 15, 2026 – 09:00 AM</p>
+                  <p className="text-gray-900 mt-0.5">
+                    {backendTask
+                      ? formatDateTime(
+                          backendTask.task_startDate || backendTask.task_startdate || "",
+                          backendTask.task_startTime || backendTask.task_starttime
+                        )
+                      : "—"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">End Date & Time</p>
-                  <p className="text-gray-900 mt-0.5">Feb 21, 2026 – 06:00 PM</p>
+                  <p className="text-gray-900 mt-0.5">
+                    {backendTask
+                      ? formatDateTime(
+                          backendTask.task_endDate || backendTask.task_enddate || "",
+                          backendTask.task_endTime || backendTask.task_endtime
+                        )
+                      : "—"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assigned To</p>
@@ -245,7 +427,11 @@ export default function TaskDetailPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assigned By</p>
-                  <p className="text-gray-900 mt-0.5">Arjun Sindhia</p>
+                  <p className="text-gray-900 mt-0.5">
+                    {backendTask
+                      ? backendTask.assignedBy_name || backendTask.assignedby_name || "—"
+                      : "—"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</p>
@@ -285,6 +471,7 @@ export default function TaskDetailPage() {
                   className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 bg-white hover:bg-gray-50"
                   value={task.status}
                   onChange={handleStatusChange}
+                  disabled={isUpdatingStatus}
                 >
                   <option value="Open">Open</option>
                   <option value="In Progress">In Progress</option>
@@ -384,7 +571,25 @@ export default function TaskDetailPage() {
 
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Task Description</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{DEFAULT_DESCRIPTION}</p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                {(() => {
+                  const taskDesc =
+                    backendTask?.task_taskDescription || backendTask?.task_taskdescription || "";
+                  if (!taskDesc) return DEFAULT_DESCRIPTION;
+                  
+                  // Try to parse JSON metadata
+                  try {
+                    const metadata = JSON.parse(taskDesc);
+                    if (metadata.originalDescription) {
+                      return metadata.originalDescription;
+                    }
+                  } catch {
+                    // If not JSON, use as-is
+                  }
+                  
+                  return taskDesc || DEFAULT_DESCRIPTION;
+                })()}
+              </p>
             </div>
 
             <div className="mb-6">
@@ -427,27 +632,52 @@ export default function TaskDetailPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created On</p>
-                <p className="text-sm text-gray-900 mt-1">Feb 10, 2026 at 11:30 AM</p>
+                <p className="text-sm text-gray-900 mt-1">
+                  {backendTask
+                    ? formatDateTime(
+                        backendTask.task_createdAt || backendTask.task_createdat || "",
+                        undefined
+                      )
+                    : "—"}
+                </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created By</p>
-                <p className="text-sm text-gray-900 mt-1">Arjun Sindhia</p>
+                <p className="text-sm text-gray-900 mt-1">
+                  {backendTask
+                    ? backendTask.assignedBy_name || backendTask.assignedby_name || "—"
+                    : "—"}
+                </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Started On</p>
-                <p className="text-sm text-gray-900 mt-1">Feb 15, 2026 at 09:15 AM</p>
+                <p className="text-sm text-gray-900 mt-1">
+                  {backendTask
+                    ? formatDateTime(
+                        backendTask.task_startDate || backendTask.task_startdate || "",
+                        backendTask.task_startTime || backendTask.task_starttime
+                      )
+                    : "—"}
+                </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Time Spent</p>
-                <p className="text-sm text-gray-900 mt-1">12 hours 45 minutes</p>
+                <p className="text-sm text-gray-900 mt-1">—</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Last Updated</p>
-                <p className="text-sm text-gray-400 mt-1">—</p>
+                <p className="text-sm text-gray-900 mt-1">
+                  {backendTask
+                    ? formatDateTime(
+                        backendTask.task_updatedAt || backendTask.task_updatedat || "",
+                        undefined
+                      )
+                    : "—"}
+                </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Updated By</p>
-                <p className="text-sm text-gray-400 mt-1">—</p>
+                <p className="text-sm text-gray-900 mt-1">—</p>
               </div>
             </div>
           </div>

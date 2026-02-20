@@ -3,10 +3,18 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { toast } from "react-toastify";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useGetProjectQuery } from "@/store/api/projectApiSlice";
-import type { TaskDepartment, CreateTaskFormData } from "./_components/taskTypes";
-import { INITIAL_TASK_DEPARTMENTS, addTaskToDepartments, TASK_TYPE_TO_SUBSECTION } from "./_components/taskData";
+import {
+  useGetTasksQuery,
+  useCreateTaskMutation,
+  useUpdateTaskStatusMutation,
+  mapFrontendToBackendStatus,
+} from "@/store/api/taskApiSlice";
+import { useGetEmployeesQuery } from "@/store/api/employeeApiSlice";
+import type { TaskDepartment, CreateTaskFormData, TaskStatus } from "./_components/taskTypes";
+import { INITIAL_TASK_DEPARTMENTS, TASK_TYPE_TO_SUBSECTION } from "./_components/taskData";
+import { transformTasksToDepartments } from "./_utils/taskTransformers";
 import CreateTaskModal from "./_components/CreateTaskModal";
 import TaskDepartmentList from "./_components/TaskDepartmentList";
 import ProjectDocuments from "./_components/ProjectDocuments";
@@ -34,9 +42,39 @@ export default function ProjectDetailPage() {
     skip: !projectId,
   });
 
+  // Fetch all tasks (backend doesn't support projectId filter yet, so we filter on frontend)
+  const {
+    data: allTasksData,
+    isLoading: isLoadingTasks,
+    isError: isTasksError,
+    error: tasksError,
+    refetch: refetchTasks,
+  } = useGetTasksQuery(undefined, { skip: !projectId });
+
+  // Filter tasks by projectId - memoize to prevent infinite loops
+  // Backend uses explicit aliases, but PostgreSQL returns lowercase by default
+  const tasksData = useMemo(() => {
+    if (!allTasksData || !projectId) return undefined;
+    
+    return allTasksData.filter((task: any) => {
+      // Try both camelCase and lowercase versions (PostgreSQL may lowercase aliases)
+      const taskProjectId = task.project_projectId || task.project_projectid;
+      return taskProjectId === projectId;
+    });
+  }, [allTasksData, projectId]);
+  
+
+  // Fetch employees for task assignment
+  const { data: employeesData } = useGetEmployeesQuery({ limit: 100 });
+
+  // Task mutations
+  const [createTask, { isLoading: isCreatingTask }] = useCreateTaskMutation();
+  const [updateTaskStatus, { isLoading: isUpdatingStatus }] = useUpdateTaskStatusMutation();
+
   const [activeTab, setActiveTab] = useState("Project Info");
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [departments, setDepartments] = useState<TaskDepartment[]>(INITIAL_TASK_DEPARTMENTS);
+  const departmentsRef = useRef<TaskDepartment[]>(INITIAL_TASK_DEPARTMENTS);
 
   const [expandedDepts, setExpandedDepts] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(INITIAL_TASK_DEPARTMENTS.map((d) => [d.name, true]))
@@ -50,23 +88,164 @@ export default function ProjectDetailPage() {
     );
     return map;
   });
-  const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(() => {
-    const ids = new Set<string>();
-    INITIAL_TASK_DEPARTMENTS.forEach((d) =>
-      d.subSections.forEach((s) =>
-        s.tasks.filter((t) => t.isComplete).forEach((t) => ids.add(t.id))
-      )
-    );
-    return ids;
-  });
+  const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(new Set());
+
+  // Track previous tasks data to prevent unnecessary updates
+  const prevTasksDataRef = useRef<any[] | undefined>(undefined);
+  const prevTasksDataLengthRef = useRef<number>(0);
+
+  // Transform backend tasks to frontend format when tasks data changes
+  useEffect(() => {
+    // Skip if tasksData hasn't actually changed (reference equality check)
+    if (tasksData === prevTasksDataRef.current) {
+      return;
+    }
+    
+    // Also check if length changed (simple check to prevent unnecessary updates)
+    const currentLength = tasksData?.length ?? 0;
+    if (tasksData === undefined && prevTasksDataRef.current === undefined) {
+      return;
+    }
+    
+    prevTasksDataRef.current = tasksData;
+    prevTasksDataLengthRef.current = currentLength;
+
+    if (tasksData && tasksData.length > 0) {
+      const transformed = transformTasksToDepartments(tasksData, INITIAL_TASK_DEPARTMENTS);
+      setDepartments(transformed);
+      departmentsRef.current = transformed;
+
+      // Update completed task IDs - preserve manual changes unless task was removed
+      setCompletedTaskIds((prevCompletedIds) => {
+        const backendCompletedIds = new Set<string>();
+        const allTaskIds = new Set<string>();
+        
+        transformed.forEach((d) =>
+          d.subSections.forEach((s) => {
+            s.tasks.forEach((t) => {
+              allTaskIds.add(t.id);
+              if (t.isComplete) {
+                backendCompletedIds.add(t.id);
+              }
+            });
+          })
+        );
+        
+        // Merge: keep manually toggled tasks that still exist, add backend-completed tasks
+        const merged = new Set<string>();
+        
+        // Add backend-completed tasks
+        backendCompletedIds.forEach((id) => merged.add(id));
+        
+        // Preserve manual toggles for tasks that still exist
+        prevCompletedIds.forEach((id) => {
+          if (allTaskIds.has(id)) {
+            merged.add(id);
+          }
+        });
+        
+        // Only update if actually changed
+        if (
+          merged.size !== prevCompletedIds.size ||
+          Array.from(merged).some((id) => !prevCompletedIds.has(id)) ||
+          Array.from(prevCompletedIds).some((id) => !merged.has(id))
+        ) {
+          return merged;
+        }
+        
+        return prevCompletedIds;
+      });
+
+      // Only initialize expanded states if they're empty (first load)
+      // Don't reset them if user has manually expanded/collapsed
+      setExpandedDepts((prev) => {
+        const hasAnyExpanded = Object.keys(prev).length > 0;
+        if (hasAnyExpanded) {
+          // Preserve existing state, but add any new departments
+          const newState = { ...prev };
+          let changed = false;
+          transformed.forEach((d) => {
+            if (!(d.name in newState)) {
+              newState[d.name] = true; // Default new departments to expanded
+              changed = true;
+            }
+          });
+          return changed ? newState : prev;
+        }
+        // First load - initialize all to expanded
+        return Object.fromEntries(transformed.map((d) => [d.name, true]));
+      });
+
+      setExpandedSubSections((prev) => {
+        const hasAnyExpanded = Object.keys(prev).length > 0;
+        if (hasAnyExpanded) {
+          // Preserve existing state, but add any new subsections
+          const newState = { ...prev };
+          let changed = false;
+          transformed.forEach((d) =>
+            d.subSections.forEach((s) => {
+              const key = `${d.name}::${s.name}`;
+              if (!(key in newState)) {
+                newState[key] = true; // Default new subsections to expanded
+                changed = true;
+              }
+            })
+          );
+          return changed ? newState : prev;
+        }
+        // First load - initialize all to expanded
+        const subMap: Record<string, boolean> = {};
+        transformed.forEach((d) =>
+          d.subSections.forEach((s) => {
+            subMap[`${d.name}::${s.name}`] = true;
+          })
+        );
+        return subMap;
+      });
+    } else if (tasksData && tasksData.length === 0) {
+      // No tasks, use initial empty structure
+      setDepartments((prevDepts) => {
+        if (prevDepts.length === INITIAL_TASK_DEPARTMENTS.length) {
+          return prevDepts;
+        }
+        departmentsRef.current = INITIAL_TASK_DEPARTMENTS;
+        return INITIAL_TASK_DEPARTMENTS;
+      });
+    }
+  }, [tasksData]);
 
   const toggleTaskComplete = useCallback((taskId: string, e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
+    
     setCompletedTaskIds((prev) => {
       const next = new Set(prev);
-      if (next.has(taskId)) next.delete(taskId);
-      else next.add(taskId);
+      const wasComplete = next.has(taskId);
+      
+      if (wasComplete) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      
       return next;
+    });
+    
+    // Also update the task's visual state in departments immediately
+    setDepartments((prevDepts) => {
+      const updated = prevDepts.map((dept) => ({
+        ...dept,
+        subSections: dept.subSections.map((sub) => ({
+          ...sub,
+          tasks: sub.tasks.map((task) =>
+            task.id === taskId
+              ? { ...task, isComplete: !task.isComplete, status: (!task.isComplete ? "Closed" : "In Progress") as TaskStatus }
+              : task
+          ),
+        })),
+      }));
+      departmentsRef.current = updated;
+      return updated;
     });
   }, []);
 
@@ -80,38 +259,92 @@ export default function ProjectDetailPage() {
   }, []);
 
   const expandAll = useCallback(() => {
-    setExpandedDepts(Object.fromEntries(departments.map((d) => [d.name, true])));
-    const map: Record<string, boolean> = {};
-    departments.forEach((d) =>
+    const currentDepts = departmentsRef.current;
+    const deptMap: Record<string, boolean> = {};
+    const subMap: Record<string, boolean> = {};
+    
+    currentDepts.forEach((d) => {
+      deptMap[d.name] = true;
       d.subSections.forEach((s) => {
-        map[`${d.name}::${s.name}`] = true;
-      })
-    );
-    setExpandedSubSections(map);
-  }, [departments]);
+        subMap[`${d.name}::${s.name}`] = true;
+      });
+    });
+    
+    setExpandedDepts(deptMap);
+    setExpandedSubSections(subMap);
+  }, []);
 
   const collapseAll = useCallback(() => {
-    setExpandedDepts(Object.fromEntries(departments.map((d) => [d.name, false])));
-    setExpandedSubSections({});
-  }, [departments]);
-
-  const handleCreateTask = useCallback((formData: CreateTaskFormData) => {
-    const { departments: updated, newTaskId } = addTaskToDepartments(departments, {
-      taskName: formData.taskName,
-      department: formData.department,
-      taskType: formData.taskType,
-      assignTo: formData.assignTo,
-      dueDate: formData.dueDate,
-      status: formData.status,
+    const currentDepts = departmentsRef.current;
+    const deptMap: Record<string, boolean> = {};
+    
+    currentDepts.forEach((d) => {
+      deptMap[d.name] = false;
     });
-    setDepartments(updated);
-    setExpandedDepts((p) => ({ ...p, [formData.department]: true }));
-    const subSectionKey = TASK_TYPE_TO_SUBSECTION[formData.taskType] ?? formData.taskType;
-    setExpandedSubSections((p) => ({ ...p, [`${formData.department}::${subSectionKey}`]: true }));
-    if (formData.status === "Closed") {
-      setCompletedTaskIds((p) => new Set([...p, newTaskId]));
-    }
-  }, [departments]);
+    
+    setExpandedDepts(deptMap);
+    setExpandedSubSections({});
+  }, []);
+
+  const handleCreateTask = useCallback(
+    async (formData: CreateTaskFormData) => {
+      if (!projectId || !employeesData?.data) {
+        toast.error("Project ID or employees data not available");
+        return;
+      }
+
+      // Find employee ID from name
+      const employee = employeesData.data.find(
+        (emp) => emp.name === formData.assignTo || `${emp.name}` === formData.assignTo
+      );
+
+      if (!employee) {
+        toast.error(`Employee "${formData.assignTo}" not found`);
+        return;
+      }
+
+      // Parse due date and set start/end dates
+      const dueDate = new Date(formData.dueDate);
+      const startDate = new Date(dueDate);
+      startDate.setDate(startDate.getDate() - 1); // Start 1 day before due date
+
+      const startDateStr = startDate.toISOString().split("T")[0];
+      const endDateStr = dueDate.toISOString().split("T")[0];
+
+      try {
+        // Store department and taskType in taskDescription as JSON metadata
+        // Format: JSON string with department and taskType
+        const taskDescription = JSON.stringify({
+          department: formData.department,
+          taskType: formData.taskType,
+          originalDescription: formData.taskName,
+        });
+
+        // Create task via Redux Toolkit mutation
+        // This will automatically invalidate the Task cache and trigger refetch
+        const result = await createTask({
+          taskName: formData.taskName,
+          taskDescription: taskDescription,
+          startDate: startDateStr,
+          startTime: "09:00",
+          endDate: endDateStr,
+          endTime: "18:00",
+          assignedToId: employee.id,
+          projectId: projectId,
+               }).unwrap();
+
+               toast.success("Task created successfully");
+               
+               // RTK Query will automatically refetch due to cache invalidation,
+               // but we also manually refetch to ensure immediate update
+               await refetchTasks();
+             } catch (error: any) {
+               console.error("Failed to create task:", error);
+        toast.error(error?.data?.message || "Failed to create task");
+      }
+    },
+    [projectId, employeesData, createTask, refetchTasks]
+  );
 
   if (!projectId) {
     return (
@@ -121,10 +354,10 @@ export default function ProjectDetailPage() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || isLoadingTasks) {
     return (
       <div className="bg-gray-100 min-h-screen py-10 flex items-center justify-center">
-        <p className="text-gray-600">Loading project…</p>
+        <p className="text-gray-600">Loading project and tasks…</p>
       </div>
     );
   }
@@ -271,22 +504,35 @@ export default function ProjectDetailPage() {
       <div className="scrollbar-hide flex-1 min-h-0 overflow-y-auto">
         <div className="max-w-[1600px] mx-auto px-8 pb-10">
           {activeTab === "Project Documents" ? (
-          <ProjectDocuments />
-        ) : (
-          <TaskDepartmentList
-            departments={departments}
-            expandedDepts={expandedDepts}
-            expandedSubSections={expandedSubSections}
-            completedTaskIds={completedTaskIds}
-            projectId={projectId ?? ""}
-            onToggleDept={toggleDept}
-            onToggleSubSection={toggleSubSection}
-            onToggleTaskComplete={toggleTaskComplete}
-            onExpandAll={expandAll}
-            onCollapseAll={collapseAll}
-            onCreateTask={() => setIsCreateTaskOpen(true)}
-          />
-        )}
+            <ProjectDocuments />
+          ) : isTasksError ? (
+            <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-xl">
+              <p className="text-yellow-800 font-medium mb-2">⚠️ Failed to load tasks</p>
+              <p className="text-yellow-700 text-sm mb-4">
+                {(tasksError as { data?: { message?: string } })?.data?.message || "Unable to fetch tasks from the server."}
+              </p>
+              <button
+                onClick={() => refetchTasks()}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+              >
+                🔄 Retry
+              </button>
+            </div>
+          ) : (
+            <TaskDepartmentList
+              departments={departments}
+              expandedDepts={expandedDepts}
+              expandedSubSections={expandedSubSections}
+              completedTaskIds={completedTaskIds}
+              projectId={projectId ?? ""}
+              onToggleDept={toggleDept}
+              onToggleSubSection={toggleSubSection}
+              onToggleTaskComplete={toggleTaskComplete}
+              onExpandAll={expandAll}
+              onCollapseAll={collapseAll}
+              onCreateTask={() => setIsCreateTaskOpen(true)}
+            />
+          )}
         </div>
       </div>
 

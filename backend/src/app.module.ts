@@ -11,6 +11,8 @@ import { DepartmentModule } from './modules/department/department.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { EmployeeModule } from './modules/employee/employee.module';
 import { TaskModule } from './modules/task/task.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -24,8 +26,13 @@ import { TaskModule } from './modules/task/task.module';
     ProjectsModule,
     EmployeeModule,
     TaskModule,
+
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

@@ -6,12 +6,14 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectQueryDto } from './dto/project-query.dto';
 import { AdminProfile } from 'src/modules/admin/entities/admin-profile.entity';
+import { ProjectDocument } from './entities/project-document.entity';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectRepository(Project) private readonly projectRepository: Repository<Project>,
     @InjectRepository(AdminProfile) private readonly adminProfileRepository: Repository<AdminProfile>,
+    @InjectRepository(ProjectDocument) private readonly documentRepository: Repository<ProjectDocument>,
   ) { }
 
   async create(dto: CreateProjectDto, userId: string) {
@@ -72,4 +74,18 @@ export class ProjectsService {
     await this.projectRepository.delete(id);
     return { message: 'Project permanently deleted' };
   }
+
+  async uploadDocument(projectId: string, file: Express.Multer.File) {
+    const relativePath = file.path.replace(/\\/g, '/');
+    const newDocument = this.documentRepository.create({
+      fileName: file.originalname,
+      fileUrl: `/${relativePath}`,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+      projectId: projectId,
+    });
+
+    return await this.documentRepository.save(newDocument);
+  }
 }
+

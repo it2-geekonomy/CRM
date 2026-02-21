@@ -1,12 +1,14 @@
-import { Injectable, HttpException, HttpStatus, ConflictException } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, ConflictException, BadRequestException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { Project } from './entities/project.entity';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectQueryDto } from './dto/project-query.dto';
 import { AdminProfile } from 'src/modules/admin/entities/admin-profile.entity';
 import { ProjectDocument } from './entities/project-document.entity';
+import { Client } from '../client/entities/client.entity';
+
 
 @Injectable()
 export class ProjectsService {
@@ -14,6 +16,7 @@ export class ProjectsService {
     @InjectRepository(Project) private readonly projectRepository: Repository<Project>,
     @InjectRepository(AdminProfile) private readonly adminProfileRepository: Repository<AdminProfile>,
     @InjectRepository(ProjectDocument) private readonly documentRepository: Repository<ProjectDocument>,
+    @InjectRepository(Client) private readonly clientRepository: Repository<Client>,
   ) { }
 
   async create(dto: CreateProjectDto, userId: string) {
@@ -24,6 +27,10 @@ export class ProjectsService {
       }
       const adminProfile = await this.adminProfileRepository.findOne({ where: { user: { id: userId } } });
       if (!adminProfile) throw new HttpException('Admin profile not found for this user.', HttpStatus.FORBIDDEN);
+      const clientExists = await this.clientRepository.findOne({ where: { id: dto.clientId } });
+      if (!clientExists) {
+        throw new BadRequestException(`Client with ID "${dto.clientId}" does not exist`);
+      }
       const project = this.projectRepository.create({ ...dto, createdBy: adminProfile.id, projectCode: dto.projectCode ?? `PRJ-${Date.now()}` });
       return await this.projectRepository.save(project);
     } catch (error) {
@@ -52,24 +59,43 @@ export class ProjectsService {
   }
 
   async findOne(id: string) {
-    const project = await this.projectRepository.findOne({ where: { projectId: id }, relations: ['projectManager', 'projectLead', 'creator'] });
+    const project = await this.projectRepository.findOne({
+      where: { id }, relations: [
+        'projectManager',
+        'projectLead',
+        'creator',
+        'client',
+        'documents',
+        'tasks',]
+    });
     if (!project) throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
     return project;
   }
 
   async update(id: string, dto: UpdateProjectDto) {
-    const project = await this.projectRepository.findOne({ where: { projectId: id } });
-    if (!project) throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
-    if (dto.projectCode !== undefined) {
-      const existing = await this.projectRepository.findOne({ where: { projectCode: dto.projectCode } });
-      if (existing && existing.projectId !== id) throw new ConflictException(`Project code "${dto.projectCode}" already exists`);
+    const project = await this.projectRepository.findOne({ where: { id } });
+    if (!project) throw new NotFoundException(`Project with ID "${id}" not found`);
+    if (dto.projectCode) {
+      const existingByCode = await this.projectRepository.findOne({
+        where: { projectCode: dto.projectCode, id: Not(id) },
+      });
+      if (existingByCode) throw new ConflictException(`Project code "${dto.projectCode}" is already taken`);
     }
-    Object.assign(project, dto);
-    return await this.projectRepository.save(project);
+    if (dto.clientId) {
+      const clientExists = await this.clientRepository.exists?.({ where: { id: dto.clientId } })
+        ?? await this.clientRepository.findOne({ where: { id: dto.clientId } });
+      if (!clientExists) throw new BadRequestException(`Client ID "${dto.clientId}" is invalid`);
+    }
+    try {
+      this.projectRepository.merge(project, dto);
+      return await this.projectRepository.save(project);
+    } catch (error) {
+      throw new InternalServerErrorException(error.message || 'Update failed');
+    }
   }
 
   async remove(id: string) {
-    const project = await this.projectRepository.findOne({ where: { projectId: id } });
+    const project = await this.projectRepository.findOne({ where: { id } });
     if (!project) throw new HttpException('Project not found', HttpStatus.NOT_FOUND);
     await this.projectRepository.delete(id);
     return { message: 'Project permanently deleted' };
@@ -77,12 +103,13 @@ export class ProjectsService {
 
   async uploadDocument(projectId: string, file: Express.Multer.File) {
     const relativePath = file.path.replace(/\\/g, '/');
+
     const newDocument = this.documentRepository.create({
       fileName: file.originalname,
-      fileUrl: `/${relativePath}`,
+      fileUrl: relativePath.replace('uploads/', '/uploads/'),
       fileSize: file.size,
       mimeType: file.mimetype,
-      projectId: projectId,
+      projectId,
     });
 
     return await this.documentRepository.save(newDocument);

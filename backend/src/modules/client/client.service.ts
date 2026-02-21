@@ -11,7 +11,7 @@ export class ClientService {
   constructor(
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
-  ) {}
+  ) { }
 
   async create(dto: CreateClientDto) {
     const existing = await this.clientRepository.findOne({ where: { email: dto.email } });
@@ -25,7 +25,7 @@ export class ClientService {
   }
 
   async findOne(id: string) {
-    const client = await this.clientRepository.findOne({ where: { clientId: id } });
+    const client = await this.clientRepository.findOne({ where: { id } });
     if (!client) throw new NotFoundException(`Client with id "${id}" not found`);
     return client;
   }

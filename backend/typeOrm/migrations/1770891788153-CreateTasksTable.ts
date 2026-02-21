@@ -4,7 +4,7 @@ export class CreateTasksTable1770891788153 implements MigrationInterface {
     name = 'CreateTasksTable1770891788153'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // Safe check for task_status_enum
+        // Create enums if they don't exist
         const statusTypeExists = await queryRunner.query(
             `SELECT 1 FROM pg_type WHERE typname = 'task_status_enum'`
         );
@@ -12,7 +12,6 @@ export class CreateTasksTable1770891788153 implements MigrationInterface {
             await queryRunner.query(`CREATE TYPE "public"."task_status_enum" AS ENUM('IN_PROGRESS', 'ON_HOLD', 'REVIEW', 'ADDRESSED', 'OVERDUE')`);
         }
 
-        // Safe check for task_priority_enum (This was the one causing your error)
         const priorityTypeExists = await queryRunner.query(
             `SELECT 1 FROM pg_type WHERE typname = 'task_priority_enum'`
         );
@@ -20,7 +19,7 @@ export class CreateTasksTable1770891788153 implements MigrationInterface {
             await queryRunner.query(`CREATE TYPE "public"."task_priority_enum" AS ENUM('Low', 'Medium', 'High')`);
         }
 
-        // Create table
+        // Create tasks table
         await queryRunner.query(`
             CREATE TABLE "tasks" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -42,9 +41,24 @@ export class CreateTasksTable1770891788153 implements MigrationInterface {
         `);
 
         // Add foreign keys
-        await queryRunner.query(`ALTER TABLE "tasks" ADD CONSTRAINT "FK_9430f12c5a1604833f64595a57f" FOREIGN KEY ("assigned_to_id") REFERENCES "employee_profiles"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "tasks" ADD CONSTRAINT "FK_3e08a7ca125a175cf899b09f71a" FOREIGN KEY ("assigned_by_id") REFERENCES "employee_profiles"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "tasks" ADD CONSTRAINT "FK_project_id" FOREIGN KEY ("project_id") REFERENCES "projects"("project_id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`
+            ALTER TABLE "tasks" 
+            ADD CONSTRAINT "FK_9430f12c5a1604833f64595a57f" 
+            FOREIGN KEY ("assigned_to_id") REFERENCES "employee_profiles"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
+        `);
+
+        await queryRunner.query(`
+            ALTER TABLE "tasks" 
+            ADD CONSTRAINT "FK_3e08a7ca125a175cf899b09f71a" 
+            FOREIGN KEY ("assigned_by_id") REFERENCES "employee_profiles"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
+        `);
+
+        // FIXED foreign key to match new projects column name
+        await queryRunner.query(`
+            ALTER TABLE "tasks" 
+            ADD CONSTRAINT "FK_project_id" 
+            FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE NO ACTION
+        `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
@@ -56,7 +70,7 @@ export class CreateTasksTable1770891788153 implements MigrationInterface {
         // Drop table
         await queryRunner.query(`DROP TABLE "tasks"`);
 
-        // Drop enums (Postgres supports IF EXISTS for DROP, just not for CREATE)
+        // Drop enums
         await queryRunner.query(`DROP TYPE IF EXISTS "public"."task_status_enum"`);
         await queryRunner.query(`DROP TYPE IF EXISTS "public"."task_priority_enum"`);
     }

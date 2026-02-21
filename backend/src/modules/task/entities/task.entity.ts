@@ -43,6 +43,15 @@ export class Task {
   })
   taskStatus: TaskStatus;
 
+  @Column({ name: 'project_id' })
+  projectId: string;
+
+  @Column({ name: 'assigned_to_id' })
+  assignedToId: string;
+
+  @Column({ name: 'assigned_by_id' })
+  assignedById: string;
+
   @ManyToOne(() => EmployeeProfile, { nullable: false })
   @JoinColumn({ name: 'assigned_to_id' })
   assignedTo: EmployeeProfile;
@@ -60,7 +69,7 @@ export class Task {
     type: 'enum',
     enum: TaskPriority,
     enumName: 'task_priority_enum',
-    default: TaskPriority.MEDIUM, 
+    default: TaskPriority.MEDIUM,
   })
   priority: TaskPriority;
 

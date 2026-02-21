@@ -12,8 +12,8 @@ import { Project } from '../../projects/entities/project.entity';
 
 @Entity('clients')
 export class Client {
-    @PrimaryGeneratedColumn('uuid', { name: 'client_id' })
-    clientId: string;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Column({ name: 'name', type: 'varchar', length: 150 })
     name: string;

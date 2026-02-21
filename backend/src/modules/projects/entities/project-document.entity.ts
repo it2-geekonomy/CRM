@@ -4,7 +4,7 @@ import { Project } from './project.entity';
 @Entity('project_documents')
 export class ProjectDocument {
     @PrimaryGeneratedColumn('uuid')
-    documentId: string;
+    id: string;
 
     @Column()
     fileName: string;
@@ -18,7 +18,7 @@ export class ProjectDocument {
     @Column()
     mimeType: string;
 
-    @Column()
+    @Column({ name: 'projectId', type: 'uuid' })
     projectId: string;
 
     @ManyToOne(() => Project, (project) => project.documents, {

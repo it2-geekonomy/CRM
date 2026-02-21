@@ -4,7 +4,6 @@ import {
     Column,
     CreateDateColumn,
     UpdateDateColumn,
-    DeleteDateColumn,
     ManyToOne,
     JoinColumn,
     OneToMany,
@@ -20,8 +19,8 @@ import { Client } from '../../client/entities/client.entity';
 
 @Entity('projects')
 export class Project {
-    @PrimaryGeneratedColumn('uuid', { name: 'project_id' })
-    projectId: string;
+    @PrimaryGeneratedColumn('uuid', { name: 'id' })
+    id: string;
 
     @Column({ name: 'project_name', type: 'varchar', length: 150 })
     projectName: string;
@@ -89,10 +88,11 @@ export class Project {
     @OneToMany(() => ProjectDocument, (doc) => doc.project)
     documents: ProjectDocument[];
 
+    @Column({ name: 'client_id', type: 'uuid', nullable: true })
+    clientId: string;
+
     @ManyToOne(() => Client, (client) => client.projects, { onDelete: 'SET NULL' })
     @JoinColumn({ name: 'client_id' })
     client: Client;
 
-    @Column({ name: 'client_id', type: 'uuid', nullable: true })
-    clientId: string;
 }

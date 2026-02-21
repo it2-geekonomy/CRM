@@ -13,7 +13,6 @@ export default function ProjectDocuments() {
     const files = e.target.files;
     if (files && files.length > 0) {
       // TODO: integrate with backend API when ready
-      console.log("Selected files:", Array.from(files).map((f) => f.name));
       e.target.value = "";
     }
   };

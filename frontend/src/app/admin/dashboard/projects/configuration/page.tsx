@@ -50,9 +50,23 @@ export default function ProjectConfigurationPage() {
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
-  const { data: employeesData } = useGetEmployeesQuery({ limit: 100 });
-  const { data: adminsData } = useGetAdminsQuery();
+  const {
+    data: employeesData,
+    isLoading: isLoadingEmployees,
+    isError: isEmployeesError,
+    error: employeesError,
+    refetch: refetchEmployees,
+  } = useGetEmployeesQuery({ limit: 100 });
+
+  const {
+    data: adminsData,
+    isLoading: isLoadingAdmins,
+    isError: isAdminsError,
+    error: adminsError,
+  } = useGetAdminsQuery();
+
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
 
   const employees = employeesData?.data ?? [];
@@ -151,37 +165,80 @@ export default function ProjectConfigurationPage() {
   };
 
   const saveProject = async (status: "Draft" | "Active") => {
-    const apiStatus: ProjectStatus = status === "Draft" ? "Draft" : "Active";
-    const apiProjectType = mapUiProjectTypeToApi(projectType);
+    // Clear previous errors
+    setCreateError(null);
 
-    if (!projectManagerId || teamMembers.length === 0) {
-      alert("Please select a Project Manager and add at least one team member (project lead).");
+    // Validation
+    if (!projectName.trim()) {
+      setCreateError("Project name is required.");
       return;
     }
 
+    if (!projectManagerId) {
+      setCreateError("Please select a Project Manager.");
+      return;
+    }
+
+    if (teamMembers.length === 0) {
+      setCreateError("Please add at least one team member (project lead).");
+      return;
+    }
+
+    if (!startDate || !endDate) {
+      setCreateError("Please select both start and end dates.");
+      return;
+    }
+
+    if (new Date(startDate) > new Date(endDate)) {
+      setCreateError("End date must be after start date.");
+      return;
+    }
+
+    const apiStatus: ProjectStatus = status === "Draft" ? "Draft" : "Active";
+    const apiProjectType = mapUiProjectTypeToApi(projectType);
     const projectLeadId = teamMembers[0].id;
 
     try {
-      await createProject({
-        projectName: projectName.trim() || "Untitled Project",
+      const result = await createProject({
+        projectName: projectName.trim(),
         projectCode: projectCode.trim() || undefined,
         projectType: apiProjectType,
         projectDescription: description.trim() || undefined,
         status: apiStatus,
         startDate,
         endDate,
-        estimatedHours: Number(estimatedHours) || 320,
+        estimatedHours: Number(estimatedHours) || undefined,
         projectManagerId,
         projectLeadId,
         requireTimeTracking: false,
       }).unwrap();
+
+      // Success - redirect to projects page
       router.push("/admin/dashboard/projects");
     } catch (err: unknown) {
-      const message =
-        err && typeof err === "object" && "data" in err
-          ? (err as { data?: { message?: string } }).data?.message
-          : "Failed to create project.";
-      alert(message ?? "Failed to create project.");
+      // Handle error with better UX
+      let errorMessage = "Failed to create project. Please try again.";
+      
+      if (err && typeof err === "object") {
+        if ("data" in err) {
+          const data = (err as { data?: { message?: string } }).data;
+          errorMessage = data?.message || errorMessage;
+        } else if ("status" in err) {
+          const status = (err as { status?: number }).status;
+          if (status === 400) {
+            errorMessage = "Invalid project data. Please check all fields.";
+          } else if (status === 401) {
+            errorMessage = "You are not authorized to create projects.";
+          } else if (status === 500) {
+            errorMessage = "Server error. Please try again later.";
+          }
+        }
+      }
+
+      setCreateError(errorMessage);
+      
+      // Scroll to top to show error
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -202,6 +259,101 @@ export default function ProjectConfigurationPage() {
               Set up and manage your project settings, team members, and deliverables
             </p>
           </div>
+
+          {/* ERROR MESSAGE */}
+          {createError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <span className="text-red-600 text-xl">⚠️</span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-900">Error creating project</p>
+                  <p className="text-sm text-red-700 mt-1">{createError}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCreateError(null)}
+                  className="text-red-600 hover:text-red-800"
+                  aria-label="Dismiss error"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* LOADING STATE FOR DATA */}
+          {(isLoadingEmployees || isLoadingAdmins) && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <p className="text-sm text-blue-700">Loading employees and admins...</p>
+            </div>
+          )}
+
+          {/* ERROR STATE FOR DATA */}
+          {(isEmployeesError || isAdminsError) && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <span className="text-yellow-600 text-xl">⚠️</span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-yellow-900">Warning: Could not load some data</p>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    {isEmployeesError && "Failed to load employees. "}
+                    {isAdminsError && "Failed to load admins. "}
+                    You can still create a project, but some options may be limited.
+                  </p>
+                  <div className="mt-3 flex gap-2 flex-wrap">
+                    {isEmployeesError && (
+                      <button
+                        type="button"
+                        onClick={() => refetchEmployees()}
+                        disabled={isLoadingEmployees}
+                        className="px-3 py-1.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 disabled:opacity-50 transition"
+                      >
+                        {isLoadingEmployees ? "⏳ Retrying..." : "🔄 Retry Employees"}
+                      </button>
+                    )}
+                    {isAdminsError && (
+                      <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="px-3 py-1.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition"
+                      >
+                        🔄 Retry Admins
+                      </button>
+                    )}
+                  </div>
+                  {process.env.NODE_ENV === "development" && (
+                    <details className="mt-2 text-xs">
+                      <summary className="cursor-pointer text-yellow-800 hover:text-yellow-900 font-medium">
+                        🔍 Show error details (dev only)
+                      </summary>
+                      <div className="mt-2 space-y-2">
+                        {isEmployeesError && employeesError && (
+                          <div className="p-2 bg-yellow-100 rounded">
+                            <strong className="text-yellow-900">Employees API Error:</strong>
+                            <div className="mt-1 text-yellow-800">
+                              <pre className="text-xs overflow-auto">{JSON.stringify(employeesError, null, 2)}</pre>
+                            </div>
+                          </div>
+                        )}
+                        {isAdminsError && adminsError && (
+                          <div className="p-2 bg-yellow-100 rounded">
+                            <strong className="text-yellow-900">Admins API Error:</strong>
+                            <div className="mt-1 text-yellow-800">
+                              <pre className="text-xs overflow-auto">{JSON.stringify(adminsError, null, 2)}</pre>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  )}
+                  <p className="text-xs text-yellow-600 mt-2">
+                    💡 <strong>Common causes:</strong> Backend not running, API endpoint unavailable, or authentication issue.
+                    Check browser console (F12) for more details.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
   
           {/* BASIC INFORMATION CARD */}
           <div className="bg-white rounded-2xl border border-gray-200 p-8">
@@ -374,8 +526,14 @@ export default function ProjectConfigurationPage() {
         ref={dropdownRef}
         className="absolute right-0 top-full mt-1 z-20 w-72 max-h-60 overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg py-1"
       >
-        {availableEmployees.length === 0 ? (
-          <p className="px-4 py-3 text-sm text-gray-500">No more employees to add</p>
+        {isLoadingEmployees ? (
+          <p className="px-4 py-3 text-sm text-gray-500">Loading employees...</p>
+        ) : isEmployeesError ? (
+          <p className="px-4 py-3 text-sm text-red-600">Failed to load employees</p>
+        ) : availableEmployees.length === 0 ? (
+          <p className="px-4 py-3 text-sm text-gray-500">
+            {employees.length === 0 ? "No employees available" : "No more employees to add"}
+          </p>
         ) : (
           availableEmployees.map((emp) => (
             <button
@@ -406,31 +564,54 @@ export default function ProjectConfigurationPage() {
     <label className="text-sm font-medium text-gray-700">
       Project Manager <span className="text-red-500">*</span>
     </label>
-    <select
-      value={projectManagerId}
-      onChange={(e) => setProjectManagerId(e.target.value)}
-      className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
-    >
-      {admins.map((admin) => (
-        <option key={admin.id} value={admin.id}>
-          {admin.name}
-        </option>
-      ))}
-      {admins.length === 0 && (
-        <option value="">— No admins —</option>
-      )}
-    </select>
+    {isLoadingAdmins ? (
+      <div className="mt-2 px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-500">
+        Loading admins...
+      </div>
+    ) : isAdminsError ? (
+      <div className="mt-2 px-4 py-3 rounded-xl border border-red-300 bg-red-50 text-red-700">
+        Failed to load admins. Please refresh the page.
+      </div>
+    ) : (
+      <select
+        value={projectManagerId}
+        onChange={(e) => setProjectManagerId(e.target.value)}
+        className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
+        disabled={admins.length === 0}
+      >
+        {admins.length === 0 ? (
+          <option value="">— No admins available —</option>
+        ) : (
+          admins.map((admin) => (
+            <option key={admin.id} value={admin.id}>
+              {admin.name}
+            </option>
+          ))
+        )}
+      </select>
+    )}
   </div>
 
   {/* Team Members */}
   <div className="mt-6 space-y-4">
     <label className="text-sm font-medium text-gray-700">
-      Team Members
+      Team Members <span className="text-red-500">*</span>
+      <span className="text-xs text-gray-500 font-normal ml-2">
+        (First member will be set as Project Lead)
+      </span>
     </label>
     {teamMembers.length === 0 ? (
-      <p className="text-sm text-gray-500 py-2">No team members added yet. Click &quot;+ Add Member&quot; to add employees.</p>
+      <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center">
+        <p className="text-sm text-gray-500">
+          {isLoadingEmployees 
+            ? "Loading employees..." 
+            : isEmployeesError
+            ? "Unable to load employees. Please refresh the page."
+            : "No team members added yet. Click \"+ Add Member\" to add employees."}
+        </p>
+      </div>
     ) : (
-      teamMembers.map((m) => (
+      teamMembers.map((m, index) => (
         <div
           key={m.id}
           className="flex items-center justify-between border border-gray-200 rounded-xl p-4"
@@ -440,7 +621,14 @@ export default function ProjectConfigurationPage() {
               {m.name.slice(0, 2).toUpperCase()}
             </div>
             <div>
-              <p className="font-medium text-gray-900">{m.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-medium text-gray-900">{m.name}</p>
+                {index === 0 && (
+                  <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded">
+                    Lead
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-gray-500">{m.designation}</p>
             </div>
           </div>
@@ -578,26 +766,26 @@ export default function ProjectConfigurationPage() {
   {/* Save as Draft */}
   <button
     type="button"
-    disabled={isCreating}
+    disabled={isCreating || isLoadingEmployees || isLoadingAdmins}
     onClick={() => saveProject("Draft")}
     className="
       px-6 py-2.5 rounded-xl border border-gray-300
       text-gray-700 bg-white
-      hover:bg-gray-50 transition disabled:opacity-50
+      hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed
     "
   >
-    Save as Draft
+    {isCreating ? "Saving…" : "Save as Draft"}
   </button>
 
   {/* Create Project */}
   <button
     type="button"
-    disabled={isCreating}
+    disabled={isCreating || isLoadingEmployees || isLoadingAdmins}
     onClick={() => saveProject("Active")}
     className="
       px-6 py-2.5 rounded-xl bg-green-600
       text-white font-medium
-      hover:bg-green-700 transition disabled:opacity-50
+      hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed
     "
   >
     {isCreating ? "Creating…" : "Create Project"}

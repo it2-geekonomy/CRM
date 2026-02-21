@@ -59,8 +59,11 @@ async function seedEmployeeProfiles() {
       return;
     }
 
-    const existingProfiles = await profileRepo.find({ relations: ['user'] });
-    const existingUserIds = new Set(existingProfiles.map((p) => p.user.id));
+    const existingProfiles = await profileRepo.find({ 
+      relations: ['user'],
+      select: ['id'],
+    });
+    const existingUserIds = new Set(existingProfiles.map((p) => p.user?.id).filter(Boolean));
 
     const usersWithoutProfile = employeeUsers.filter((u) => !existingUserIds.has(u.id));
     if (usersWithoutProfile.length === 0) {

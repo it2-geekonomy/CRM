@@ -9,7 +9,8 @@ const baseQuery = fetchBaseQuery({
     const currentUser = raw ? (JSON.parse(raw) as { accessToken?: string }) : null;
     const token = currentUser?.accessToken ?? null;
     if (token) {
-      headers.set("Authorization", token);
+      const authToken = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+      headers.set("Authorization", authToken);
     }
     return headers;
   },
@@ -17,6 +18,6 @@ const baseQuery = fetchBaseQuery({
 
 export const apiSlice = createApi({
   baseQuery,
-  tagTypes: ["Auth", "User", "Employee", "Project", "Admin"],
+  tagTypes: ["Auth", "User", "Employee", "Project", "Admin", "Task"],
   endpoints: () => ({}),
 });

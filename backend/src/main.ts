@@ -1,10 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { setupSwagger } from './swagger';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Enable CORS: allow comma-separated origins; CORS allows only ONE value in
   // Access-Control-Allow-Origin, so we pass an array and the middleware picks the matching origin.
@@ -37,7 +38,7 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  
+
   console.log(`🚀 Application is running on: http://localhost:${port}`);
   if (process.env.NODE_ENV !== 'production') {
     console.log(`📚 Swagger documentation: http://localhost:${port}/api`);

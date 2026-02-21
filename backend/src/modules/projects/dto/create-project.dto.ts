@@ -6,6 +6,7 @@ import {
     IsInt,
     IsEnum,
     IsString,
+    MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectStatus } from '../../../shared/enum/project/project-status.enum';
@@ -19,6 +20,12 @@ export class CreateProjectDto {
     @ApiPropertyOptional({ example: 'ABC-WEB-001' })
     @IsOptional()
     projectCode: string;
+
+    @ApiPropertyOptional({ example: 'ABC Corporation', description: 'Name of the client' })
+    @IsOptional()
+    @IsString()
+    @MaxLength(150)
+    clientName?: string;
 
     @ApiProperty({
         enum: ProjectType,

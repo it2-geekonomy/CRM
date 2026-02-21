@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    CreateDateColumn,
+    UpdateDateColumn,
+    ManyToOne,
+    JoinColumn,
+} from 'typeorm';
 import { Project } from './project.entity';
 
 @Entity('project_documents')
@@ -6,27 +14,30 @@ export class ProjectDocument {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column()
-    fileName: string;
+    @Column({ name: 'name', type: 'varchar', length: 255 })
+    name: string;
 
-    @Column()
-    fileUrl: string;
+    @Column({ name: 'url', type: 'text' })
+    url: string;
 
-    @Column({ type: 'int' })
-    fileSize: number;
+    @Column({ name: 'size', type: 'int' })
+    size: number;
 
-    @Column()
+    @Column({ name: 'mime_type', type: 'varchar', length: 100 })
     mimeType: string;
 
-    @Column({ name: 'projectId', type: 'uuid' })
+    @Column({ name: 'project_id', type: 'uuid' })
     projectId: string;
 
     @ManyToOne(() => Project, (project) => project.documents, {
         onDelete: 'CASCADE',
     })
-    @JoinColumn({ name: 'projectId' })
+    @JoinColumn({ name: 'project_id' })
     project: Project;
 
-    @CreateDateColumn()
+    @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
     createdAt: Date;
+
+    @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+    updatedAt: Date;
 }

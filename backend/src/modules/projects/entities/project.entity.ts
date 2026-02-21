@@ -16,23 +16,22 @@ import { Task } from '../../task/entities/task.entity';
 import { ProjectDocument } from './project-document.entity';
 import { Client } from '../../client/entities/client.entity';
 
-
 @Entity('projects')
 export class Project {
-    @PrimaryGeneratedColumn('uuid', { name: 'id' })
+    @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ name: 'project_name', type: 'varchar', length: 150 })
-    projectName: string;
+    @Column({ name: 'name', type: 'varchar', length: 150 })
+    name: string;
 
-    @Column({ name: 'project_code', type: 'varchar', length: 50, unique: true })
-    projectCode: string;
+    @Column({ name: 'code', type: 'varchar', length: 50, unique: true })
+    code: string;
 
-    @Column({ name: 'project_type', type: 'enum', enum: ProjectType })
-    projectType: ProjectType;
+    @Column({ name: 'type', type: 'enum', enum: ProjectType })
+    type: ProjectType;
 
-    @Column({ name: 'project_description', type: 'text', nullable: true })
-    projectDescription?: string;
+    @Column({ name: 'description', type: 'text', nullable: true })
+    description?: string;
 
     @Column({ name: 'status', type: 'enum', enum: ProjectStatus, default: ProjectStatus.DRAFT })
     status: ProjectStatus;
@@ -94,5 +93,4 @@ export class Project {
     @ManyToOne(() => Client, (client) => client.projects, { onDelete: 'SET NULL' })
     @JoinColumn({ name: 'client_id' })
     client: Client;
-
 }

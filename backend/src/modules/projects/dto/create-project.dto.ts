@@ -15,13 +15,16 @@ import { ProjectType } from '../../../shared/enum/project/project-type.enum';
 export class CreateProjectDto {
     @ApiProperty({ example: 'ABC Corp Website Redesign' })
     @IsString()
-    projectName: string;
+    @MaxLength(150)
+    name: string;
 
     @ApiPropertyOptional({ example: 'ABC-WEB-001' })
     @IsOptional()
-    projectCode: string;
+    @IsString()
+    @MaxLength(50)
+    code?: string;
 
-    @ApiPropertyOptional({ example: '6eff1312-88fe-4dd0-a93c-37aff05b5fc7', })
+    @ApiPropertyOptional({ example: '6eff1312-88fe-4dd0-a93c-37aff05b5fc7' })
     @IsOptional()
     @IsUUID()
     clientId?: string;
@@ -31,11 +34,12 @@ export class CreateProjectDto {
         example: ProjectType.WEBSITE,
     })
     @IsEnum(ProjectType)
-    projectType: ProjectType;
+    type: ProjectType;
 
     @ApiPropertyOptional({ example: 'Complete website redesign' })
     @IsOptional()
-    projectDescription?: string;
+    @IsString()
+    description?: string;
 
     @ApiProperty({
         enum: ProjectStatus,
@@ -55,7 +59,7 @@ export class CreateProjectDto {
     @ApiPropertyOptional({ example: 320 })
     @IsOptional()
     @IsInt()
-    estimatedHours: number;
+    estimatedHours?: number;
 
     @ApiProperty({ example: '0a86a793-09a6-4f21-9926-67d587a75e31' })
     @IsUUID()

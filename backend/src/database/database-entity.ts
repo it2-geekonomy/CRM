@@ -24,6 +24,7 @@ import { ProjectDocument } from '../modules/projects/entities/project-document.e
 import { TaskActivity } from '../modules/task/entities/task-activity.entity';
 import { TaskChecklist } from '../modules/task/entities/task-checklist.entity';
 import { TaskFile } from '../modules/task/entities/task-file.entity';
+import { TaskType } from '../modules/task-type/entities/task-type.entity';
 
 
 
@@ -40,5 +41,6 @@ export const models = [
   Task,
   TaskActivity,
   TaskChecklist,
-  TaskFile
+  TaskFile,
+  TaskType
 ];

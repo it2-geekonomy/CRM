@@ -10,6 +10,7 @@ import {
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
 import { TaskStatus } from '../../../shared/enum/task/task-status.enum';
 import { Project } from '../../projects/entities/project.entity';
+import { TaskPriority } from '../../../shared/enum/task/task-priority.enum';
 @Entity('tasks')
 export class Task {
   @PrimaryGeneratedColumn('uuid')
@@ -53,6 +54,15 @@ export class Task {
   @ManyToOne(() => Project, (project) => project.tasks, { nullable: false })
   @JoinColumn({ name: 'project_id' })
   project: Project;
+
+  @Column({
+    name: 'priority',
+    type: 'enum',
+    enum: TaskPriority,
+    enumName: 'task_priority_enum',
+    default: TaskPriority.MEDIUM, 
+  })
+  priority: TaskPriority;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;

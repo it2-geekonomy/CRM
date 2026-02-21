@@ -52,6 +52,7 @@ export class TaskService {
         'task.endTime',
         'task.createdAt',
         'task.updatedAt',
+        'task.priority',
         'assignedTo.id',
         'assignedTo.name',
         'assignedTo.designation',

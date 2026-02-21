@@ -19,6 +19,7 @@ import { TaskChecklist } from './entities/task-checklist.entity';
 import { TaskFile } from './entities/task-file.entity';
 import { CreateTaskFileDto } from './dto/create-task-file.dto';
 import { FileInterceptor, MulterModule } from '@nestjs/platform-express';
+import { Project } from '../projects/entities/project.entity';
 
 @Injectable()
 export class TaskService {
@@ -34,7 +35,7 @@ export class TaskService {
     @InjectRepository(TaskFile)
     private readonly taskFileRepo: Repository<TaskFile>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   private baseTaskQuery() {
     return this.taskRepo
@@ -58,7 +59,7 @@ export class TaskService {
         'assignedTo.designation',
         'assignedBy.id',
         'assignedBy.name',
-        'project.projectId',
+        'project.id',
         'project.projectName',
       ]);
   }
@@ -118,7 +119,7 @@ export class TaskService {
         const [assignedTo, assignedBy, project] = await Promise.all([
           manager.findOne(EmployeeProfile, { where: { id: dto.assignedToId } }),
           manager.findOne(EmployeeProfile, { where: { user: { id: userId } } }),
-          manager.findOne('Project', { where: { projectId: dto.projectId } }),
+          manager.findOne(Project, { where: { id: dto.projectId } }),
         ]);
 
         if (!assignedTo) throw new BadRequestException('Invalid assignedTo ID');
@@ -143,9 +144,7 @@ export class TaskService {
       });
     } catch (err) {
       if (err instanceof BadRequestException) throw err;
-      throw new InternalServerErrorException(
-        err.message || 'Failed to create task',
-      );
+      throw new InternalServerErrorException(err.message || 'Failed to create task');
     }
   }
 
@@ -336,7 +335,7 @@ export class TaskService {
         startDate: task.startDate,
         endDate: task.endDate,
       },
-      projectId: task.project?.projectId,
+      projectId: task.project?.id,
       departmentId: task.assignedTo?.department?.id,
     };
   }

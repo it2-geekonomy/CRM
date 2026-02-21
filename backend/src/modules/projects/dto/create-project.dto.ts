@@ -21,11 +21,10 @@ export class CreateProjectDto {
     @IsOptional()
     projectCode: string;
 
-    @ApiPropertyOptional({ example: 'ABC Corporation', description: 'Name of the client' })
+    @ApiPropertyOptional({ example: '6eff1312-88fe-4dd0-a93c-37aff05b5fc7', })
     @IsOptional()
-    @IsString()
-    @MaxLength(150)
-    clientName?: string;
+    @IsUUID()
+    clientId?: string;
 
     @ApiProperty({
         enum: ProjectType,
@@ -58,11 +57,11 @@ export class CreateProjectDto {
     @IsInt()
     estimatedHours: number;
 
-    @ApiProperty({ example: 'uuid-manager-id' })
+    @ApiProperty({ example: '0a86a793-09a6-4f21-9926-67d587a75e31' })
     @IsUUID()
     projectManagerId: string;
 
-    @ApiProperty({ example: 'uuid-lead-id' })
+    @ApiProperty({ example: '6edc4986-11fa-4747-b47e-b3c95041bffb' })
     @IsUUID()
     projectLeadId: string;
 

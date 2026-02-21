@@ -15,6 +15,7 @@ import { AdminProfile } from '../../admin/entities/admin-profile.entity';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
 import { Task } from '../../task/entities/task.entity';
 import { ProjectDocument } from './project-document.entity';
+import { Client } from '../../client/entities/client.entity';
 
 
 @Entity('projects')
@@ -88,6 +89,10 @@ export class Project {
     @OneToMany(() => ProjectDocument, (doc) => doc.project)
     documents: ProjectDocument[];
 
-    @Column({ name: 'client_name', type: 'varchar', length: 150, nullable: true })
-    clientName: string;
+    @ManyToOne(() => Client, (client) => client.projects, { onDelete: 'SET NULL' })
+    @JoinColumn({ name: 'client_id' })
+    client: Client;
+
+    @Column({ name: 'client_id', type: 'uuid', nullable: true })
+    clientId: string;
 }

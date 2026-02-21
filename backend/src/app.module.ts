@@ -13,6 +13,7 @@ import { EmployeeModule } from './modules/employee/employee.module';
 import { TaskModule } from './modules/task/task.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { ClientModule } from './modules/client/client.module';
 
 @Module({
   imports: [
@@ -31,6 +32,8 @@ import { join } from 'path';
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
+
+    ClientModule,
   ],
   controllers: [AppController],
   providers: [AppService],

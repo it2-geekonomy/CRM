@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsInt, Min, IsString, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsUUID } from 'class-validator';
 
 export class TaskQueryDto {
     @ApiPropertyOptional({ example: 1 })
@@ -42,4 +43,21 @@ export class TaskQueryDto {
     @IsOptional()
     @IsIn(['ASC', 'DESC'])
     sortOrder?: 'ASC' | 'DESC' = 'DESC';
+
+    @ApiPropertyOptional({
+        description: 'Filter tasks by department ID',
+        example: 'uuid-department-id',
+    })
+    @IsOptional()
+    @IsUUID()
+    departmentId?: string;
+
+    @ApiPropertyOptional({
+        description: 'Filter tasks by project ID',
+        example: 'uuid-project-id',
+    })
+    @IsOptional()
+    @IsUUID()
+    projectId?: string;
 }
+

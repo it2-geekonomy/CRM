@@ -5,7 +5,8 @@ import {
   IsEnum,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TaskStatus } from 'src/shared/enum/task/task-status.enum';
+import { TaskStatus } from '../../../shared/enum/task/task-status.enum';
+import { TaskPriority } from '../../../shared/enum/task/task-priority.enum';
 
 export class CreateTaskDto {
 
@@ -65,4 +66,13 @@ export class CreateTaskDto {
   })
   @IsUUID()
   projectId: string;
+
+  @ApiPropertyOptional({
+    enum: TaskPriority,
+    example: TaskPriority.HIGH,
+    description: 'Priority of the task',
+  })
+  @IsOptional()
+  @IsEnum(TaskPriority)
+  priority?: TaskPriority;
 }

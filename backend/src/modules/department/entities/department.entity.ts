@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { OneToMany } from 'typeorm';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
+import { TaskType } from '../../task-type/entities/task-type.entity';
 
 
 @Entity('departments')
@@ -37,5 +38,8 @@ export class Department {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
   updatedAt: Date;
+
+  @OneToMany(() => TaskType, (taskType) => taskType.department)
+  taskTypes: TaskType[];
 
 }

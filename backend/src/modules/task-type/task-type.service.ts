@@ -11,6 +11,7 @@ import { TaskType } from './entities/task-type.entity';
 import { Department } from '../department/entities/department.entity';
 import { CreateTaskTypeDto } from './dto/create-task-type.dto';
 import { UpdateTaskTypeDto } from './dto/update-task-type.dto';
+import { TaskTypeStatus } from 'src/shared/enum/task/task-type-status.enum';
 
 @Injectable()
 export class TaskTypeService {
@@ -24,7 +25,7 @@ export class TaskTypeService {
 
   async create(createDto: CreateTaskTypeDto) {
     try {
-      const { name, description, departmentId } = createDto;
+      const { name, description, departmentId, billable, slaHours, status } = createDto;
 
       const department = await this.departmentRepository.findOne({
         where: { id: departmentId },
@@ -44,6 +45,9 @@ export class TaskTypeService {
         name,
         description,
         department,
+        billable,
+        slaHours,
+        status,
       });
 
       return await this.taskTypeRepository.save(taskType);
@@ -118,7 +122,8 @@ export class TaskTypeService {
           throw new ConflictException('Task type name already exists');
       }
 
-      Object.assign(taskType, updateDto);
+      const { departmentId, ...rest } = updateDto;
+      Object.assign(taskType, rest);
 
       return await this.taskTypeRepository.save(taskType);
     } catch (err) {

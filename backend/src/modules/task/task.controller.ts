@@ -60,7 +60,7 @@ export class TaskController {
     @Param('taskId') taskId: string,
     @Body() dto: CreateTaskChecklistDto,
   ) {
-    return this.taskService.addChecklist(taskId, dto.itemName);
+    return this.taskService.addChecklist(taskId, dto);
   }
 
   @Post(':taskId/files')

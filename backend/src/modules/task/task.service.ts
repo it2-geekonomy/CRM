@@ -18,6 +18,7 @@ import { TaskQueryDto } from './dto/task-query.dto';
 import { TaskChecklist } from './entities/task-checklist.entity';
 import { TaskFile } from './entities/task-file.entity';
 import { TaskPriority } from 'src/shared/enum/task/task-priority.enum';
+import { CreateTaskChecklistDto } from './dto/create-task-checklist.dto';
 
 @Injectable()
 export class TaskService {
@@ -300,23 +301,16 @@ export class TaskService {
       order: { changedAt: 'ASC' },
     });
   }
-  async addChecklist(taskId: string, itemName: string) {
-    const task = await this.taskRepo.findOne
-      ({
-        where: { id: taskId },
-        relations: [
-          'project',
-          'assignedTo',
-          'assignedTo.department',
-        ],
-      });
-
-
+  async addChecklist(taskId: string, dto: CreateTaskChecklistDto) {
+    const task = await this.taskRepo.findOne({
+      where: { id: taskId },
+      relations: ['project', 'assignedTo', 'assignedTo.department'],
+    });
 
     if (!task) throw new NotFoundException('Task not found');
 
     const checklist = this.checklistRepo.create({
-      itemName,
+      itemName: dto.itemName,
       task,
     });
 
@@ -324,19 +318,19 @@ export class TaskService {
 
     return {
       id: savedChecklist.id,
-      itemName: savedChecklist.itemName,
-      isCompleted: savedChecklist.isCompleted,
-      createdAt: savedChecklist.createdAt,
-      updatedAt: savedChecklist.updatedAt,
+      item_name: savedChecklist.itemName,
+      is_completed: savedChecklist.isCompleted,
+      created_at: savedChecklist.createdAt,
+      updated_at: savedChecklist.updatedAt,
       task: {
         id: task.id,
-        taskName: task.name,
-        taskStatus: task.status,
-        startDate: task.startDate,
-        endDate: task.endDate,
+        task_name: task.name,
+        task_status: task.status,
+        start_date: task.startDate,
+        end_date: task.endDate,
       },
-      projectId: task.project?.projectId,
-      departmentId: task.assignedTo?.department?.id,
+      project_id: task.project?.projectId,
+      department_id: task.assignedTo?.department?.id,
     };
   }
 

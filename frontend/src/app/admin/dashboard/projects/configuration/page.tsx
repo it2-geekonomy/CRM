@@ -56,7 +56,10 @@ export default function ProjectConfigurationPage() {
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
 
   const employees = employeesData?.data ?? [];
-  const admins = Array.isArray(adminsData) ? adminsData : [];
+  const admins = Array.isArray(adminsData) ? adminsData : [];  
+
+console.log("admidfgdhgfns", admins);
+
   const alreadyAddedIds = new Set(teamMembers.map((m) => m.id));
   const availableEmployees = employees.filter((e) => !alreadyAddedIds.has(e.id));
 

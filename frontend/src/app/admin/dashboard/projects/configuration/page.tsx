@@ -45,6 +45,8 @@ export default function ProjectConfigurationPage() {
   const [endDate, setEndDate] = useState("2026-05-15");
   const [estimatedHours, setEstimatedHours] = useState(320);
   const [projectManagerId, setProjectManagerId] = useState("");
+  const [businessManagerId, setBusinessManagerId] = useState("");
+  const [operationManagerId, setOperationManagerId] = useState("");
   const [teamMembers, setTeamMembers] = useState<Employee[]>([]);
   const [addMemberDropdownOpen, setAddMemberDropdownOpen] = useState(false);
   const [files, setFiles] = useState<FileEntry[]>([]);
@@ -77,6 +79,14 @@ export default function ProjectConfigurationPage() {
   useEffect(() => {
     if (admins.length > 0 && !projectManagerId) setProjectManagerId(admins[0].id);
   }, [admins, projectManagerId]);
+
+  useEffect(() => {
+    if (admins.length > 0 && !businessManagerId) setBusinessManagerId(admins[0].id);
+  }, [admins, businessManagerId]);
+
+  useEffect(() => {
+    if (admins.length > 0 && !operationManagerId) setOperationManagerId(admins[0].id);
+  }, [admins, operationManagerId]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -592,6 +602,72 @@ export default function ProjectConfigurationPage() {
     )}
   </div>
 
+  {/* Business Manager */}
+  <div className="mt-6">
+    <label className="text-sm font-medium text-gray-700">
+      Business Manager <span className="text-red-500">*</span>
+    </label>
+    {isLoadingAdmins ? (
+      <div className="mt-2 px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-500">
+        Loading admins...
+      </div>
+    ) : isAdminsError ? (
+      <div className="mt-2 px-4 py-3 rounded-xl border border-red-300 bg-red-50 text-red-700">
+        Failed to load admins. Please refresh the page.
+      </div>
+    ) : (
+      <select
+        value={businessManagerId}
+        onChange={(e) => setBusinessManagerId(e.target.value)}
+        className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
+        disabled={admins.length === 0}
+      >
+        {admins.length === 0 ? (
+          <option value="">— No admins available —</option>
+        ) : (
+          admins.map((admin) => (
+            <option key={admin.id} value={admin.id}>
+              {admin.name}
+            </option>
+          ))
+        )}
+      </select>
+    )}
+  </div>
+
+  {/* Operation Manager */}
+  <div className="mt-6">
+    <label className="text-sm font-medium text-gray-700">
+      Operation Manager <span className="text-red-500">*</span>
+    </label>
+    {isLoadingAdmins ? (
+      <div className="mt-2 px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-500">
+        Loading admins...
+      </div>
+    ) : isAdminsError ? (
+      <div className="mt-2 px-4 py-3 rounded-xl border border-red-300 bg-red-50 text-red-700">
+        Failed to load admins. Please refresh the page.
+      </div>
+    ) : (
+      <select
+        value={operationManagerId}
+        onChange={(e) => setOperationManagerId(e.target.value)}
+        className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
+        disabled={admins.length === 0}
+      >
+        {admins.length === 0 ? (
+          <option value="">— No admins available —</option>
+        ) : (
+          admins.map((admin) => (
+            <option key={admin.id} value={admin.id}>
+              {admin.name}
+            </option>
+          ))
+        )}
+      </select>
+    )}
+  </div>
+
   {/* Team Members */}
   <div className="mt-6 space-y-4">
     <label className="text-sm font-medium text-gray-700">
@@ -761,20 +837,6 @@ export default function ProjectConfigurationPage() {
     "
   >
     Cancel
-  </button>
-
-  {/* Save as Draft */}
-  <button
-    type="button"
-    disabled={isCreating || isLoadingEmployees || isLoadingAdmins}
-    onClick={() => saveProject("Draft")}
-    className="
-      px-6 py-2.5 rounded-xl border border-gray-300
-      text-gray-700 bg-white
-      hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed
-    "
-  >
-    {isCreating ? "Saving…" : "Save as Draft"}
   </button>
 
   {/* Create Project */}

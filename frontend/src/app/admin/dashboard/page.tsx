@@ -1,10 +1,12 @@
 "use client";
 
 import { useAppSelector } from "@/store/hooks";
+import { useGetProjectsQuery, type ProjectStatus } from "@/store/api/projectApiSlice";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-const SEARCH_FILTERS = ["All", "Projects", "Clients", "Resources", "Leads", "Sales"];
+const SEARCH_FILTERS = ["All", "Projects", "Clients", "Employee", "Leads", "Sales"];
+const QUICK_FILTERS = ["Active", "Inactive", "Pipeline", "Completed", "Total"];
 
 function getDisplayName(email: string | undefined): string {
   if (!email) return "User";
@@ -17,6 +19,9 @@ export default function AdminDashboardPage() {
   const [activeBtn, setActiveBtn] = useState("My Active Projects");
   const [searchFilter, setSearchFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [projectSearchInput, setProjectSearchInput] = useState("");
+  const [quickFilter, setQuickFilter] = useState<string>("Active");
+  const isProjectsView = searchFilter === "Projects";
   const user = useAppSelector((s) => s.auth.currentUser?.user);
   const displayName = (user as { name?: string } | undefined)?.name ?? getDisplayName(user?.email);
   const buttons = [
@@ -25,6 +30,27 @@ export default function AdminDashboardPage() {
     "My Clients",
     "Open Deals",
   ];
+  const projectQuery = useMemo(() => {
+    const params: { status?: ProjectStatus; search?: string; limit: number; page: number } = {
+      limit: 100,
+      page: 1,
+    };
+    const hasSearch = projectSearchInput.trim().length > 0;
+    if (!hasSearch) {
+      if (quickFilter === "Active") params.status = "Active";
+      else if (quickFilter === "Inactive") params.status = "Draft";
+      else if (quickFilter === "Completed") params.status = "Completed";
+      else if (quickFilter === "Pipeline") params.status = "Draft";
+    }
+    if (hasSearch) params.search = projectSearchInput.trim();
+    return params;
+  }, [quickFilter, projectSearchInput]);
+  const { data, isLoading, isError } = useGetProjectsQuery(projectQuery, {
+    skip: !isProjectsView,
+  });
+  const activeCount = data?.data?.filter((p) => p.status === "Active").length ?? 0;
+  const draftCount = data?.data?.filter((p) => p.status === "Draft").length ?? 0;
+  const totalCount = data?.meta?.total ?? data?.data?.length ?? 0;
 
   return (
     <div className="bg-gray-100 min-h-screen py-8">
@@ -48,9 +74,8 @@ export default function AdminDashboardPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  const q = searchQuery.trim();
-                  if (q) router.push(`/admin/dashboard/projects?search=${encodeURIComponent(q)}`);
-                  else router.push("/admin/dashboard/projects");
+                  setProjectSearchInput(searchQuery.trim());
+                  setSearchFilter("Projects");
                 }
               }}
               className="flex-1 px-5 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -64,7 +89,7 @@ export default function AdminDashboardPage() {
                   onClick={() => {
                     setSearchFilter(item);
                     if (item === "Projects") {
-                      router.push("/admin/dashboard/projects");
+                      setProjectSearchInput(searchQuery.trim());
                     }
                   }}
                   className={`px-5 py-3 text-base rounded-lg transition-colors ${
@@ -81,9 +106,8 @@ export default function AdminDashboardPage() {
             <button
               type="button"
               onClick={() => {
-                const q = searchQuery.trim();
-                if (q) router.push(`/admin/dashboard/projects?search=${encodeURIComponent(q)}`);
-                else router.push("/admin/dashboard/projects");
+                setProjectSearchInput(searchQuery.trim());
+                setSearchFilter("Projects");
               }}
               className="bg-green-600 text-white px-8 py-4 rounded-xl text-base font-medium hover:bg-green-700"
             >
@@ -145,7 +169,99 @@ export default function AdminDashboardPage() {
             <p className="text-sm text-gray-500 mt-2">No change</p>
           </div>
         </div>
+        {isProjectsView && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mt-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Projects</h3>
+              <button
+                type="button"
+                onClick={() => router.push("/admin/dashboard/projects/configuration")}
+                className="px-5 py-2.5 rounded-xl bg-green-600 text-white hover:bg-green-700"
+              >
+                + New Project
+              </button>
+            </div>
+
+            <div className="mt-2 flex flex-col sm:flex-row gap-4">
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={projectSearchInput}
+                onChange={(e) => setProjectSearchInput(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
+              />
+              <button
+                type="button"
+                className="px-6 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 shrink-0"
+              >
+                Search
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-3 mt-6">
+              {QUICK_FILTERS.map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setQuickFilter(filter)}
+                  className={`px-4 py-2 rounded-xl border text-sm transition-colors ${
+                    quickFilter === filter
+                      ? "border-green-500 text-green-700 bg-green-50"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 mb-6">
+              <div className="rounded-xl border border-gray-200 p-4">
+                <p className="text-sm text-gray-500">Active Projects</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">{activeCount}</p>
+              </div>
+              <div className="rounded-xl border border-gray-200 p-4">
+                <p className="text-sm text-gray-500">Draft Projects</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">{draftCount}</p>
+              </div>
+              <div className="rounded-xl border border-gray-200 p-4">
+                <p className="text-sm text-gray-500">Total Projects</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">{totalCount}</p>
+              </div>
+              <div className="rounded-xl border border-gray-200 p-4">
+                <p className="text-sm text-gray-500">Team Members</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">—</p>
+              </div>
+            </div>
+
+            {isLoading && <div className="text-gray-500 py-6">Loading projects...</div>}
+            {isError && <div className="text-red-600 py-6">Failed to load projects.</div>}
+            {!isLoading && !isError && (data?.data?.length ?? 0) === 0 && (
+              <div className="text-gray-500 py-6">No projects found.</div>
+            )}
+            {!isLoading && !isError && (data?.data?.length ?? 0) > 0 && (
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                {data?.data.map((project) => (
+                  <button
+                    key={project.projectId}
+                    type="button"
+                    onClick={() => router.push(`/admin/dashboard/projects/${project.projectId}`)}
+                    className="w-full text-left rounded-xl border border-gray-200 p-5 hover:border-green-500 transition-colors group relative"
+                  >
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-xl group-hover:bg-green-600" />
+                    <div className="pl-4">
+                      <p className="text-sm text-gray-500">{project.projectCode || "—"}</p>
+                      <p className="text-base font-semibold text-gray-900">{project.projectName}</p>
+                      <p className="text-sm text-gray-500">{project.projectType} • {project.status}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {/* BELOW DASHBOARD SECTION */}
+{!isProjectsView && (
 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-10">
   {/* Today's Schedule */}
   <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-8">
@@ -279,7 +395,7 @@ export default function AdminDashboardPage() {
     </div>
   </div>
 </div>
-
+)}
       </div>
     </div>
   );

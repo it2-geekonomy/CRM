@@ -4,7 +4,7 @@ import { useAppSelector } from "@/store/hooks";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-const SEARCH_FILTERS = ["All", "Projects", "Clients", "Resources", "Leads", "Sales"];
+const SEARCH_FILTERS = ["All", "Projects", "Clients", "Employee", "Leads", "Sales"];
 
 function getDisplayName(email: string | undefined): string {
   if (!email) return "User";

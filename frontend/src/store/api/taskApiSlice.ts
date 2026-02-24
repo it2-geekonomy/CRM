@@ -75,6 +75,11 @@ export type TaskApi = {
 /** Query params for GET /tasks */
 export type TaskQueryParams = {
   projectId?: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: "createdAt" | "taskName" | "startDate" | "endDate" | "taskStatus";
+  sortOrder?: "ASC" | "DESC";
 };
 
 /** Body for POST /tasks (CreateTaskDto) */
@@ -127,6 +132,7 @@ export type UpdateChecklistItemBody = {
 };
 
 export type TasksResponse = TaskApi[];
+type TasksApiResponse = TaskApi[] | { data?: TaskApi[] };
 
 export const taskApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -134,9 +140,17 @@ export const taskApiSlice = apiSlice.injectEndpoints({
       query: (params = {}) => {
         const searchParams = new URLSearchParams();
         if (params?.projectId) searchParams.set("projectId", params.projectId);
+        if (params?.page != null) searchParams.set("page", String(params.page));
+        if (params?.limit != null) searchParams.set("limit", String(params.limit));
+        else searchParams.set("limit", "1000");
+        if (params?.search) searchParams.set("search", params.search);
+        if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+        if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
         const qs = searchParams.toString();
         return { url: `/tasks${qs ? `?${qs}` : ""}` };
       },
+      transformResponse: (response: TasksApiResponse): TasksResponse =>
+        Array.isArray(response) ? response : response?.data ?? [],
       providesTags: (result) =>
         result
           ? [

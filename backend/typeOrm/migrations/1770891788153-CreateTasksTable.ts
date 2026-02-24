@@ -68,9 +68,9 @@ export class CreateTasksTable1770891788153 implements MigrationInterface {
             ALTER TABLE "tasks"
             ADD CONSTRAINT "FK_tasks_project"
             FOREIGN KEY ("project_id")
-            REFERENCES "projects"("project_id")
+            REFERENCES "projects"("id")
             ON DELETE CASCADE ON UPDATE NO ACTION
-        `);
+`);
 
         await queryRunner.query(`
             ALTER TABLE "tasks"

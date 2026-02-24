@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Task } from './task.entity';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
@@ -15,6 +16,7 @@ export class TaskActivity {
   id: string;
 
   @ManyToOne(() => Task, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'task_id' })
   task: Task;
 
   @Column({ name: 'old_status', type: 'enum', enum: TaskStatus })
@@ -24,12 +26,12 @@ export class TaskActivity {
   newStatus: TaskStatus;
 
   @ManyToOne(() => EmployeeProfile, { nullable: false })
+  @JoinColumn({ name: 'changed_by_id' })
   changedBy: EmployeeProfile;
 
-  @Column({ name: 'change_reason', nullable: true })
+  @Column({ name: 'change_reason', type: 'varchar', nullable: true })
   changeReason: string;
 
   @CreateDateColumn({ name: 'changed_at', type: 'timestamp' })
   changedAt: Date;
 }
-

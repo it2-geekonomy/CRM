@@ -18,32 +18,39 @@ export class Task {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'task_name', type: 'varchar', length: 255 })
-  taskName: string;
+  @Column({ type: 'varchar', length: 255 })
+  name: string;
 
-  @Column({ name: 'task_description', type: 'text', nullable: true })
-  taskDescription?: string;
+  @Column({ type: 'text', nullable: true })
+  description?: string;
 
-  @Column({ name: 'start_date', type: 'date' })
+  @Column({ type: 'date' })
   startDate: string;
 
-  @Column({ name: 'start_time', type: 'time' })
+  @Column({ type: 'time' })
   startTime: string;
 
-  @Column({ name: 'end_date', type: 'date' })
+  @Column({ type: 'date' })
   endDate: string;
 
-  @Column({ name: 'end_time', type: 'time' })
+  @Column({ type: 'time' })
   endTime: string;
 
   @Column({
-    name: 'task_status',
     type: 'enum',
     enum: TaskStatus,
     enumName: 'task_status_enum',
     default: TaskStatus.IN_PROGRESS,
   })
-  taskStatus: TaskStatus;
+  status: TaskStatus;
+
+  @Column({
+    type: 'enum',
+    enum: TaskPriority,
+    enumName: 'task_priority_enum',
+    default: TaskPriority.MEDIUM,
+  })
+  priority: TaskPriority;
 
   @Column({ name: 'project_id' })
   projectId: string;
@@ -65,15 +72,6 @@ export class Task {
   @ManyToOne(() => Project, (project) => project.tasks, { nullable: false })
   @JoinColumn({ name: 'project_id' })
   project: Project;
-
-  @Column({
-    name: 'priority',
-    type: 'enum',
-    enum: TaskPriority,
-    enumName: 'task_priority_enum',
-    default: TaskPriority.MEDIUM,
-  })
-  priority: TaskPriority;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;

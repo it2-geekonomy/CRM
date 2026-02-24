@@ -17,9 +17,8 @@ import { GetCalendarDto } from './dto/get-calendar.dto';
 import { TaskQueryDto } from './dto/task-query.dto';
 import { TaskChecklist } from './entities/task-checklist.entity';
 import { TaskFile } from './entities/task-file.entity';
-import { CreateTaskFileDto } from './dto/create-task-file.dto';
-import { FileInterceptor, MulterModule } from '@nestjs/platform-express';
-import { Project } from '../projects/entities/project.entity';
+import { TaskPriority } from 'src/shared/enum/task/task-priority.enum';
+import { CreateTaskChecklistDto } from './dto/create-task-checklist.dto';
 
 @Injectable()
 export class TaskService {
@@ -46,8 +45,8 @@ export class TaskService {
       .leftJoinAndSelect('task.taskType', 'taskType')
       .select([
         'task.id',
-        'task.taskName',
-        'task.taskStatus',
+        'task.name',
+        'task.status',
         'task.startDate',
         'task.startTime',
         'task.endDate',
@@ -63,8 +62,7 @@ export class TaskService {
         'project.id',
         'project.projectName',
         'taskType.id',
-        'taskType.name'
-
+        'taskType.name',
       ]);
   }
 
@@ -82,20 +80,20 @@ export class TaskService {
 
     if (search) {
       qb.andWhere(
-        `(task.taskName ILIKE :search 
+        `(task.name ILIKE :search 
         OR assignedTo.name ILIKE :search
         OR project.projectName ILIKE :search
-        OR task.task_status::text ILIKE :search)`,
+        OR task.status::text ILIKE :search)`,
         { search: `%${search}%` },
       );
     }
 
     const sortMap = {
       createdAt: 'task.createdAt',
-      taskName: 'task.taskName',
+      name: 'task.name',
       startDate: 'task.startDate',
       endDate: 'task.endDate',
-      taskStatus: 'task.taskStatus',
+      status: 'task.status',
     };
 
     const sortColumn = sortMap[sortBy] || 'task.createdAt';
@@ -136,20 +134,20 @@ export class TaskService {
             }),
           ]);
 
-        if (!assignedTo)
-          throw new BadRequestException('Invalid assignedTo ID');
-
-        if (!assignedBy)
-          throw new BadRequestException('Invalid assignedBy ID');
-
-        if (!project)
-          throw new BadRequestException('Invalid project ID');
-
-        if (!taskType)
-          throw new BadRequestException('Invalid task type ID');
+        if (!assignedTo) throw new BadRequestException('Invalid assignedTo ID');
+        if (!assignedBy) throw new BadRequestException('Invalid assignedBy ID');
+        if (!project) throw new BadRequestException('Invalid project ID');
+        if (!taskType) throw new BadRequestException('Invalid task type ID');
 
         const task = manager.create(Task, {
-          ...dto,
+          name: dto.name,
+          description: dto.description,
+          startDate: dto.startDate,
+          startTime: dto.startTime,
+          endDate: dto.endDate,
+          endTime: dto.endTime,
+          status: TaskStatus.IN_PROGRESS,
+          priority: dto.priority || TaskPriority.MEDIUM,
           assignedTo,
           assignedBy,
           project,
@@ -160,20 +158,20 @@ export class TaskService {
 
         return {
           id: savedTask.id,
-          taskName: savedTask.taskName,
-          taskStatus: savedTask.taskStatus,
+          taskName: savedTask.name,
+          taskStatus: savedTask.status,
           createdAt: savedTask.createdAt,
         };
       });
     } catch (err) {
       if (err instanceof BadRequestException) throw err;
-
       throw new InternalServerErrorException(
         err.message || 'Failed to create task',
       );
 
     }
   }
+
   async findAll(query: TaskQueryDto) {
     const qb = this.baseTaskQuery();
     return this.applyCommonFilters(qb, query);
@@ -182,10 +180,9 @@ export class TaskService {
   async findOne(id: string) {
     const task = await this.baseTaskQuery()
       .where('task.id = :id', { id })
-      .getRawOne();
+      .getOne();
 
     if (!task) throw new NotFoundException('Task not found');
-
     return task;
   }
 
@@ -199,47 +196,52 @@ export class TaskService {
     }
 
     if (query.year && query.month) {
-      const start = new Date(Number(query.year), Number(query.month) - 1, 1, 0, 0, 0);
-      const end = new Date(Number(query.year), Number(query.month), 0, 23, 59, 59);
-
-      qb.andWhere(
-        'task.startDate <= :end AND task.endDate >= :start',
-        { start, end },
-      );
+      const start = new Date(Number(query.year), Number(query.month) - 1, 1);
+      const end = new Date(Number(query.year), Number(query.month), 0);
+      qb.andWhere('task.startDate <= :end AND task.endDate >= :start', {
+        start,
+        end,
+      });
     }
 
     return qb
       .orderBy('task.startDate', 'ASC')
       .addOrderBy('task.startTime', 'ASC')
-      .getRawMany();
+      .getMany();
+  }
+
+  async getTasksByProject(projectId: string, query: TaskQueryDto) {
+    const qb = this.baseTaskQuery()
+      .leftJoin('assignedTo.department', 'department')
+      .where('project.projectId = :projectId', { projectId });
+
+    if (query.departmentId) {
+      qb.andWhere('department.id = :departmentId', {
+        departmentId: query.departmentId,
+      });
+    }
+
+    return this.applyCommonFilters(qb, query);
   }
 
   async update(id: string, dto: UpdateTaskDto) {
     const task = await this.taskRepo.findOne({ where: { id } });
-
-    if (!task) {
-      throw new NotFoundException('Task not found');
-    }
+    if (!task) throw new NotFoundException('Task not found');
 
     Object.assign(task, dto);
-
     const updated = await this.taskRepo.save(task);
 
     return {
       id: updated.id,
-      taskName: updated.taskName,
-      taskStatus: updated.taskStatus,
+      taskName: updated.name,
+      taskStatus: updated.status,
       updatedAt: updated.updatedAt,
     };
   }
 
-
   async remove(id: string) {
     const result = await this.taskRepo.delete(id);
-
-    if (!result.affected) {
-      throw new NotFoundException('Task not found');
-    }
+    if (!result.affected) throw new NotFoundException('Task not found');
   }
 
   async changeStatus(
@@ -248,50 +250,38 @@ export class TaskService {
     changedById: string,
     reason?: string,
   ) {
-    try {
-      return await this.dataSource.transaction(async (manager) => {
-        const task = await manager.findOne(Task, { where: { id: taskId } });
-        if (!task) throw new NotFoundException('Task not found');
-        if (task.taskStatus === newStatus)
-          throw new BadRequestException(`Task already in ${newStatus}`);
+    return await this.dataSource.transaction(async (manager) => {
+      const task = await manager.findOne(Task, { where: { id: taskId } });
+      if (!task) throw new NotFoundException('Task not found');
+      if (task.status === newStatus)
+        throw new BadRequestException(`Task already in ${newStatus}`);
 
-        const employee = await manager.findOne(EmployeeProfile, {
-          where: { id: changedById },
-        });
-        if (!employee) throw new BadRequestException('Invalid employee');
-
-        const oldStatus = task.taskStatus;
-        task.taskStatus = newStatus;
-
-        const activity = manager.create(TaskActivity, {
-          task,
-          oldStatus,
-          newStatus,
-          changedBy: employee,
-          changeReason: reason,
-        });
-
-        await manager.save([task, activity]);
-
-        return {
-          taskId: task.id,
-          oldStatus,
-          newStatus,
-          changedAt: activity.changedAt,
-          changedBy: { id: employee.id, name: employee.name },
-        };
+      const employee = await manager.findOne(EmployeeProfile, {
+        where: { id: changedById },
       });
-    } catch (err) {
-      if (
-        err instanceof NotFoundException ||
-        err instanceof BadRequestException
-      )
-        throw err;
+      if (!employee) throw new BadRequestException('Invalid employee');
 
-      throw new InternalServerErrorException(
-        err.message || 'Failed to change task status',
-      );
-    }
+      const oldStatus = task.status;
+      task.status = newStatus;
+
+      const activity = manager.create(TaskActivity, {
+        task,
+        oldStatus,
+        newStatus,
+        changedBy: employee,
+        changeReason: reason,
+      });
+
+      await manager.save([task, activity]);
+
+      return {
+        taskId: task.id,
+        oldStatus,
+        newStatus,
+        changedAt: activity.changedAt,
+        changedBy: { id: employee.id, name: employee.name },
+      };
+    });
   }
 
   async getTaskActivity(taskId: string) {
@@ -312,37 +302,16 @@ export class TaskService {
       order: { changedAt: 'ASC' },
     });
   }
-
-  async getTasksByProject(projectId: string, query: TaskQueryDto) {
-    const qb = this.baseTaskQuery()
-      .leftJoin('assignedTo.department', 'department')
-      .where('project.projectId = :projectId', { projectId });
-
-    if (query.departmentId) {
-      qb.andWhere('department.id = :departmentId', {
-        departmentId: query.departmentId,
-      });
-    }
-
-    return this.applyCommonFilters(qb, query);
-  }
-
-  async addChecklist(taskId: string, itemName: string) {
+  async addChecklist(taskId: string, dto: CreateTaskChecklistDto) {
     const task = await this.taskRepo.findOne({
       where: { id: taskId },
-      relations: [
-        'project',
-        'assignedTo',
-        'assignedTo.department',
-      ],
+      relations: ['project', 'assignedTo', 'assignedTo.department'],
     });
 
-    if (!task) {
-      throw new NotFoundException('Task not found');
-    }
+    if (!task) throw new NotFoundException('Task not found');
 
     const checklist = this.checklistRepo.create({
-      itemName,
+      itemName: dto.itemName,
       task,
     });
 
@@ -350,19 +319,19 @@ export class TaskService {
 
     return {
       id: savedChecklist.id,
-      itemName: savedChecklist.itemName,
-      isCompleted: savedChecklist.isCompleted,
-      createdAt: savedChecklist.createdAt,
-      updatedAt: savedChecklist.updatedAt,
+      item_name: savedChecklist.itemName,
+      is_completed: savedChecklist.isCompleted,
+      created_at: savedChecklist.createdAt,
+      updated_at: savedChecklist.updatedAt,
       task: {
         id: task.id,
-        taskName: task.taskName,
-        taskStatus: task.taskStatus,
-        startDate: task.startDate,
-        endDate: task.endDate,
+        task_name: task.name,
+        task_status: task.status,
+        start_date: task.startDate,
+        end_date: task.endDate,
       },
-      projectId: task.project?.id,
-      departmentId: task.assignedTo?.department?.id,
+      project_id: task.project?.projectId,
+      department_id: task.assignedTo?.department?.id,
     };
   }
 
@@ -375,18 +344,19 @@ export class TaskService {
 
     const taskFile = this.taskFileRepo.create({
       task,
-      fileName: file.originalname,
-      fileUrl: `/uploads/${file.filename}`,
-      fileType: file.mimetype,
+      name: file.originalname,
+      url: `/uploads/${file.filename}`,
+      type: file.mimetype,
       uploadedBy,
     });
 
     const savedFile = await this.taskFileRepo.save(taskFile);
+
     return {
       id: savedFile.id,
-      fileName: savedFile.fileName,
-      fileUrl: savedFile.fileUrl,
-      fileType: savedFile.fileType,
+      fileName: savedFile.name,
+      fileUrl: savedFile.url,
+      fileType: savedFile.type,
       uploadedByName: uploadedBy.name,
       uploadedAt: savedFile.uploadedAt,
     };

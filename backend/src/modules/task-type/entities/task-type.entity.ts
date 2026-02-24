@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Department } from '../../department/entities/department.entity';
 import { Task } from '../../task/entities/task.entity';
+import { TaskTypeStatus } from '../../../shared/enum/task/task-type-status.enum';
 
 @Entity('task_types')
 export class TaskType {
@@ -25,6 +26,19 @@ export class TaskType {
     @ManyToOne(() => Department, { nullable: false })
     @JoinColumn({ name: 'department_id' })
     department: Department;
+
+    @Column({ type: 'boolean', default: true })
+    billable: boolean;
+
+    @Column({ name: 'sla_hours', type: 'int', nullable: true })
+    slaHours?: number;
+
+    @Column({
+        type: 'enum',
+        enum: TaskTypeStatus,
+        default: TaskTypeStatus.ACTIVE,
+    })
+    status: TaskTypeStatus;
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;

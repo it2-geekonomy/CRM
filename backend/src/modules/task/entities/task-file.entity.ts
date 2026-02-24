@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Task } from './task.entity';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
@@ -14,21 +15,22 @@ export class TaskFile {
   id: string;
 
   @ManyToOne(() => Task, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'task_id' })
   task: Task;
 
-  @Column({ name: 'file_name' })
-  fileName: string;
+  @Column({ type: 'varchar', length: 255 })
+  name: string;
 
-  @Column({ name: 'file_url' })
-  fileUrl: string;
+  @Column({ type: 'varchar', length: 500 })
+  url: string;
 
-  @Column({ name: 'file_type', nullable: true })
-  fileType: string;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  type?: string;
 
   @ManyToOne(() => EmployeeProfile, { nullable: false })
+  @JoinColumn({ name: 'uploaded_by_id' })
   uploadedBy: EmployeeProfile;
 
   @CreateDateColumn({ name: 'uploaded_at', type: 'timestamp' })
   uploadedAt: Date;
 }
-

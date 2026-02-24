@@ -9,14 +9,14 @@ export class UpdateTaskDto {
     })
     @IsOptional()
     @IsString()
-    taskName?: string;
+    name?: string; 
 
     @ApiPropertyOptional({
         example: 'Call client regarding payment',
     })
     @IsOptional()
     @IsString()
-    taskDescription?: string;
+    description?: string; 
 
     @ApiPropertyOptional({
         example: '2026-02-14',

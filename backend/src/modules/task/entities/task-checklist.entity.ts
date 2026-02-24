@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Task } from './task.entity';
 
@@ -14,6 +15,7 @@ export class TaskChecklist {
   id: string;
 
   @ManyToOne(() => Task, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'task_id' })
   task: Task;
 
   @Column({ name: 'item_name' })

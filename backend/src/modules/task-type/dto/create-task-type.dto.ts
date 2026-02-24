@@ -1,5 +1,6 @@
-import { IsString, IsUUID, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsUUID, IsOptional, MaxLength, IsBoolean, IsNumber,IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { TaskTypeStatus } from 'src/shared/enum/task/task-type-status.enum';
 
 export class CreateTaskTypeDto {
   @ApiProperty({
@@ -24,4 +25,19 @@ export class CreateTaskTypeDto {
   })
   @IsUUID()
   departmentId: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  billable?: boolean;
+
+  @ApiPropertyOptional({ example: 24 })
+  @IsOptional()
+  @IsNumber()
+  slaHours?: number;
+
+  @ApiPropertyOptional({ enum: TaskTypeStatus, example: TaskTypeStatus.ACTIVE })
+  @IsOptional()
+  @IsEnum(TaskTypeStatus)
+  status?: TaskTypeStatus;
 }

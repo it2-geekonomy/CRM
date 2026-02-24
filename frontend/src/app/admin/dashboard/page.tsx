@@ -50,7 +50,7 @@ export default function AdminDashboardPage() {
   });
   const activeCount = data?.data?.filter((p) => p.status === "Active").length ?? 0;
   const draftCount = data?.data?.filter((p) => p.status === "Draft").length ?? 0;
-  const totalCount = data?.meta?.total ?? data?.data?.length ?? 0;
+  const totalCount = data?.meta?.totalItems ?? data?.data?.length ?? 0;
 
   return (
     <div className="bg-gray-100 min-h-screen py-8">
@@ -243,16 +243,16 @@ export default function AdminDashboardPage() {
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
                 {data?.data.map((project) => (
                   <button
-                    key={project.projectId}
+                    key={project.id}
                     type="button"
-                    onClick={() => router.push(`/admin/dashboard/projects/${project.projectId}`)}
+                    onClick={() => router.push(`/admin/dashboard/projects/${project.id}`)}
                     className="w-full text-left rounded-xl border border-gray-200 p-5 hover:border-green-500 transition-colors group relative"
                   >
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-xl group-hover:bg-green-600" />
                     <div className="pl-4">
-                      <p className="text-sm text-gray-500">{project.projectCode || "—"}</p>
-                      <p className="text-base font-semibold text-gray-900">{project.projectName}</p>
-                      <p className="text-sm text-gray-500">{project.projectType} • {project.status}</p>
+                      <p className="text-sm text-gray-500">{project.code || "—"}</p>
+                      <p className="text-base font-semibold text-gray-900">{project.name}</p>
+                      <p className="text-sm text-gray-500">{project.type} • {project.status}</p>
                     </div>
                   </button>
                 ))}

@@ -210,10 +210,10 @@ export default function ProjectConfigurationPage() {
 
     try {
       const result = await createProject({
-        projectName: projectName.trim(),
-        projectCode: projectCode.trim() || undefined,
-        projectType: apiProjectType,
-        projectDescription: description.trim() || undefined,
+        name: projectName.trim(),
+        code: projectCode.trim() || undefined,
+        type: apiProjectType,
+        description: description.trim() || undefined,
         status: apiStatus,
         startDate,
         endDate,

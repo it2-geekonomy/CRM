@@ -495,7 +495,7 @@ export default function ProjectDetailPage() {
               Projects
             </Link>
             <span className="text-gray-400 mx-2">/</span>
-            <span className="text-green-600">{project.projectName}</span>
+            <span className="text-green-600">{project.name}</span>
           </div>
         </div>
       </div>

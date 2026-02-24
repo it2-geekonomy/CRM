@@ -6,9 +6,10 @@ import { Project } from './entities/project.entity';
 import { AdminProfile } from 'src/modules/admin/entities/admin-profile.entity';
 import { ProjectDocument } from './entities/project-document.entity';
 import { Client } from '../client/entities/client.entity';
+import { EmployeeProfile } from '../employee/entities/employee-profile.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Project, AdminProfile, ProjectDocument, Client])],
+  imports: [TypeOrmModule.forFeature([Project, AdminProfile, ProjectDocument, Client, EmployeeProfile])],
   controllers: [ProjectsController],
   providers: [ProjectsService],
 })

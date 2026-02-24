@@ -114,5 +114,6 @@ export class AdminService {
     const profile = await this.adminProfileRepository.findOne({ where: { id } });
     if (!profile) throw new HttpException('Admin profile not found', HttpStatus.NOT_FOUND);
     await this.adminProfileRepository.remove(profile);
+    return { success: true, message: 'Admin profile deleted successfully', }
   }
 }

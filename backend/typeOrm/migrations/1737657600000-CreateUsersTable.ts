@@ -4,14 +4,13 @@ export class CreateUsersTable1737657600000 implements MigrationInterface {
   name = 'CreateUsersTable1737657600000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // 1. Setup Extensions
     await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
 
-    // 2. CREATE ROLES TABLE FIRST (Crucial Step)
+    // ROLES TABLE
     await queryRunner.query(`
       CREATE TABLE "roles" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
-        "name" character varying(50) NOT NULL,
+        "name" varchar(50) NOT NULL,
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
         CONSTRAINT "PK_roles" PRIMARY KEY ("id"),
@@ -19,32 +18,40 @@ export class CreateUsersTable1737657600000 implements MigrationInterface {
       )
     `);
 
-    // 3. SEED ROLES (So user creation doesn't fail later)
+    // Safe seed
     await queryRunner.query(`
-      INSERT INTO "roles" ("name") VALUES ('admin'), ('employee')
+      INSERT INTO "roles" ("name")
+      VALUES ('admin'), ('employee')
+      ON CONFLICT ("name") DO NOTHING
     `);
 
-    // 4. CREATE USERS TABLE
+    // USERS TABLE (NO unique constraint on email)
     await queryRunner.query(`
       CREATE TABLE "users" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
-        "email" character varying(255) NOT NULL,
-        "password_hash" character varying(255) NOT NULL,
+        "email" varchar(255) NOT NULL,
+        "password_hash" varchar(255) NOT NULL,
         "role_id" uuid NOT NULL,
         "is_verified" boolean NOT NULL DEFAULT false,
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
         CONSTRAINT "PK_users" PRIMARY KEY ("id"),
-        CONSTRAINT "UQ_users_email" UNIQUE ("email"),
-        CONSTRAINT "FK_users_roles" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE RESTRICT
+        CONSTRAINT "FK_users_roles"
+          FOREIGN KEY ("role_id")
+          REFERENCES "roles"("id")
+          ON DELETE RESTRICT
       )
     `);
 
-    await queryRunner.query(`CREATE UNIQUE INDEX "IDX_users_email" ON "users" ("email")`);
+    // Unique index from @Index decorator
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX "IDX_users_email"
+      ON "users" ("email")
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE "users"`);
-    await queryRunner.query(`DROP TABLE "roles"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "users"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "roles"`);
   }
 }

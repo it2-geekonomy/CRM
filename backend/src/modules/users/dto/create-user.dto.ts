@@ -17,8 +17,4 @@ export class CreateUserDto {
   @IsOptional()
   roleId?: string;
 
-  @ApiPropertyOptional({ example: '9647aa46-4052-4999-8984-0568e90ba9c5' })
-  @IsUUID()
-  @IsOptional()
-  departmentId?: string;
 }

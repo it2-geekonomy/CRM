@@ -75,7 +75,6 @@ export class UsersService {
           user: savedUser,
           name: defaultName,
           isActive: true,
-          department: { id: createUserDto.departmentId },
           designation: 'New Joinee',
           employmentType: 'FULL_TIME',
           employmentStatus: 'ACTIVE',

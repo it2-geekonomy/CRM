@@ -25,7 +25,7 @@ import { UpdateAdminProfileDto } from './dto/update-admin-profile.dto';
 @Controller('admin')
 @ApiBearerAuth('JWT-auth')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -74,7 +74,7 @@ export class AdminController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete an admin profile' })
   @ApiParam({ name: 'id', type: 'string', description: 'Admin profile UUID' })
   @ApiResponse({ status: 204, description: 'Admin profile deleted' })

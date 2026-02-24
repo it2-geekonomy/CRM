@@ -18,12 +18,12 @@ export class ProjectQueryDto {
   @ApiPropertyOptional({ enum: ProjectType })
   @IsOptional()
   @IsEnum(ProjectType)
-  projectType?: ProjectType;
+  type?: ProjectType;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()
-  managerId?: string; 
+  managerId?: string;
 
   @ApiPropertyOptional({ description: 'Filter projects starting from this date' })
   @IsOptional()

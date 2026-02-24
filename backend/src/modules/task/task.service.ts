@@ -19,6 +19,7 @@ import { TaskChecklist } from './entities/task-checklist.entity';
 import { TaskFile } from './entities/task-file.entity';
 import { CreateTaskFileDto } from './dto/create-task-file.dto';
 import { FileInterceptor, MulterModule } from '@nestjs/platform-express';
+import { Project } from '../projects/entities/project.entity';
 
 @Injectable()
 export class TaskService {
@@ -34,7 +35,7 @@ export class TaskService {
     @InjectRepository(TaskFile)
     private readonly taskFileRepo: Repository<TaskFile>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   private baseTaskQuery() {
     return this.taskRepo
@@ -59,7 +60,7 @@ export class TaskService {
         'assignedTo.designation',
         'assignedBy.id',
         'assignedBy.name',
-        'project.projectId',
+        'project.id',
         'project.projectName',
         'taskType.id',
         'taskType.name'
@@ -170,6 +171,7 @@ export class TaskService {
       throw new InternalServerErrorException(
         err.message || 'Failed to create task',
       );
+
     }
   }
   async findAll(query: TaskQueryDto) {
@@ -359,7 +361,7 @@ export class TaskService {
         startDate: task.startDate,
         endDate: task.endDate,
       },
-      projectId: task.project?.projectId,
+      projectId: task.project?.id,
       departmentId: task.assignedTo?.department?.id,
     };
   }

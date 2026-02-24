@@ -45,6 +45,15 @@ export class Task {
   })
   taskStatus: TaskStatus;
 
+  @Column({ name: 'project_id' })
+  projectId: string;
+
+  @Column({ name: 'assigned_to_id' })
+  assignedToId: string;
+
+  @Column({ name: 'assigned_by_id' })
+  assignedById: string;
+
   @ManyToOne(() => EmployeeProfile, { nullable: false })
   @JoinColumn({ name: 'assigned_to_id' })
   assignedTo: EmployeeProfile;

@@ -4,7 +4,7 @@ export class CreateTasksTable1770891788153 implements MigrationInterface {
     name = 'CreateTasksTable1770891788153'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // Safe check for task_status_enum
+        // Create enums if they don't exist
         const statusTypeExists = await queryRunner.query(
             `SELECT 1 FROM pg_type WHERE typname = 'task_status_enum'`
         );
@@ -15,6 +15,7 @@ export class CreateTasksTable1770891788153 implements MigrationInterface {
         }
 
         // Safe check for task_priority_enum
+
         const priorityTypeExists = await queryRunner.query(
             `SELECT 1 FROM pg_type WHERE typname = 'task_priority_enum'`
         );

@@ -10,6 +10,9 @@ import {
   HttpCode,
   HttpStatus,
   Query,
+  UseInterceptors,
+  UploadedFile,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,11 +21,14 @@ import {
   ApiParam,
   ApiBody,
   ApiBearerAuth,
+  ApiConsumes,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectQueryDto } from './dto/project-query.dto';
+import { multerProjectStorage } from 'src/config/multer.config';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -70,12 +76,24 @@ export class ProjectsController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.OK) 
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete project' })
   @ApiParam({ name: 'id', type: 'string', description: 'Project UUID' })
   @ApiResponse({ status: 200, description: 'Project deleted successfully' })
   @ApiResponse({ status: 404, description: 'Project not found' })
   remove(@Param('id') id: string) {
     return this.projectsService.remove(id);
+  }
+
+
+  @Post(':id/documents')
+  @UseInterceptors(FileInterceptor('file', multerProjectStorage))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' }, }, }, })
+  async uploadDocument(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    return await this.projectsService.uploadDocument(id, file);
   }
 }

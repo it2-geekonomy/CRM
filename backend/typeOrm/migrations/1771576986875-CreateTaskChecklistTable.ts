@@ -4,7 +4,18 @@ export class CreateTaskChecklistTable1771576986875 implements MigrationInterface
     name = 'CreateTaskChecklistTable1771576986875'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // Create the table
+
+        // Drop old constraints
+        await queryRunner.query(`ALTER TABLE "employee_profiles" DROP CONSTRAINT "FK_employee_profiles_users"`);
+        await queryRunner.query(`ALTER TABLE "employee_profiles" DROP CONSTRAINT "FK_employee_profiles_departments"`);
+        await queryRunner.query(`ALTER TABLE "tasks" DROP CONSTRAINT "FK_project_id"`);
+        await queryRunner.query(`ALTER TABLE "admin_profiles" DROP CONSTRAINT "FK_admin_profiles_users"`);
+        await queryRunner.query(`ALTER TABLE "users" DROP CONSTRAINT "FK_users_roles"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_departments_code"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_admin_profiles_user_id"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_users_email"`);
+
+        // Create task_checklist table
         await queryRunner.query(`
             CREATE TABLE "task_checklist" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),

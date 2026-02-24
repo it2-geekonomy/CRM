@@ -34,7 +34,7 @@ export class TaskService {
     @InjectRepository(TaskFile)
     private readonly taskFileRepo: Repository<TaskFile>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   private baseTaskQuery() {
     return this.taskRepo
@@ -59,7 +59,7 @@ export class TaskService {
         'assignedTo.designation',
         'assignedBy.id',
         'assignedBy.name',
-        'project.projectId',
+        'project.id',
         'project.projectName',
         'taskType.id',
         'taskType.name',
@@ -168,6 +168,7 @@ export class TaskService {
       throw new InternalServerErrorException(
         err.message || 'Failed to create task',
       );
+
     }
   }
 

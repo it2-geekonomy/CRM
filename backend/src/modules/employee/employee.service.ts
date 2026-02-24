@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException,InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -154,7 +154,7 @@ export class EmployeeService {
 
   async update(id: string, dto: UpdateEmployeeDto) {
     const employee = await this.employeeRepo.findOne({
-      where: { id },
+      where: { id, isActive: true },
       relations: ['department'],
     });
 
@@ -174,9 +174,17 @@ export class EmployeeService {
       employee.department = department;
     }
 
-    Object.assign(employee, dto);
+    Object.assign(employee, { ...dto, department: employee.department });
 
-    return this.employeeRepo.save(employee);
+    const updated = await this.employeeRepo.save(employee);
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      designation: updated.designation,
+      department: updated.department,
+      updatedAt: updated.updatedAt,
+    };
   }
 
   async remove(id: string) {

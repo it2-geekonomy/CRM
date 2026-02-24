@@ -62,7 +62,7 @@ export class TaskService {
         'assignedBy.id',
         'assignedBy.name',
         'project.id',
-        'project.projectName',
+        'project.name',
         'taskType.id',
         'taskType.name',
       ]);
@@ -84,7 +84,7 @@ export class TaskService {
       qb.andWhere(
         `(task.name ILIKE :search 
         OR assignedTo.name ILIKE :search
-        OR project.projectName ILIKE :search
+        OR project.name ILIKE :search
         OR task.status::text ILIKE :search)`,
         { search: `%${search}%` },
       );
@@ -211,7 +211,7 @@ export class TaskService {
   async getTasksByProject(projectId: string, query: TaskQueryDto) {
     const qb = this.baseTaskQuery()
       .leftJoin('assignedTo.department', 'department')
-      .where('project.projectId = :projectId', { projectId });
+      .where('project.id = :projectId', { projectId });
 
     if (query.departmentId) {
       qb.andWhere('department.id = :departmentId', {

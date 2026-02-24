@@ -839,20 +839,6 @@ export default function ProjectConfigurationPage() {
     Cancel
   </button>
 
-  {/* Save as Draft */}
-  <button
-    type="button"
-    disabled={isCreating || isLoadingEmployees || isLoadingAdmins}
-    onClick={() => saveProject("Draft")}
-    className="
-      px-6 py-2.5 rounded-xl border border-gray-300
-      text-gray-700 bg-white
-      hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed
-    "
-  >
-    {isCreating ? "Saving…" : "Save as Draft"}
-  </button>
-
   {/* Create Project */}
   <button
     type="button"

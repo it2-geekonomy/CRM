@@ -5,7 +5,7 @@ import { useGetProjectsQuery, type ProjectStatus } from "@/store/api/projectApiS
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-const SEARCH_FILTERS = ["All", "Projects", "Clients", "Resources", "Leads", "Sales"];
+const SEARCH_FILTERS = ["All", "Projects", "Clients", "Employee", "Leads", "Sales"];
 const QUICK_FILTERS = ["Active", "Inactive", "Pipeline", "Completed", "Total"];
 
 function getDisplayName(email: string | undefined): string {

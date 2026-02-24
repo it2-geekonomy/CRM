@@ -19,6 +19,8 @@ import { TaskChecklist } from './entities/task-checklist.entity';
 import { TaskFile } from './entities/task-file.entity';
 import { TaskPriority } from 'src/shared/enum/task/task-priority.enum';
 import { CreateTaskChecklistDto } from './dto/create-task-checklist.dto';
+import { Project } from 'src/modules/projects/entities/project.entity';
+import { TaskType } from 'src/modules/task-type/entities/task-type.entity';
 
 @Injectable()
 export class TaskService {
@@ -126,12 +128,8 @@ export class TaskService {
             manager.findOne(EmployeeProfile, {
               where: { user: { id: userId } },
             }),
-            manager.findOne('Project', {
-              where: { projectId: dto.projectId },
-            }),
-            manager.findOne('TaskType', {
-              where: { id: dto.taskTypeId },
-            }),
+            manager.findOne(Project, { where: { id: dto.projectId } }),
+            manager.findOne(TaskType, { where: { id: dto.taskTypeId } }),
           ]);
 
         if (!assignedTo) throw new BadRequestException('Invalid assignedTo ID');
@@ -330,7 +328,7 @@ export class TaskService {
         start_date: task.startDate,
         end_date: task.endDate,
       },
-      project_id: task.project?.projectId,
+      project_id: task.project?.id,
       department_id: task.assignedTo?.department?.id,
     };
   }

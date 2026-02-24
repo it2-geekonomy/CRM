@@ -43,6 +43,6 @@ export const models = [
   TaskActivity,
   TaskChecklist,
   TaskFile,
-  TaskType
+  TaskType,
   Client,
 ];

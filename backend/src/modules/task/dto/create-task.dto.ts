@@ -75,4 +75,11 @@ export class CreateTaskDto {
   @IsOptional()
   @IsEnum(TaskPriority)
   priority?: TaskPriority;
+
+  @ApiProperty({
+    example: 'f3b2c6a1-4d2e-4c92-9f21-7f7a8e4c1a22',
+    description: 'UUID of the task type',
+  })
+  @IsUUID()
+  taskTypeId: string;
 }

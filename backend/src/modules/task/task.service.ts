@@ -43,6 +43,7 @@ export class TaskService {
       .leftJoin('task.assignedTo', 'assignedTo')
       .leftJoin('task.assignedBy', 'assignedBy')
       .leftJoin('task.project', 'project')
+      .leftJoinAndSelect('task.taskType', 'taskType')
       .select([
         'task.id',
         'task.taskName',
@@ -61,6 +62,9 @@ export class TaskService {
         'assignedBy.name',
         'project.id',
         'project.projectName',
+        'taskType.id',
+        'taskType.name'
+
       ]);
   }
 
@@ -116,21 +120,40 @@ export class TaskService {
   async create(dto: CreateTaskDto, userId: string) {
     try {
       return await this.dataSource.transaction(async (manager) => {
-        const [assignedTo, assignedBy, project] = await Promise.all([
-          manager.findOne(EmployeeProfile, { where: { id: dto.assignedToId } }),
-          manager.findOne(EmployeeProfile, { where: { user: { id: userId } } }),
-          manager.findOne(Project, { where: { id: dto.projectId } }),
-        ]);
+        const [assignedTo, assignedBy, project, taskType] =
+          await Promise.all([
+            manager.findOne(EmployeeProfile, {
+              where: { id: dto.assignedToId },
+            }),
+            manager.findOne(EmployeeProfile, {
+              where: { user: { id: userId } },
+            }),
+            manager.findOne('Project', {
+              where: { projectId: dto.projectId },
+            }),
+            manager.findOne('TaskType', {
+              where: { id: dto.taskTypeId },
+            }),
+          ]);
 
-        if (!assignedTo) throw new BadRequestException('Invalid assignedTo ID');
-        if (!assignedBy) throw new BadRequestException('Invalid assignedBy ID');
-        if (!project) throw new BadRequestException('Invalid project ID');
+        if (!assignedTo)
+          throw new BadRequestException('Invalid assignedTo ID');
+
+        if (!assignedBy)
+          throw new BadRequestException('Invalid assignedBy ID');
+
+        if (!project)
+          throw new BadRequestException('Invalid project ID');
+
+        if (!taskType)
+          throw new BadRequestException('Invalid task type ID');
 
         const task = manager.create(Task, {
           ...dto,
           assignedTo,
           assignedBy,
           project,
+          taskType,
         });
 
         const savedTask = await manager.save(task);
@@ -144,10 +167,13 @@ export class TaskService {
       });
     } catch (err) {
       if (err instanceof BadRequestException) throw err;
-      throw new InternalServerErrorException(err.message || 'Failed to create task');
+
+      throw new InternalServerErrorException(
+        err.message || 'Failed to create task',
+      );
+
     }
   }
-
   async findAll(query: TaskQueryDto) {
     const qb = this.baseTaskQuery();
     return this.applyCommonFilters(qb, query);

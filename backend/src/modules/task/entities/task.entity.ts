@@ -6,11 +6,13 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
 import { TaskStatus } from '../../../shared/enum/task/task-status.enum';
 import { Project } from '../../projects/entities/project.entity';
 import { TaskPriority } from '../../../shared/enum/task/task-priority.enum';
+import { TaskType } from '../../task-type/entities/task-type.entity';
 @Entity('tasks')
 export class Task {
   @PrimaryGeneratedColumn('uuid')
@@ -78,5 +80,9 @@ export class Task {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
   updatedAt: Date;
+
+  @ManyToOne(() => TaskType, (taskType) => taskType.tasks)
+  @JoinColumn({ name: 'task_type_id' })
+  taskType: TaskType;
 
 }

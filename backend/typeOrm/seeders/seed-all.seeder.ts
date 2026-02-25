@@ -3,6 +3,8 @@ import { seedDepartments } from './create-departments.seeder';
 import { seedAdminProfiles } from './create-admin-profiles.seeder';
 import { seedEmployeeProfiles } from './create-employee-profiles.seeder';
 import { seedTaskTypes } from './create-task-type.seeder';
+import { seedClients } from './create-clients.seeder';
+import { seedProjectTypes } from './create-project-type.seeder';
 
 /**
  * Run all seeders in order.
@@ -16,6 +18,8 @@ const SEEDERS = [
   { name: 'Departments', run: seedDepartments },
   { name: 'Admin profiles (3)', run: seedAdminProfiles },
   { name: 'Employee profiles', run: seedEmployeeProfiles },
+  { name: 'Clients', run: seedClients },
+  { name: 'Project Types', run: seedProjectTypes },
   { name: 'Task Types', run: seedTaskTypes },
 ] as const;
 

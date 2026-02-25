@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useGetEmployeesQuery } from "@/store/api/employeeApiSlice";
+import { useGetTaskTypesQuery } from "@/store/api/taskTypeApiSlice";
 import type { CreateTaskFormData, TaskStatus, TaskPriority } from "./taskTypes";
 import {
   DEPARTMENTS,
-  TASK_TYPES_BY_DEPARTMENT,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from "./taskTypes";
@@ -16,10 +16,10 @@ type CreateTaskModalProps = {
   onCreateTask: (data: CreateTaskFormData) => void;
 };
 
-const getInitialForm = (firstEmployeeName?: string): CreateTaskFormData => ({
+const getInitialForm = (firstEmployeeName?: string, firstTaskType?: string): CreateTaskFormData => ({
   taskName: "",
   department: "Sales",
-  taskType: "Lead Qualification",
+  taskType: firstTaskType || "",
   assignTo: firstEmployeeName || "",
   dueDate: "",
   status: "Open",
@@ -34,6 +34,9 @@ export default function CreateTaskModal({
   // Fetch employees from API
   const { data: employeesData, isLoading: isLoadingEmployees } = useGetEmployeesQuery({ limit: 100 });
 
+  // Fetch task types from API
+  const { data: taskTypesData, isLoading: isLoadingTaskTypes } = useGetTaskTypesQuery();
+
   // Get employees list for dropdown
   const employees = employeesData?.data || [];
   const firstEmployeeName = employees.length > 0 ? employees[0].name : "";
@@ -41,24 +44,70 @@ export default function CreateTaskModal({
   const [form, setForm] = useState<CreateTaskFormData>(getInitialForm(firstEmployeeName));
   const [errors, setErrors] = useState<Partial<Record<keyof CreateTaskFormData, string>>>({});
 
-  const taskTypes = TASK_TYPES_BY_DEPARTMENT[form.department] ?? TASK_TYPES_BY_DEPARTMENT.Sales ?? [];
-
-  // Update form when employees load and modal opens
-  useEffect(() => {
-    if (isOpen && employees.length > 0 && (!form.assignTo || !employees.some(emp => emp.name === form.assignTo))) {
-      setForm((prev) => ({ ...prev, assignTo: employees[0].name }));
+  // Filter task types by department (matching department name)
+  // If no match found, show all task types as fallback
+  const taskTypes = useMemo(() => {
+    if (!taskTypesData || taskTypesData.length === 0) return [];
+    
+    // Try to filter task types that belong to the selected department
+    const filtered = taskTypesData
+      .filter((tt) => tt.department?.name === form.department)
+      .map((tt) => tt.name);
+    
+    // If no task types found for this department, show all available task types
+    if (filtered.length === 0) {
+      return taskTypesData.map((tt) => tt.name);
     }
-  }, [isOpen, employees, form.assignTo]);
+    
+    return filtered;
+  }, [taskTypesData, form.department]);
+
+  // Update form when employees and task types load and modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const updates: Partial<CreateTaskFormData> = {};
+      
+      if (employees.length > 0 && (!form.assignTo || !employees.some(emp => emp.name === form.assignTo))) {
+        updates.assignTo = employees[0].name;
+      }
+      
+      if (taskTypes.length > 0 && (!form.taskType || !taskTypes.includes(form.taskType))) {
+        updates.taskType = taskTypes[0];
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        setForm((prev) => ({ ...prev, ...updates }));
+      }
+    }
+  }, [isOpen, employees, taskTypes, form.assignTo, form.taskType]);
 
   const handleDepartmentChange = useCallback((department: string) => {
-    const types = TASK_TYPES_BY_DEPARTMENT[department] ?? [];
+    if (!taskTypesData) {
+      setForm((prev) => ({
+        ...prev,
+        department,
+        taskType: "",
+      }));
+      return;
+    }
+
+    // Filter task types for the selected department
+    let types = taskTypesData
+      .filter((tt) => tt.department?.name === department)
+      .map((tt) => tt.name);
+    
+    // If no task types found for this department, use all available task types
+    if (types.length === 0) {
+      types = taskTypesData.map((tt) => tt.name);
+    }
+    
     const firstType = types[0] ?? "";
     setForm((prev) => ({
       ...prev,
       department,
       taskType: firstType,
     }));
-  }, []);
+  }, [taskTypesData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,13 +118,13 @@ export default function CreateTaskModal({
     if (Object.keys(newErrors).length > 0) return;
 
     onCreateTask(form);
-    setForm(getInitialForm(firstEmployeeName));
+    setForm(getInitialForm(firstEmployeeName, taskTypes[0]));
     setErrors({});
     onClose();
   };
 
   const handleClose = () => {
-    setForm(getInitialForm(firstEmployeeName));
+    setForm(getInitialForm(firstEmployeeName, taskTypes[0]));
     setErrors({});
     onClose();
   };
@@ -154,18 +203,36 @@ export default function CreateTaskModal({
               <label htmlFor="taskType" className="block text-sm font-medium text-gray-700 mb-1">
                 Task Type
               </label>
-              <select
-                id="taskType"
-                value={form.taskType}
-                onChange={(e) => setForm((p) => ({ ...p, taskType: e.target.value }))}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none bg-white"
-              >
-                {taskTypes.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+              {isLoadingTaskTypes ? (
+                <select
+                  id="taskType"
+                  disabled
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-500"
+                >
+                  <option>Loading task types...</option>
+                </select>
+              ) : taskTypes.length === 0 ? (
+                <select
+                  id="taskType"
+                  disabled
+                  className="w-full px-4 py-2.5 rounded-lg border border-yellow-300 bg-yellow-50 text-yellow-700"
+                >
+                  <option>No task types available for this department</option>
+                </select>
+              ) : (
+                <select
+                  id="taskType"
+                  value={form.taskType}
+                  onChange={(e) => setForm((p) => ({ ...p, taskType: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none bg-white"
+                >
+                  {taskTypes.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 

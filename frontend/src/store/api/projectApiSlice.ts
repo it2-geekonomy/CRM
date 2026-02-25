@@ -24,7 +24,8 @@ export type ProjectQueryParams = {
 export type CreateProjectBody = {
   name: string;
   code?: string;
-  type: ProjectType;
+  projectTypeId: string; // Backend expects UUID, not enum string
+  clientId?: string; // Backend expects UUID, not name string
   description?: string;
   status: ProjectStatus;
   startDate: string;

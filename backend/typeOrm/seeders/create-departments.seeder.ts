@@ -30,13 +30,14 @@ async function seedDepartments() {
     }
 
     const departments = repo.create([
-      { name: 'Engineering', code: 'ENG', description: 'Software development and technical teams' },
-      { name: 'Product', code: 'PROD', description: 'Product management and design' },
-      { name: 'Operations', code: 'OPS', description: 'Operations and support' },
+      {name: 'Sales',code: 'SALES',description: 'Handles client acquisition, revenue generation, and customer relationships'},
+      {name: 'Design',code: 'DES',description: 'Responsible for UI/UX design, branding, and visual communication'},
+      {name: 'Development',code: 'DEV',description: 'Handles software development, implementation, and technical architecture'},
+      {name: 'Social Media',code: 'SM',description: 'Manages social media marketing, content strategy, and online engagement'},
     ]);
 
     await repo.save(departments);
-    console.log('✅ Created 3 departments: Engineering, Product, Operations');
+    console.log('✅ Created 4 departments: Sales,Design,Development,Social Media');
   } catch (error) {
     console.error('❌ Error running departments seeder:', error);
     throw error;

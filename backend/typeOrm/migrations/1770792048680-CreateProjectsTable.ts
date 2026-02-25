@@ -1,3 +1,4 @@
+// src/migrations/1770792048680-CreateProjectsTable.ts
 import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class CreateProjectsTable1770792048680 implements MigrationInterface {
@@ -34,36 +35,18 @@ export class CreateProjectsTable1770792048680 implements MigrationInterface {
         )
         `);
 
-        // Project documents table
-        await queryRunner.query(`
-        CREATE TABLE "project_documents" (
-            "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
-            "name" character varying NOT NULL,
-            "url" character varying NOT NULL,
-            "size" integer NOT NULL,
-            "mime_type" character varying NOT NULL,
-            "project_id" uuid NOT NULL,
-            "created_at" TIMESTAMP NOT NULL DEFAULT now(),
-            "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
-            CONSTRAINT "PK_project_documents_id" PRIMARY KEY ("id")
-        )
-        `);
-
-        // Foreign keys
+        // Foreign keys for Projects
         await queryRunner.query(`ALTER TABLE "projects" ADD CONSTRAINT "FK_project_manager" FOREIGN KEY ("project_manager_id") REFERENCES "admin_profiles"("id") ON DELETE RESTRICT`);
         await queryRunner.query(`ALTER TABLE "projects" ADD CONSTRAINT "FK_project_lead" FOREIGN KEY ("project_lead_id") REFERENCES "employee_profiles"("id") ON DELETE RESTRICT`);
         await queryRunner.query(`ALTER TABLE "projects" ADD CONSTRAINT "FK_project_creator" FOREIGN KEY ("created_by") REFERENCES "admin_profiles"("id") ON DELETE RESTRICT`);
         await queryRunner.query(`ALTER TABLE "projects" ADD CONSTRAINT "FK_project_client" FOREIGN KEY ("client_id") REFERENCES "clients"("id") ON DELETE SET NULL`);
-        await queryRunner.query(`ALTER TABLE "project_documents" ADD CONSTRAINT "FK_project_documents_project" FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "project_documents" DROP CONSTRAINT "FK_project_documents_project"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_client"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_creator"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_lead"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_manager"`);
-        await queryRunner.query(`DROP TABLE "project_documents"`);
         await queryRunner.query(`DROP TABLE "projects"`);
         await queryRunner.query(`DROP TYPE "public"."projects_status_enum"`);
         await queryRunner.query(`DROP TYPE "public"."projects_type_enum"`);

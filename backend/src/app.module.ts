@@ -15,6 +15,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TaskTypeModule } from './modules/task-type/task-type.module';
 import { ClientModule } from './modules/client/client.module';
+import { ConfigurationModule } from './modules/configuration/configuration.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ClientModule } from './modules/client/client.module';
     EmployeeModule,
     TaskModule,
     TaskTypeModule,
+    ConfigurationModule,
 
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),

@@ -9,12 +9,12 @@ import {
     OneToMany,
 } from 'typeorm';
 import { ProjectStatus } from '../../../shared/enum/project/project-status.enum';
-import { ProjectType } from '../../../shared/enum/project/project-type.enum';
 import { AdminProfile } from '../../admin/entities/admin-profile.entity';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
 import { Task } from '../../task/entities/task.entity';
 import { ProjectDocument } from './project-document.entity';
 import { Client } from '../../client/entities/client.entity';
+import { ProjectType } from '../../project-type/entities/project-type.entity';
 
 @Entity('projects')
 export class Project {
@@ -27,8 +27,12 @@ export class Project {
     @Column({ name: 'code', type: 'varchar', length: 50, unique: true })
     code: string;
 
-    @Column({ name: 'type', type: 'enum', enum: ProjectType })
-    type: ProjectType;
+    @Column({ name: 'project_type_id', type: 'uuid' })
+    projectTypeId: string;
+
+    @ManyToOne(() => ProjectType, (projectType) => projectType.projects, { onDelete: 'RESTRICT' })
+    @JoinColumn({ name: 'project_type_id' })
+    projectType: ProjectType;
 
     @Column({ name: 'description', type: 'text', nullable: true })
     description?: string;

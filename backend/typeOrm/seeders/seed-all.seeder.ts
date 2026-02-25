@@ -2,6 +2,7 @@ import { seedUsers } from './create-users.seeder';
 import { seedDepartments } from './create-departments.seeder';
 import { seedAdminProfiles } from './create-admin-profiles.seeder';
 import { seedEmployeeProfiles } from './create-employee-profiles.seeder';
+import { seedTaskTypes } from './create-task-type.seeder';
 
 /**
  * Run all seeders in order.
@@ -15,6 +16,7 @@ const SEEDERS = [
   { name: 'Departments', run: seedDepartments },
   { name: 'Admin profiles (3)', run: seedAdminProfiles },
   { name: 'Employee profiles', run: seedEmployeeProfiles },
+  { name: 'Task Types', run: seedTaskTypes },
 ] as const;
 
 async function seedAll() {

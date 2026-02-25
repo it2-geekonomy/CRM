@@ -45,6 +45,7 @@ export class TaskService {
       .leftJoin('task.assignedBy', 'assignedBy')
       .leftJoin('task.project', 'project')
       .leftJoinAndSelect('task.taskType', 'taskType')
+      .leftJoinAndSelect('taskType.department', 'department')
       .select([
         'task.id',
         'task.name',
@@ -65,6 +66,8 @@ export class TaskService {
         'project.name',
         'taskType.id',
         'taskType.name',
+        'department.id',      
+        'department.name',
       ]);
   }
 
@@ -300,13 +303,14 @@ export class TaskService {
       order: { changedAt: 'ASC' },
     });
   }
+
   async addChecklist(taskId: string, dto: CreateTaskChecklistDto) {
     const task = await this.taskRepo.findOne({
       where: { id: taskId },
       relations: ['project', 'assignedTo', 'assignedTo.department'],
     });
 
-    if (!task) throw new NotFoundException('Task not found');
+    if (!task) throw new NotFoundException(`Cannot add checklist item: Task not found`);
 
     const checklist = this.checklistRepo.create({
       itemName: dto.itemName,
@@ -316,29 +320,60 @@ export class TaskService {
     const savedChecklist = await this.checklistRepo.save(checklist);
 
     return {
-      id: savedChecklist.id,
-      item_name: savedChecklist.itemName,
-      is_completed: savedChecklist.isCompleted,
-      created_at: savedChecklist.createdAt,
-      updated_at: savedChecklist.updatedAt,
-      task: {
-        id: task.id,
-        task_name: task.name,
-        task_status: task.status,
-        start_date: task.startDate,
-        end_date: task.endDate,
-      },
-      project_id: task.project?.id,
-      department_id: task.assignedTo?.department?.id,
+      message: 'Checklist item added successfully',
+      data: {
+        id: savedChecklist.id,
+        item_name: savedChecklist.itemName,
+        is_completed: savedChecklist.isCompleted,
+        created_at: savedChecklist.createdAt,
+        updated_at: savedChecklist.updatedAt,
+        task: {
+          id: task.id,
+          task_name: task.name,
+          task_status: task.status,
+          start_date: task.startDate,
+          end_date: task.endDate,
+        },
+        project_id: task.project?.id,
+        department_id: task.assignedTo?.department?.id,
+      }
+    };
+  }
+
+  async findAllChecklist(taskId: string) {
+    const taskExists = await this.taskRepo.exist({ where: { id: taskId } });
+    if (!taskExists) throw new NotFoundException(`Task not found`);
+
+    return this.checklistRepo.find({
+      where: { task: { id: taskId } },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async findOneChecklist(id: string) {
+    const item = await this.checklistRepo.findOne({
+      where: { id },
+      relations: ['task'],
+    });
+    if (!item) throw new NotFoundException(`Checklist item not found`);
+    return item;
+  }
+
+  async removeChecklist(id: string) {
+    const result = await this.checklistRepo.delete(id);
+    if (!result.affected) throw new NotFoundException(`Checklist not found`);
+    return {
+      statusCode: 200,
+      message: 'Checklist item deleted successfully'
     };
   }
 
   async addFile(taskId: string, file: Express.Multer.File, uploadedById: string) {
     const task = await this.taskRepo.findOne({ where: { id: taskId } });
-    if (!task) throw new NotFoundException('Task not found');
+    if (!task) throw new NotFoundException(`Cannot upload file: Task  not found`);
 
     const uploadedBy = await this.employeeRepo.findOne({ where: { id: uploadedById } });
-    if (!uploadedBy) throw new NotFoundException('Uploader not found');
+    if (!uploadedBy) throw new NotFoundException(`Uploader  not found`);
 
     const taskFile = this.taskFileRepo.create({
       task,
@@ -351,12 +386,44 @@ export class TaskService {
     const savedFile = await this.taskFileRepo.save(taskFile);
 
     return {
-      id: savedFile.id,
-      fileName: savedFile.name,
-      fileUrl: savedFile.url,
-      fileType: savedFile.type,
-      uploadedByName: uploadedBy.name,
-      uploadedAt: savedFile.uploadedAt,
+      message: 'File uploaded successfully',
+      data: {
+        id: savedFile.id,
+        fileName: savedFile.name,
+        fileUrl: savedFile.url,
+        fileType: savedFile.type,
+        uploadedByName: uploadedBy.name,
+        uploadedAt: savedFile.uploadedAt,
+      }
+    };
+  }
+
+  async findAllFiles(taskId: string) {
+    const taskExists = await this.taskRepo.exist({ where: { id: taskId } });
+    if (!taskExists) throw new NotFoundException(`Task not found`);
+
+    return this.taskFileRepo.find({
+      where: { task: { id: taskId } },
+      relations: ['uploadedBy'],
+      order: { uploadedAt: 'DESC' },
+    });
+  }
+
+  async findOneFile(id: string) {
+    const file = await this.taskFileRepo.findOne({
+      where: { id },
+      relations: ['task', 'uploadedBy'],
+    });
+    if (!file) throw new NotFoundException(`File not found`);
+    return file;
+  }
+
+  async removeFile(id: string) {
+    const result = await this.taskFileRepo.delete(id);
+    if (!result.affected) throw new NotFoundException(`File not found`);
+    return {
+      statusCode: 200,
+      message: 'File deleted successfully'
     };
   }
 }

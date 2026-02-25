@@ -16,6 +16,7 @@ import { join } from 'path';
 import { TaskTypeModule } from './modules/task-type/task-type.module';
 import { ClientModule } from './modules/client/client.module';
 import { ConfigurationModule } from './modules/configuration/configuration.module';
+import { ProjectTypeModule } from './modules/project-type/project-type.module';
 
 @Module({
   imports: [
@@ -38,6 +39,8 @@ import { ConfigurationModule } from './modules/configuration/configuration.modul
     }),
 
     ClientModule,
+
+    ProjectTypeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

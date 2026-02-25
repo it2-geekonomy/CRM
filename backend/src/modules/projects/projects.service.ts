@@ -9,6 +9,7 @@ import { AdminProfile } from 'src/modules/admin/entities/admin-profile.entity';
 import { ProjectDocument } from './entities/project-document.entity';
 import { Client } from '../client/entities/client.entity';
 import { EmployeeProfile } from '../employee/entities/employee-profile.entity';
+import { ProjectType } from '../project-type/entities/project-type.entity';
 
 @Injectable()
 export class ProjectsService {
@@ -18,6 +19,7 @@ export class ProjectsService {
     @InjectRepository(EmployeeProfile) private readonly employeeProfileRepository: Repository<EmployeeProfile>,
     @InjectRepository(ProjectDocument) private readonly documentRepository: Repository<ProjectDocument>,
     @InjectRepository(Client) private readonly clientRepository: Repository<Client>,
+    @InjectRepository(ProjectType) private readonly projectTypeRepository: Repository<ProjectType>,
   ) { }
 
   async create(dto: CreateProjectDto, userId: string) {
@@ -29,6 +31,11 @@ export class ProjectsService {
 
       const adminProfile = await this.adminProfileRepository.findOne({ where: { user: { id: userId } } });
       if (!adminProfile) throw new HttpException('Admin profile not found for this user.', HttpStatus.FORBIDDEN);
+
+      if (dto.projectTypeId) {
+        const typeExists = await this.projectTypeRepository.findOne({ where: { id: dto.projectTypeId } });
+        if (!typeExists) throw new NotFoundException(`Project Type with ID "${dto.projectTypeId}" not found`);
+      }
 
       if (dto.clientId) {
         const clientExists = await this.clientRepository.findOne({ where: { id: dto.clientId } });
@@ -61,12 +68,12 @@ export class ProjectsService {
 
   async findAll(filterDto: ProjectQueryDto) {
     try {
-      const { status, type, managerId, search, fromDate, toDate, page, limit, sortOrder } = filterDto;
+      const { status, projectTypeId, managerId, search, fromDate, toDate, page, limit, sortOrder } = filterDto;
       const skip = (page - 1) * limit;
       const query = this.projectRepository.createQueryBuilder('project');
 
       if (status) query.andWhere('project.status = :status', { status });
-      if (type) query.andWhere('project.type = :type', { type });
+      if (projectTypeId) query.andWhere('project.projectTypeId = :projectTypeId', { projectTypeId });
       if (managerId) query.andWhere('project.projectManagerId = :managerId', { managerId });
 
       if (search) {
@@ -88,7 +95,7 @@ export class ProjectsService {
   async findOne(id: string) {
     const project = await this.projectRepository.findOne({
       where: { id },
-      relations: ['projectManager', 'projectLead', 'creator', 'client', 'documents', 'tasks'],
+      relations: ['projectManager', 'projectLead', 'creator', 'client', 'documents', 'tasks', 'projectType'],
     });
     if (!project) throw new NotFoundException(`Project with ID "${id}" not found`);
     return project;
@@ -103,6 +110,11 @@ export class ProjectsService {
         where: { code: dto.code, id: Not(id) },
       });
       if (existingByCode) throw new ConflictException(`Project code "${dto.code}" is already taken`);
+    }
+
+    if (dto.projectTypeId) {
+      const typeExists = await this.projectTypeRepository.findOne({ where: { id: dto.projectTypeId } });
+      if (!typeExists) throw new NotFoundException(`Project Type with ID "${dto.projectTypeId}" not found`);
     }
 
     if (dto.clientId) {

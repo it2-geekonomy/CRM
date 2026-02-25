@@ -10,13 +10,15 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectStatus } from '../../../shared/enum/project/project-status.enum';
-import { ProjectType } from '../../../shared/enum/project/project-type.enum';
-
 export class CreateProjectDto {
     @ApiProperty({ example: 'ABC Corp Website Redesign' })
     @IsString()
     @MaxLength(150)
     name: string;
+
+    @ApiProperty({ example: '6eff1312-88fe-4dd0-a93c-37aff05b5fc7',})
+    @IsUUID()
+    projectTypeId: string;
 
     @ApiPropertyOptional({ example: 'ABC-WEB-001' })
     @IsOptional()
@@ -28,13 +30,6 @@ export class CreateProjectDto {
     @IsOptional()
     @IsUUID()
     clientId?: string;
-
-    @ApiProperty({
-        enum: ProjectType,
-        example: ProjectType.WEBSITE,
-    })
-    @IsEnum(ProjectType)
-    type: ProjectType;
 
     @ApiPropertyOptional({ example: 'Complete website redesign' })
     @IsOptional()
@@ -68,6 +63,7 @@ export class CreateProjectDto {
     @ApiProperty({ example: '6edc4986-11fa-4747-b47e-b3c95041bffb' })
     @IsUUID()
     projectLeadId: string;
+    
 
     @ApiPropertyOptional({ example: true })
     @IsOptional()

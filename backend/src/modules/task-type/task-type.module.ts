@@ -9,5 +9,6 @@ import { Department } from '../department/entities/department.entity';
   imports: [TypeOrmModule.forFeature([TaskType, Department])],
   controllers: [TaskTypeController],
   providers: [TaskTypeService],
+  exports: [TaskTypeService],
 })
-export class TaskTypeModule {}
+export class TaskTypeModule { }

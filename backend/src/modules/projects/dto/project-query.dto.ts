@@ -2,7 +2,6 @@ import { IsOptional, IsString, IsEnum, IsInt, Min, IsUUID, IsDateString, IsBoole
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectStatus } from '../../../shared/enum/project/project-status.enum';
-import { ProjectType } from '../../../shared/enum/project/project-type.enum';
 
 export class ProjectQueryDto {
   @ApiPropertyOptional()
@@ -10,15 +9,16 @@ export class ProjectQueryDto {
   @IsString()
   search?: string;
 
+  @ApiPropertyOptional({})
+  @IsOptional()
+  @IsUUID()
+  projectTypeId?: string;
+
   @ApiPropertyOptional({ enum: ProjectStatus })
   @IsOptional()
   @IsEnum(ProjectStatus)
   status?: ProjectStatus;
 
-  @ApiPropertyOptional({ enum: ProjectType })
-  @IsOptional()
-  @IsEnum(ProjectType)
-  type?: ProjectType;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -1,26 +1,34 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Project } from '../../projects/entities/project.entity';
+import { Department } from '../../department/entities/department.entity';
 
 @Entity('project_types')
 export class ProjectType {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
-  name: string; 
+    @Column({ type: 'varchar', length: 100, unique: true })
+    name: string;
 
-  @Column({ type: 'text', nullable: true })
-  description: string;
+    @Column({ type: 'text', nullable: true })
+    description: string;
 
-  @Column({ type: 'boolean', default: true, name: 'is_active' })
-  isActive: boolean;
+    @Column({ type: 'uuid', name: 'department_id', nullable: true })
+    departmentId: string;
 
-  @OneToMany(() => Project, (project) => project.projectType)
-  projects: Project[];
+    @Column({ type: 'boolean', default: true, name: 'is_active' })
+    isActive: boolean;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+    @ManyToOne(() => Department, (department) => department.projectTypes, { nullable: false })
+    @JoinColumn({ name: 'department_id' })
+    department: Department;
 
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+    @OneToMany(() => Project, (project) => project.projectType)
+    projects: Project[];
+
+    @CreateDateColumn({ name: 'created_at' })
+    createdAt: Date;
+
+    @UpdateDateColumn({ name: 'updated_at' })
+    updatedAt: Date;
 }

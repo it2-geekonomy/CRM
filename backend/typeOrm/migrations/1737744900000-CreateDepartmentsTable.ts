@@ -1,18 +1,11 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-/**
- * Migration: CreateDepartmentsTable
- *
- * Creates departments table with name, code (unique, optional),
- * description (optional), created_at, updated_at.
- */
 export class CreateDepartmentsTable1737744900000 implements MigrationInterface {
   name = 'CreateDepartmentsTable1737744900000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
-      CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
-    `);
+    // Ensure UUID extension exists
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
 
     await queryRunner.query(`
       CREATE TABLE "departments" (
@@ -27,13 +20,15 @@ export class CreateDepartmentsTable1737744900000 implements MigrationInterface {
       )
     `);
 
+    // Index for optimized code searching
     await queryRunner.query(`
-      CREATE UNIQUE INDEX "IDX_departments_code" ON "departments" ("code") WHERE "code" IS NOT NULL
+      CREATE UNIQUE INDEX "IDX_departments_code" ON "departments" ("code") 
+      WHERE "code" IS NOT NULL
     `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_departments_code"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_departments_code"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "departments"`);
   }
 }

@@ -19,8 +19,9 @@ const SEEDERS = [
   { name: 'Admin profiles (3)', run: seedAdminProfiles },
   { name: 'Employee profiles', run: seedEmployeeProfiles },
   { name: 'Clients', run: seedClients },
-  { name: 'Project Types', run: seedProjectTypes },
   { name: 'Task Types', run: seedTaskTypes },
+  { name: 'Project Types', run: seedProjectTypes },
+
 ] as const;
 
 async function seedAll() {

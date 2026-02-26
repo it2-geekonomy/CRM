@@ -164,4 +164,31 @@ export class ProjectsService {
 
     return await this.documentRepository.save(newDocument);
   }
+
+  async findAllDocuments(projectId: string) {
+    const project = await this.projectRepository.findOne({ where: { id: projectId } });
+    if (!project) throw new NotFoundException(`Project with ID "${projectId}" not found`);
+
+    return await this.documentRepository.find({
+      where: { projectId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findOneDocument(documentId: string) {
+    const document = await this.documentRepository.findOne({
+      where: { id: documentId },
+      relations: ['project']
+    });
+    if (!document) throw new NotFoundException(`Document with ID "${documentId}" not found`);
+    return document;
+  }
+
+  async removeDocument(documentId: string) {
+    const document = await this.documentRepository.findOne({ where: { id: documentId } });
+    if (!document) throw new NotFoundException(`Document with ID "${documentId}" not found`);
+
+    await this.documentRepository.remove(document);
+    return { message: 'Document deleted successfully' };
+  }
 }

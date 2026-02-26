@@ -213,11 +213,11 @@ export class TaskService {
 
   async getTasksByProject(projectId: string, query: TaskQueryDto) {
     const qb = this.baseTaskQuery()
-      .leftJoin('assignedTo.department', 'assignedToDepartment')
+      .leftJoin('taskType.department', 'taskTypeDepartment')
       .where('project.id = :projectId', { projectId });
 
     if (query.departmentId) {
-      qb.andWhere('assignedToDepartment.id = :departmentId', {
+      qb.andWhere('taskTypeDepartment.id = :departmentId', {
         departmentId: query.departmentId,
       });
     }

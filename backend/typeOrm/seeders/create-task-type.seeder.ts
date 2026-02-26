@@ -29,12 +29,14 @@ async function seedTaskTypes() {
             return;
         }
 
-        // Fetch department references
-        const salesDept = await departmentRepo.findOneBy({ name: 'Sales' });
-        const devDept = await departmentRepo.findOneBy({ name: 'Development' });
+        // Fetch department references using the codes from your department seeder
+        const salesDept = await departmentRepo.findOneBy({ code: 'SALES' });
+        const designDept = await departmentRepo.findOneBy({ code: 'DES' });
+        const devDept = await departmentRepo.findOneBy({ code: 'DEV' });
+        const smDept = await departmentRepo.findOneBy({ code: 'SM' });
 
-        if (!salesDept || !devDept) {
-            console.error('❌ Required departments (Sales/Development) not found. Run department seeder first.');
+        if (!salesDept || !designDept || !devDept || !smDept) {
+            console.error('❌ Required departments not found. Run department seeder first.');
             return;
         }
 
@@ -48,9 +50,25 @@ async function seedTaskTypes() {
                 status: TaskTypeStatus.ACTIVE,
             },
             {
-                name: 'Bug Fix',
-                description: 'Fixing reported software defects',
+                name: 'UI/UX Design',
+                description: 'Creating user interfaces and visual communication mockups',
+                department: designDept,
+                billable: true,
+                slaHours: 40,
+                status: TaskTypeStatus.ACTIVE,
+            },
+            {
+                name: 'Feature Implementation',
+                description: 'Developing and coding new software requirements',
                 department: devDept,
+                billable: true,
+                slaHours: 72,
+                status: TaskTypeStatus.ACTIVE,
+            },
+            {
+                name: 'Social Media Strategy',
+                description: 'Managing marketing content and online engagement',
+                department: smDept,
                 billable: true,
                 slaHours: 24,
                 status: TaskTypeStatus.ACTIVE,

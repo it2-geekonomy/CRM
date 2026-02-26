@@ -72,7 +72,7 @@ export class TaskController {
 
   @Get('project/:projectId')
   @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Get tasks by project ID with department filter' })
+  @ApiOperation({ summary: 'Get tasks by project ID with optional department filter and task type' })
   @ApiParam({ name: 'projectId', type: 'string', description: 'Project UUID' })
   getTasksByProject(
     @Param('projectId') projectId: string,

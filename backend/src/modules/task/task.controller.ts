@@ -36,7 +36,7 @@ import { CreateTaskChecklistDto } from './dto/create-task-checklist.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateTaskFileDto } from './dto/create-task-file.dto';
 
-@ApiTags('Tasks')
+ @ApiTags('Tasks')
 @ApiBearerAuth('JWT-auth')
 @Controller('tasks')
 export class TaskController {
@@ -53,32 +53,6 @@ export class TaskController {
     return this.taskService.create(dto, (req as any).user.id);
   }
 
-  @Post(':taskId/checklist')
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Add checklist item to task' })
-  addChecklist(
-    @Param('taskId') taskId: string,
-    @Body() dto: CreateTaskChecklistDto,
-  ) {
-    return this.taskService.addChecklist(taskId, dto);
-  }
-
-  @Post(':taskId/files')
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Add files related to task' })
-  @UseInterceptors(FileInterceptor('file', { dest: './uploads' }))
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    description: 'Upload file for a task',
-    type: CreateTaskFileDto,
-  })
-  async addFile(
-    @Param('taskId') taskId: string,
-    @UploadedFile() file: Express.Multer.File,
-    @Req() req: Request,
-  ) {
-    return this.taskService.addFile(taskId, file, (req as any).user.id);
-  }
 
   @Get()
   @UseGuards(AuthGuard)
@@ -139,7 +113,6 @@ export class TaskController {
     @Req() req: Request,
   ) {
     const user = (req as any).user;
-
     return this.taskService.changeStatus(
       taskId,
       dto.newStatus,
@@ -170,5 +143,72 @@ export class TaskController {
       statusCode: 200,
       message: 'Task deleted successfully',
     };
+  }
+
+  @Post(':taskId/checklist')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Add checklist item' })
+  @ApiParam({ name: 'taskId', type: 'string' })
+  addChecklist(@Param('taskId') taskId: string, @Body() dto: CreateTaskChecklistDto) {
+    return this.taskService.addChecklist(taskId, dto);
+  }
+
+  @Get(':taskId/checklist')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get all checklist items for a task' })
+  @ApiParam({ name: 'taskId', type: 'string' })
+  findAllChecklist(@Param('taskId') taskId: string) {
+    return this.taskService.findAllChecklist(taskId);
+  }
+
+  @Get('checklist/:id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get checklist item by ID' })
+  @ApiParam({ name: 'id', type: 'string' })
+  findOneChecklist(@Param('id') id: string) {
+    return this.taskService.findOneChecklist(id);
+  }
+
+  @Delete('checklist/:id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Delete checklist item' })
+  @ApiParam({ name: 'id', type: 'string' })
+  removeChecklist(@Param('id') id: string) {
+    return this.taskService.removeChecklist(id);
+  }
+
+  @Post(':taskId/files')
+  @UseGuards(AuthGuard)
+  @UseInterceptors(FileInterceptor('file', { dest: './uploads' }))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload task file' })
+  @ApiParam({ name: 'taskId', type: 'string' })
+  @ApiBody({ type: CreateTaskFileDto })
+  async addFile(@Param('taskId') taskId: string, @UploadedFile() file: Express.Multer.File, @Req() req: Request) {
+    return this.taskService.addFile(taskId, file, (req as any).user.id);
+  }
+
+  @Get(':taskId/files')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get all files for a task' })
+  @ApiParam({ name: 'taskId', type: 'string' })
+  findAllFiles(@Param('taskId') taskId: string) {
+    return this.taskService.findAllFiles(taskId);
+  }
+
+  @Get('files/:id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get file by ID' })
+  @ApiParam({ name: 'id', type: 'string' })
+  findOneFile(@Param('id') id: string) {
+    return this.taskService.findOneFile(id);
+  }
+
+  @Delete('files/:id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Delete task file' })
+  @ApiParam({ name: 'id', type: 'string' })
+  removeFile(@Param('id') id: string) {
+    return this.taskService.removeFile(id);
   }
 }

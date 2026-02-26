@@ -34,7 +34,7 @@ import { multerProjectStorage } from 'src/config/multer.config';
 @Controller('projects')
 @ApiBearerAuth('JWT-auth')
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) { }
+  constructor(private readonly projectsService: ProjectsService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -55,12 +55,53 @@ export class ProjectsController {
     return this.projectsService.findAll(queryDto);
   }
 
+  @Get('documents/:documentId')
+  @ApiOperation({ summary: 'Get specific document details' })
+  @ApiResponse({ status: 200, description: 'Document found' })
+  @ApiResponse({ status: 404, description: 'Document not found' })
+  async findOneDocument(@Param('documentId', ParseUUIDPipe) documentId: string) {
+    return await this.projectsService.findOneDocument(documentId);
+  }
+
+  @Delete('documents/:documentId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a document' })
+  @ApiResponse({ status: 200, description: 'Document deleted successfully' })
+  async removeDocument(@Param('documentId', ParseUUIDPipe) documentId: string) {
+    return await this.projectsService.removeDocument(documentId);
+  }
+
+  @Post(':id/documents')
+  @ApiOperation({ summary: 'Upload a document for a project' })
+  @UseInterceptors(FileInterceptor('file', multerProjectStorage))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  async uploadDocument(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return await this.projectsService.uploadDocument(id, file);
+  }
+
+  @Get(':id/documents')
+  @ApiOperation({ summary: 'Get all documents for a project' })
+  @ApiParam({ name: 'id', type: 'string', description: 'Project UUID' })
+  @ApiResponse({ status: 200, description: 'List of project documents' })
+  async findAllDocuments(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.projectsService.findAllDocuments(id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get project by ID' })
   @ApiParam({ name: 'id', type: 'string', description: 'Project UUID' })
   @ApiResponse({ status: 200, description: 'Project found' })
   @ApiResponse({ status: 404, description: 'Project not found' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.projectsService.findOne(id);
   }
 
@@ -71,7 +112,7 @@ export class ProjectsController {
   @ApiResponse({ status: 404, description: 'Project not found' })
   @ApiResponse({ status: 409, description: 'Project code already in use' })
   @ApiBody({ type: UpdateProjectDto })
-  update(@Param('id') id: string, @Body() dto: UpdateProjectDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateProjectDto) {
     return this.projectsService.update(id, dto);
   }
 
@@ -81,19 +122,7 @@ export class ProjectsController {
   @ApiParam({ name: 'id', type: 'string', description: 'Project UUID' })
   @ApiResponse({ status: 200, description: 'Project deleted successfully' })
   @ApiResponse({ status: 404, description: 'Project not found' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.projectsService.remove(id);
-  }
-
-
-  @Post(':id/documents')
-  @UseInterceptors(FileInterceptor('file', multerProjectStorage))
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' }, }, }, })
-  async uploadDocument(
-    @Param('id', ParseUUIDPipe) id: string,
-    @UploadedFile() file: Express.Multer.File
-  ) {
-    return await this.projectsService.uploadDocument(id, file);
   }
 }

@@ -10,8 +10,7 @@ import {
 import { OneToMany } from 'typeorm';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
 import { TaskType } from '../../task-type/entities/task-type.entity';
-
-
+import { ProjectType } from '../../project-type/entities/project-type.entity';
 @Entity('departments')
 @Index(['code'], { unique: true })
 export class Department {
@@ -41,5 +40,8 @@ export class Department {
 
   @OneToMany(() => TaskType, (taskType) => taskType.department)
   taskTypes: TaskType[];
+
+  @OneToMany(() => ProjectType, (projectType) => projectType.department)
+  projectTypes: ProjectType[];
 
 }

@@ -407,7 +407,14 @@ export default function ProjectDetailPage() {
 
       if (!employee) {
         toast.error(`Employee "${formData.assignTo}" not found`);
+        console.error("Available employees:", employeesData.data.map(e => ({ name: e.name, id: e.id })));
         return;
+      }
+
+      // Debug: Log employee details
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Selected employee:", { name: employee.name, id: employee.id });
+        console.log("All employees:", employeesData.data.map(e => ({ name: e.name, id: e.id })));
       }
 
       // Find task type ID from name
@@ -447,7 +454,7 @@ export default function ProjectDetailPage() {
 
         // Create task via Redux Toolkit mutation
         // This will automatically invalidate the Task cache and trigger refetch
-        const result = await createTask({
+        const taskPayload = {
           name: formData.taskName, // Backend expects 'name'
           description: taskDescription, // Use task name as description, or you can add a description field to the form
           startDate: startDateStr,
@@ -458,7 +465,14 @@ export default function ProjectDetailPage() {
           projectId: projectId,
           priority: priority,
           taskTypeId: taskType.id, // Required by backend
-        }).unwrap();
+        };
+
+        // Debug: Log the payload being sent
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Creating task with payload:", taskPayload);
+        }
+
+        const result = await createTask(taskPayload).unwrap();
 
         toast.success("Task created successfully");
         
@@ -478,7 +492,22 @@ export default function ProjectDetailPage() {
         }, 500);
       } catch (error: any) {
         console.error("Failed to create task:", error);
-        toast.error(error?.data?.message || "Failed to create task");
+        console.error("Error details:", {
+          message: error?.data?.message,
+          status: error?.status,
+          data: error?.data,
+          employeeId: employee?.id,
+          employeeName: employee?.name,
+        });
+        
+        // Show more specific error message
+        const errorMessage = error?.data?.message || error?.message || "Failed to create task";
+        toast.error(errorMessage);
+        
+        // If it's an assignedTo ID error, show helpful message
+        if (errorMessage.includes("assignedTo") || errorMessage.includes("assigned")) {
+          toast.error(`Employee ID "${employee?.id}" not found in database. Please check employee data.`);
+        }
       }
     },
     [projectId, employeesData, taskTypesData, createTask, refetchTasks]

@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { Department } from './entities/department.entity';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
-import { EmployeeProfile } from '../employee/entities/employee-profile.entity'; // ✅ ADD
+import { EmployeeProfile } from '../employee/entities/employee-profile.entity';
 
 @Injectable()
 export class DepartmentService {

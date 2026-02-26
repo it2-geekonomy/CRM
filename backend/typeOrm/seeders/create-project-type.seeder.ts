@@ -1,12 +1,8 @@
 import { DataSource } from 'typeorm';
 import { ProjectType } from '../../src/modules/project-type/entities/project-type.entity';
+import { Department } from '../../src/modules/department/entities/department.entity';
 import { getDatabaseConfig } from '../config';
 
-/**
- * Seeder: Create Project Types
- * Creates default project categories for assignment.
- * Skips if data already exists.
- */
 async function seedProjectTypes() {
   const dataSource = new DataSource({
     ...getDatabaseConfig(),
@@ -15,38 +11,66 @@ async function seedProjectTypes() {
 
   try {
     await dataSource.initialize();
-    console.log('✅ Database connected for Project Types');
+    console.log('✅ Database connected');
 
     const repo = dataSource.getRepository(ProjectType);
-    
-    const count = await repo.count();
-    if (count > 0) {
-      console.log('⚠️ Project Types already exist. Skipping seeder.');
+    const deptRepo = dataSource.getRepository(Department);
+
+    if (await repo.count()) {
+      console.log('⚠️ Project Types already exist, skipping...');
       return;
     }
 
-    const types = repo.create([
-      { name: 'Website Development', description: 'Web applications and sites', isActive: true },
-      { name: 'Mobile App', description: 'iOS and Android development', isActive: true },
-      { name: 'UI/UX Design', description: 'Interface and experience design', isActive: true },
-      { name: 'Digital Marketing', description: 'SEO and Social Media management', isActive: true },
-    ]);
+    const devDept = await deptRepo.findOneBy({ code: 'DEV' });
+    const designDept = await deptRepo.findOneBy({ code: 'DES' });
+    const salesDept = await deptRepo.findOneBy({ code: 'SALES' });
 
+    if (!devDept || !designDept || !salesDept) {
+      throw new Error('Required departments (DEV, DES, SALES) not found in database.');
+    }
+
+    const typesData = [
+      {
+        name: 'Website Development',
+        description: 'Web applications',
+        department: devDept,
+        isActive: true,
+      },
+      {
+        name: 'Mobile App Development',
+        description: 'iOS & Android apps',
+        department: devDept,
+        isActive: true,
+      },
+      {
+        name: 'UI/UX Design',
+        description: 'Design related projects',
+        department: designDept,
+        isActive: true,
+      },
+      {
+        name: 'Sales Campaign',
+        description: 'Sales and marketing campaigns',
+        department: salesDept,
+        isActive: true,
+      },
+    ];
+
+    const types = repo.create(typesData);
     await repo.save(types);
-    console.log('✅ Created Project Types: Website, Mobile, UI/UX, Marketing');
-  } catch (error) {
-    console.error('❌ Error running Project Type seeder:', error);
-    throw error;
+
+    console.log('✅ Created Project Types successfully');
+  } catch (error: any) {
+    console.error('❌ Error:', error.message);
   } finally {
     await dataSource.destroy();
-    console.log('✅ Database connection closed');
   }
 }
 
 if (require.main === module) {
   seedProjectTypes()
-    .then(() => { process.exit(0); })
-    .catch((error) => { console.error(error); process.exit(1); });
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
 }
 
 export { seedProjectTypes };

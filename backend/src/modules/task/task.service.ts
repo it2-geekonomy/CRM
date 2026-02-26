@@ -66,7 +66,7 @@ export class TaskService {
         'project.name',
         'taskType.id',
         'taskType.name',
-        'department.id',      
+        'department.id',
         'department.name',
       ]);
   }
@@ -213,11 +213,11 @@ export class TaskService {
 
   async getTasksByProject(projectId: string, query: TaskQueryDto) {
     const qb = this.baseTaskQuery()
-      .leftJoin('assignedTo.department', 'department')
+      .leftJoin('assignedTo.department', 'assignedToDepartment')
       .where('project.id = :projectId', { projectId });
 
     if (query.departmentId) {
-      qb.andWhere('department.id = :departmentId', {
+      qb.andWhere('assignedToDepartment.id = :departmentId', {
         departmentId: query.departmentId,
       });
     }

@@ -12,7 +12,7 @@ export type ProjectQueryParams = {
   limit?: number;
   search?: string;
   status?: ProjectStatus;
-  projectType?: ProjectType;
+  type?: ProjectType;
   managerId?: string;
   fromDate?: string;
   toDate?: string;
@@ -22,10 +22,11 @@ export type ProjectQueryParams = {
 
 /** Body for POST /projects (CreateProjectDto) */
 export type CreateProjectBody = {
-  projectName: string;
-  projectCode?: string;
-  projectType: ProjectType;
-  projectDescription?: string;
+  name: string;
+  code?: string;
+  projectTypeId: string; // Backend expects UUID, not enum string
+  clientId?: string; // Backend expects UUID, not name string
+  description?: string;
   status: ProjectStatus;
   startDate: string;
   endDate: string;
@@ -37,11 +38,11 @@ export type CreateProjectBody = {
 
 /** Project as returned by API */
 export type ProjectApi = {
-  projectId: string;
-  projectName: string;
-  projectCode: string;
-  projectType: ProjectType;
-  projectDescription?: string;
+  id: string;
+  name: string;
+  code: string;
+  type: ProjectType;
+  description?: string;
   status: ProjectStatus;
   startDate: string;
   endDate: string;
@@ -57,10 +58,9 @@ export type ProjectApi = {
 export type ProjectsResponse = {
   data: ProjectApi[];
   meta: {
-    total: number;
-    page: number;
-    limit: number;
+    totalItems: number;
     totalPages: number;
+    currentPage: number;
   };
 };
 
@@ -73,7 +73,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         if (params?.limit != null) searchParams.set("limit", String(params.limit));
         if (params?.search) searchParams.set("search", params.search);
         if (params?.status) searchParams.set("status", params.status);
-        if (params?.projectType) searchParams.set("projectType", params.projectType);
+        if (params?.type) searchParams.set("type", params.type);
         if (params?.managerId) searchParams.set("managerId", params.managerId);
         if (params?.fromDate) searchParams.set("fromDate", params.fromDate);
         if (params?.toDate) searchParams.set("toDate", params.toDate);
@@ -85,7 +85,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.data.map((p) => ({ type: "Project" as const, id: p.projectId })),
+              ...result.data.map((p) => ({ type: "Project" as const, id: p.id })),
               { type: "Project", id: "LIST" },
             ]
           : [{ type: "Project", id: "LIST" }],

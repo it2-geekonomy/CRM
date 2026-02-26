@@ -194,15 +194,15 @@ export default function TaskDetailPage() {
 
   // Transform backend checklist data to frontend format
   useEffect(() => {
-    if (checklistData) {
+    if (checklistData && checklistData.length > 0) {
       const transformed = checklistData.map((item: ChecklistItemApi) => ({
         id: item.id,
         label: item.itemName,
         completed: item.isCompleted,
       }));
       setChecklist(transformed);
-    } else if (checklistData && checklistData.length === 0) {
-      // Empty checklist from backend
+    } else {
+      // Empty checklist from backend or no data
       setChecklist([]);
     }
   }, [checklistData]);
@@ -367,7 +367,7 @@ export default function TaskDetailPage() {
 
   const completedCount = checklist.filter((c) => c.completed).length;
   const totalCount = checklist.length;
-  const projectName = project?.projectName ?? "Project";
+  const projectName = project?.name ?? "Project";
 
   return (
     <div className="bg-gray-100 flex flex-col overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>

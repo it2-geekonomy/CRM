@@ -12,6 +12,7 @@ import {
   mapFrontendToBackendStatus,
 } from "@/store/api/taskApiSlice";
 import { useGetEmployeesQuery } from "@/store/api/employeeApiSlice";
+import { useGetTaskTypesQuery } from "@/store/api/taskTypeApiSlice";
 import type { TaskDepartment, CreateTaskFormData, TaskStatus } from "./_components/taskTypes";
 import { INITIAL_TASK_DEPARTMENTS, TASK_TYPE_TO_SUBSECTION } from "./_components/taskData";
 import { transformTasksToDepartments } from "./_utils/taskTransformers";
@@ -42,30 +43,123 @@ export default function ProjectDetailPage() {
     skip: !projectId,
   });
 
-  // Fetch all tasks (backend doesn't support projectId filter yet, so we filter on frontend)
+  // Fetch tasks filtered by projectId (backend supports projectId filter)
   const {
     data: allTasksData,
     isLoading: isLoadingTasks,
     isError: isTasksError,
     error: tasksError,
     refetch: refetchTasks,
-  } = useGetTasksQuery(undefined, { skip: !projectId });
+  } = useGetTasksQuery(
+    projectId ? { projectId, limit: 1000 } : undefined,
+    { skip: !projectId }
+  );
 
-  // Filter tasks by projectId - memoize to prevent infinite loops
-  // Backend uses explicit aliases, but PostgreSQL returns lowercase by default
+  // Transform tasks to handle both entity objects and raw query results
+  // Backend returns entity objects: { id, name, project: { id, name }, ... }
+  // But frontend expects raw query results with aliases
   const tasksData = useMemo(() => {
     if (!allTasksData || !projectId) return undefined;
     
-    return allTasksData.filter((task: any) => {
-      // Try both camelCase and lowercase versions (PostgreSQL may lowercase aliases)
-      const taskProjectId = task.project_projectId || task.project_projectid;
+    // Debug: Log first task to see structure
+    if (allTasksData.length > 0 && process.env.NODE_ENV === 'development') {
+      console.log('Sample task structure:', allTasksData[0]);
+      console.log('Looking for projectId:', projectId);
+    }
+    
+    // Transform entity objects to raw query format if needed
+    // Backend returns entity objects: { id, name, project: { id, name }, assignedTo: { id, name }, ... }
+    const transformedTasks = allTasksData.map((task: any) => {
+      // If task is already in raw format (has task_id), return as is
+      if (task.task_id) {
+        return task;
+      }
+      
+      // If task is an entity object, transform it to raw format
+      // This handles the case where backend returns entities instead of raw query results
+      const transformed: any = {
+        task_id: task.id,
+        task_taskName: task.name,
+        task_taskname: task.name,
+        task_taskDescription: task.description,
+        task_taskdescription: task.description,
+        task_taskStatus: task.status,
+        task_taskstatus: task.status,
+        task_startDate: task.startDate,
+        task_startdate: task.startDate,
+        task_startTime: task.startTime,
+        task_starttime: task.startTime,
+        task_endDate: task.endDate,
+        task_enddate: task.endDate,
+        task_endTime: task.endTime,
+        task_endtime: task.endTime,
+        task_createdAt: task.createdAt,
+        task_createdat: task.createdAt,
+        task_updatedAt: task.updatedAt,
+        task_updatedat: task.updatedAt,
+        // Project fields
+        project_projectId: task.project?.id || task.projectId,
+        project_projectid: task.project?.id || task.projectId,
+        project_id: task.project?.id || task.projectId,
+        projectId: task.project?.id || task.projectId,
+        project_projectName: task.project?.name,
+        project_projectname: task.project?.name,
+        // AssignedTo fields
+        assignedTo_id: task.assignedTo?.id,
+        assignedTo_name: task.assignedTo?.name,
+        assignedto_id: task.assignedTo?.id,
+        assignedto_name: task.assignedTo?.name,
+        assignedTo_designation: task.assignedTo?.designation,
+        assignedto_designation: task.assignedTo?.designation,
+        // AssignedBy fields
+        assignedBy_id: task.assignedBy?.id,
+        assignedBy_name: task.assignedBy?.name,
+        assignedby_id: task.assignedBy?.id,
+        assignedby_name: task.assignedBy?.name,
+        // Keep original fields as fallback
+        ...task,
+      };
+      
+      return transformed;
+    });
+    
+    // Filter by projectId (backend should filter, but double-check)
+    const filtered = transformedTasks.filter((task: any) => {
+      const taskProjectId = 
+        task.project_projectId || 
+        task.project_projectid || 
+        task.project_id || 
+        task.projectId ||
+        (task.project && task.project.id);
+      
+      if (process.env.NODE_ENV === 'development' && transformedTasks.length > 0 && transformedTasks.indexOf(task) === 0) {
+        console.log('Task projectId fields:', {
+          project_projectId: task.project_projectId,
+          project_projectid: task.project_projectid,
+          project_id: task.project_id,
+          projectId: task.projectId,
+          project: task.project,
+          found: taskProjectId,
+          matches: taskProjectId === projectId
+        });
+      }
+      
       return taskProjectId === projectId;
     });
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Filtered ${filtered.length} tasks from ${transformedTasks.length} total tasks for project ${projectId}`);
+    }
+    
+    return filtered;
   }, [allTasksData, projectId]);
   
 
   // Fetch employees for task assignment
   const { data: employeesData } = useGetEmployeesQuery({ limit: 100 });
+
+  // Fetch task types for task creation
+  const { data: taskTypesData } = useGetTaskTypesQuery();
 
   // Task mutations
   const [createTask, { isLoading: isCreatingTask }] = useCreateTaskMutation();
@@ -94,7 +188,7 @@ export default function ProjectDetailPage() {
   const prevTasksDataRef = useRef<any[] | undefined>(undefined);
   const prevTasksDataLengthRef = useRef<number>(0);
 
-  // Transform backend tasks to frontend format when tasks data changes
+  // Transform backend tasks to frontend format when tasks data or taskTypes change
   useEffect(() => {
     // Skip if tasksData hasn't actually changed (reference equality check)
     if (tasksData === prevTasksDataRef.current) {
@@ -111,7 +205,15 @@ export default function ProjectDetailPage() {
     prevTasksDataLengthRef.current = currentLength;
 
     if (tasksData && tasksData.length > 0) {
-      const transformed = transformTasksToDepartments(tasksData, INITIAL_TASK_DEPARTMENTS);
+      // Only transform if taskTypes are loaded (needed for department mapping)
+      if (!taskTypesData || taskTypesData.length === 0) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('TaskTypes not loaded yet, skipping transformation. Will retry when taskTypes are available.');
+        }
+        return;
+      }
+      
+      const transformed = transformTasksToDepartments(tasksData, INITIAL_TASK_DEPARTMENTS, taskTypesData);
       setDepartments(transformed);
       departmentsRef.current = transformed;
 
@@ -212,7 +314,7 @@ export default function ProjectDetailPage() {
         return INITIAL_TASK_DEPARTMENTS;
       });
     }
-  }, [tasksData]);
+  }, [tasksData, taskTypesData]); // Also depend on taskTypesData
 
   const toggleTaskComplete = useCallback((taskId: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -293,6 +395,11 @@ export default function ProjectDetailPage() {
         return;
       }
 
+      if (!taskTypesData || taskTypesData.length === 0) {
+        toast.error("Task types not available. Please try again.");
+        return;
+      }
+
       // Find employee ID from name
       const employee = employeesData.data.find(
         (emp) => emp.name === formData.assignTo || `${emp.name}` === formData.assignTo
@@ -300,6 +407,23 @@ export default function ProjectDetailPage() {
 
       if (!employee) {
         toast.error(`Employee "${formData.assignTo}" not found`);
+        console.error("Available employees:", employeesData.data.map(e => ({ name: e.name, id: e.id })));
+        return;
+      }
+
+      // Debug: Log employee details
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Selected employee:", { name: employee.name, id: employee.id });
+        console.log("All employees:", employeesData.data.map(e => ({ name: e.name, id: e.id })));
+      }
+
+      // Find task type ID from name
+      const taskType = taskTypesData.find(
+        (tt) => tt.name === formData.taskType
+      );
+
+      if (!taskType) {
+        toast.error(`Task type "${formData.taskType}" not found`);
         return;
       }
 
@@ -310,6 +434,14 @@ export default function ProjectDetailPage() {
 
       const startDateStr = startDate.toISOString().split("T")[0];
       const endDateStr = dueDate.toISOString().split("T")[0];
+
+      // Map priority string to backend enum value
+      const priorityMap: Record<string, "Low" | "Medium" | "High"> = {
+        Low: "Low",
+        Medium: "Medium",
+        High: "High",
+      };
+      const priority = priorityMap[formData.priority] || "Medium";
 
       try {
         // Store department and taskType in taskDescription as JSON metadata
@@ -322,28 +454,63 @@ export default function ProjectDetailPage() {
 
         // Create task via Redux Toolkit mutation
         // This will automatically invalidate the Task cache and trigger refetch
-        const result = await createTask({
-          taskName: formData.taskName,
-          taskDescription: taskDescription,
+        const taskPayload = {
+          name: formData.taskName, // Backend expects 'name'
+          description: taskDescription, // Use task name as description, or you can add a description field to the form
           startDate: startDateStr,
           startTime: "09:00",
           endDate: endDateStr,
           endTime: "18:00",
           assignedToId: employee.id,
           projectId: projectId,
-               }).unwrap();
+          priority: priority,
+          taskTypeId: taskType.id, // Required by backend
+        };
 
-               toast.success("Task created successfully");
-               
-               // RTK Query will automatically refetch due to cache invalidation,
-               // but we also manually refetch to ensure immediate update
-               await refetchTasks();
-             } catch (error: any) {
-               console.error("Failed to create task:", error);
-        toast.error(error?.data?.message || "Failed to create task");
+        // Debug: Log the payload being sent
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Creating task with payload:", taskPayload);
+        }
+
+        const result = await createTask(taskPayload).unwrap();
+
+        toast.success("Task created successfully");
+        
+        // Close modal immediately
+        setIsCreateTaskOpen(false);
+        
+        // RTK Query will automatically refetch due to cache invalidation,
+        // but we also manually refetch to ensure immediate update
+        // Add a small delay to ensure backend has processed the creation
+        setTimeout(async () => {
+          try {
+            await refetchTasks();
+            console.log("Tasks refetched after creation");
+          } catch (error) {
+            console.error("Error refetching tasks:", error);
+          }
+        }, 500);
+      } catch (error: any) {
+        console.error("Failed to create task:", error);
+        console.error("Error details:", {
+          message: error?.data?.message,
+          status: error?.status,
+          data: error?.data,
+          employeeId: employee?.id,
+          employeeName: employee?.name,
+        });
+        
+        // Show more specific error message
+        const errorMessage = error?.data?.message || error?.message || "Failed to create task";
+        toast.error(errorMessage);
+        
+        // If it's an assignedTo ID error, show helpful message
+        if (errorMessage.includes("assignedTo") || errorMessage.includes("assigned")) {
+          toast.error(`Employee ID "${employee?.id}" not found in database. Please check employee data.`);
+        }
       }
     },
-    [projectId, employeesData, createTask, refetchTasks]
+    [projectId, employeesData, taskTypesData, createTask, refetchTasks]
   );
 
   if (!projectId) {
@@ -495,7 +662,7 @@ export default function ProjectDetailPage() {
               Projects
             </Link>
             <span className="text-gray-400 mx-2">/</span>
-            <span className="text-green-600">{project.projectName}</span>
+            <span className="text-green-600">{project.name}</span>
           </div>
         </div>
       </div>

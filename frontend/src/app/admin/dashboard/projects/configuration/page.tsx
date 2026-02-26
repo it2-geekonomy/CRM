@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState, useEffect } from "react";
 import { useGetEmployeesQuery } from "@/store/api/employeeApiSlice";
 import { useGetAdminsQuery } from "@/store/api/adminApiSlice";
+import { useGetProjectTypesQuery } from "@/store/api/projectTypeApiSlice";
+import { useGetClientsQuery } from "@/store/api/clientApiSlice";
 import {
   useCreateProjectMutation,
-  type ProjectType,
   type ProjectStatus,
 } from "@/store/api/projectApiSlice";
 import type { Employee } from "@/store/api/employeeApiSlice";
@@ -19,16 +20,7 @@ type FileEntry = { file: File; objectUrl?: string };
 
 const DEFAULT_PROJECT_NAME = "ABC Corp Website Redesign";
 const DEFAULT_PROJECT_CODE = "ABC-WEB-001";
-const DEFAULT_CLIENT = "ABC Corporation";
-const DEFAULT_PROJECT_TYPE = "Website Design & Development";
 const DEFAULT_DESCRIPTION = "Complete website redesign including homepage, 5 internal pages, responsive design, and CMS integration.";
-
-const PROJECT_TYPE_OPTIONS: { value: ProjectType; label: string }[] = [
-  { value: "Website", label: "Website Design & Development" },
-  { value: "App", label: "Mobile App Development" },
-  { value: "CRM", label: "CRM" },
-  { value: "Internal", label: "Internal / Branding" },
-];
 
 export default function ProjectConfigurationPage() {
   const router = useRouter();
@@ -38,8 +30,8 @@ export default function ProjectConfigurationPage() {
 
   const [projectName, setProjectName] = useState(DEFAULT_PROJECT_NAME);
   const [projectCode, setProjectCode] = useState(DEFAULT_PROJECT_CODE);
-  const [client, setClient] = useState(DEFAULT_CLIENT);
-  const [projectType, setProjectType] = useState<ProjectType>("Website");
+  const [clientId, setClientId] = useState("");
+  const [projectTypeId, setProjectTypeId] = useState("");
   const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
   const [startDate, setStartDate] = useState("2026-02-04");
   const [endDate, setEndDate] = useState("2026-05-15");
@@ -69,10 +61,26 @@ export default function ProjectConfigurationPage() {
     error: adminsError,
   } = useGetAdminsQuery();
 
+  const {
+    data: projectTypesData,
+    isLoading: isLoadingProjectTypes,
+    isError: isProjectTypesError,
+    error: projectTypesError,
+  } = useGetProjectTypesQuery();
+
+  const {
+    data: clientsData,
+    isLoading: isLoadingClients,
+    isError: isClientsError,
+    error: clientsError,
+  } = useGetClientsQuery();
+
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
 
   const employees = employeesData?.data ?? [];
   const admins = Array.isArray(adminsData) ? adminsData : [];
+  const projectTypes = Array.isArray(projectTypesData) ? projectTypesData : [];
+  const clients = Array.isArray(clientsData) ? clientsData : [];
   const alreadyAddedIds = new Set(teamMembers.map((m) => m.id));
   const availableEmployees = employees.filter((e) => !alreadyAddedIds.has(e.id));
 
@@ -87,6 +95,26 @@ export default function ProjectConfigurationPage() {
   useEffect(() => {
     if (admins.length > 0 && !operationManagerId) setOperationManagerId(admins[0].id);
   }, [admins, operationManagerId]);
+
+  useEffect(() => {
+    if (projectTypes.length > 0 && !projectTypeId) {
+      // Try to find "Website" type, or use first available
+      const websiteType = projectTypes.find((pt) => 
+        pt.name.toLowerCase().includes("website") || pt.name.toLowerCase().includes("web")
+      );
+      setProjectTypeId(websiteType?.id || projectTypes[0].id);
+    }
+  }, [projectTypes, projectTypeId]);
+
+  useEffect(() => {
+    if (clients.length > 0 && !clientId) {
+      // Try to find "ABC Corporation", or use first available
+      const abcClient = clients.find((c) => 
+        c.name.toLowerCase().includes("abc") || c.company?.toLowerCase().includes("abc")
+      );
+      setClientId(abcClient?.id || clients[0].id);
+    }
+  }, [clients, clientId]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -167,13 +195,6 @@ export default function ProjectConfigurationPage() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const mapUiProjectTypeToApi = (ui: string): ProjectType => {
-    if (ui.includes("Website")) return "Website";
-    if (ui.includes("Mobile") || ui.includes("App")) return "App";
-    if (ui.includes("CRM")) return "CRM";
-    return "Internal";
-  };
-
   const saveProject = async (status: "Draft" | "Active") => {
     // Clear previous errors
     setCreateError(null);
@@ -181,6 +202,11 @@ export default function ProjectConfigurationPage() {
     // Validation
     if (!projectName.trim()) {
       setCreateError("Project name is required.");
+      return;
+    }
+
+    if (!projectTypeId) {
+      setCreateError("Please select a Project Type.");
       return;
     }
 
@@ -205,15 +231,15 @@ export default function ProjectConfigurationPage() {
     }
 
     const apiStatus: ProjectStatus = status === "Draft" ? "Draft" : "Active";
-    const apiProjectType = mapUiProjectTypeToApi(projectType);
     const projectLeadId = teamMembers[0].id;
 
     try {
       const result = await createProject({
-        projectName: projectName.trim(),
-        projectCode: projectCode.trim() || undefined,
-        projectType: apiProjectType,
-        projectDescription: description.trim() || undefined,
+        name: projectName.trim(),
+        code: projectCode.trim() || undefined,
+        projectTypeId: projectTypeId, // Backend expects UUID
+        clientId: clientId || undefined, // Backend expects UUID (optional)
+        description: description.trim() || undefined,
         status: apiStatus,
         startDate,
         endDate,
@@ -292,14 +318,14 @@ export default function ProjectConfigurationPage() {
           )}
 
           {/* LOADING STATE FOR DATA */}
-          {(isLoadingEmployees || isLoadingAdmins) && (
+          {(isLoadingEmployees || isLoadingAdmins || isLoadingProjectTypes || isLoadingClients) && (
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-              <p className="text-sm text-blue-700">Loading employees and admins...</p>
+              <p className="text-sm text-blue-700">Loading project data...</p>
             </div>
           )}
 
           {/* ERROR STATE FOR DATA */}
-          {(isEmployeesError || isAdminsError) && (
+          {(isEmployeesError || isAdminsError || isProjectTypesError || isClientsError) && (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
               <div className="flex items-start gap-3">
                 <span className="text-yellow-600 text-xl">⚠️</span>
@@ -308,6 +334,8 @@ export default function ProjectConfigurationPage() {
                   <p className="text-sm text-yellow-700 mt-1">
                     {isEmployeesError && "Failed to load employees. "}
                     {isAdminsError && "Failed to load admins. "}
+                    {isProjectTypesError && "Failed to load project types. "}
+                    {isClientsError && "Failed to load clients. "}
                     You can still create a project, but some options may be limited.
                   </p>
                   <div className="mt-3 flex gap-2 flex-wrap">
@@ -413,32 +441,70 @@ export default function ProjectConfigurationPage() {
               {/* Client */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Client <span className="text-red-500">*</span>
+                  Client
                 </label>
-                <select
-                  value={client}
-                  onChange={(e) => setClient(e.target.value)}
-                  className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="ABC Corporation">ABC Corporation</option>
-                  <option value="XYZ Corp">XYZ Corp</option>
-                </select>
+                {isLoadingClients ? (
+                  <div className="mt-2 px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-500">
+                    Loading clients...
+                  </div>
+                ) : isClientsError ? (
+                  <div className="mt-2 px-4 py-3 rounded-xl border border-red-300 bg-red-50 text-red-700">
+                    Failed to load clients. Please refresh the page.
+                  </div>
+                ) : (
+                  <select
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                    className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
+                    disabled={clients.length === 0}
+                  >
+                    {clients.length === 0 ? (
+                      <option value="">— No clients available —</option>
+                    ) : (
+                      <>
+                        <option value="">— Select a client (optional) —</option>
+                        {clients.map((client) => (
+                          <option key={client.id} value={client.id}>
+                            {client.name} {client.company ? `(${client.company})` : ""}
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                )}
               </div>
   
   {/* Project Type */}
   <div>
     <label className="text-sm font-medium text-gray-700">
-      Project Type
+      Project Type <span className="text-red-500">*</span>
     </label>
-    <select
-      value={projectType}
-      onChange={(e) => setProjectType(e.target.value as ProjectType)}
-      className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
-    >
-      {PROJECT_TYPE_OPTIONS.map((opt) => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
-      ))}
-    </select>
+    {isLoadingProjectTypes ? (
+      <div className="mt-2 px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-500">
+        Loading project types...
+      </div>
+    ) : isProjectTypesError ? (
+      <div className="mt-2 px-4 py-3 rounded-xl border border-red-300 bg-red-50 text-red-700">
+        Failed to load project types. Please refresh the page.
+      </div>
+    ) : (
+      <select
+        value={projectTypeId}
+        onChange={(e) => setProjectTypeId(e.target.value)}
+        className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-green-500"
+        disabled={projectTypes.length === 0}
+      >
+        {projectTypes.length === 0 ? (
+          <option value="">— No project types available —</option>
+        ) : (
+          projectTypes.map((pt) => (
+            <option key={pt.id} value={pt.id}>
+              {pt.name}
+            </option>
+          ))
+        )}
+      </select>
+    )}
   </div>
   
               {/* Project Description */}
@@ -842,7 +908,7 @@ export default function ProjectConfigurationPage() {
   {/* Create Project */}
   <button
     type="button"
-    disabled={isCreating || isLoadingEmployees || isLoadingAdmins}
+    disabled={isCreating || isLoadingEmployees || isLoadingAdmins || isLoadingProjectTypes || isLoadingClients}
     onClick={() => saveProject("Active")}
     className="
       px-6 py-2.5 rounded-xl bg-green-600

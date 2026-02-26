@@ -82,16 +82,21 @@ export type TaskQueryParams = {
   sortOrder?: "ASC" | "DESC";
 };
 
+/** TaskPriority enum values from backend */
+export type TaskPriority = "Low" | "Medium" | "High";
+
 /** Body for POST /tasks (CreateTaskDto) */
 export type CreateTaskBody = {
-  taskName: string;
-  taskDescription?: string;
+  name: string; // Backend expects 'name', not 'taskName'
+  description?: string; // Backend expects 'description', not 'taskDescription'
   startDate: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   endDate: string; // YYYY-MM-DD
   endTime: string; // HH:mm
   assignedToId: string; // Employee UUID
   projectId: string; // Project UUID
+  priority?: TaskPriority; // Optional priority
+  taskTypeId: string; // Task Type UUID (required by backend)
 };
 
 /** Body for PATCH /tasks/:id */
@@ -132,7 +137,7 @@ export type UpdateChecklistItemBody = {
 };
 
 export type TasksResponse = TaskApi[];
-type TasksApiResponse = TaskApi[] | { data?: TaskApi[] };
+type TasksApiResponse = TaskApi[] | { data?: TaskApi[] } | { data: any[]; meta?: any };
 
 export const taskApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -149,8 +154,19 @@ export const taskApiSlice = apiSlice.injectEndpoints({
         const qs = searchParams.toString();
         return { url: `/tasks${qs ? `?${qs}` : ""}` };
       },
-      transformResponse: (response: TasksApiResponse): TasksResponse =>
-        Array.isArray(response) ? response : response?.data ?? [],
+      transformResponse: (response: TasksApiResponse): TasksResponse => {
+        // Handle different response formats:
+        // 1. Array directly: TaskApi[]
+        // 2. Wrapped object: { data: TaskApi[] }
+        // 3. Paginated response: { data: Task[], meta: {...} }
+        if (Array.isArray(response)) {
+          return response;
+        }
+        if (response && typeof response === 'object' && 'data' in response) {
+          return Array.isArray(response.data) ? response.data : [];
+        }
+        return [];
+      },
       providesTags: (result) =>
         result
           ? [

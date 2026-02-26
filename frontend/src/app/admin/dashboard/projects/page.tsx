@@ -26,10 +26,10 @@ function toListProject(p: ProjectApi): Project {
   const start = typeof p.startDate === "string" ? p.startDate : (p.startDate as unknown as string)?.slice?.(0, 10) ?? "";
   const end = typeof p.endDate === "string" ? p.endDate : (p.endDate as unknown as string)?.slice?.(0, 10) ?? "";
   return {
-    id: p.projectId,
-    projectName: p.projectName,
-    projectCode: p.projectCode,
-    projectType: p.projectType,
+    id: p.id,
+    projectName: p.name,
+    projectCode: p.code,
+    projectType: p.type,
     status: p.status,
     startDate: start,
     endDate: end,
@@ -79,7 +79,7 @@ export default function ProjectsPage() {
   }, [allProjects, searchInput]);
   const activeCount = data?.data?.filter((p) => p.status === "Active").length ?? 0;
   const draftCount = data?.data?.filter((p) => p.status === "Draft").length ?? 0;
-  const totalCount = data?.meta?.total ?? projects.length;
+  const totalCount = data?.meta?.totalItems ?? projects.length;
 
   return (
     <div className="bg-gray-100 min-h-screen py-10">

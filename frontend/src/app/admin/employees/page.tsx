@@ -189,7 +189,7 @@ function InnerStat({ title, value }: { title: string; value: string }) {
   );
 }
 
-/* ── Employee card — 2-col grid friendly ── */
+/* ── Emplyee card — 2-col grid friendly ── */
 function EmployeeCard({ emp }: { emp: Employee }) {
   const initials = emp.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 

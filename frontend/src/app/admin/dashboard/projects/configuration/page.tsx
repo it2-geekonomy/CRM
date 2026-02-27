@@ -28,11 +28,11 @@ export default function ProjectConfigurationPage() {
   const addMemberButtonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [projectName, setProjectName] = useState(DEFAULT_PROJECT_NAME);
+  const [projectName, setProjectName] = useState("");
   const [projectCode, setProjectCode] = useState(DEFAULT_PROJECT_CODE);
   const [clientId, setClientId] = useState("");
   const [projectTypeId, setProjectTypeId] = useState("");
-  const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
+  const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("2026-02-04");
   const [endDate, setEndDate] = useState("2026-05-15");
   const [estimatedHours, setEstimatedHours] = useState(320);

@@ -43,11 +43,21 @@ export function SideBarNavItem({
     onClick?.();
   };
 
+  const handleParentClick = (e: MouseEvent) => {
+    if (path) {
+      router.push(path);
+      onClick?.();
+    }
+    if (hasChildren) {
+      handleToggle(e);
+    }
+  };
+
   return (
     <>
       <button
         type="button"
-        onClick={hasChildren ? handleToggle : handleClick}
+        onClick={hasChildren && path ? handleParentClick : (hasChildren ? handleToggle : handleClick)}
         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mx-2 my-1 ${bg} ${hover} ${text} text-left`}
       >
         {Icon && (

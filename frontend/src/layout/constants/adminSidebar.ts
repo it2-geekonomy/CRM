@@ -7,10 +7,9 @@ export const ADMIN_SIDEBAR_ITEMS: LinkToPage[] = [
   { title: "Clients", path: "/admin/dashboard/clients", icon: BriefcaseIcon },
   { 
     title: "Configuration", 
+    path: "/admin/configuration",
     icon: CogIcon,
-    children: [
-      { title: "Departments", path: "/admin/departments", icon: BuildingIcon },
-    ],
+   
   },
 
   { title: "Employees", path: "/admin/employees", icon: UsersIcon },

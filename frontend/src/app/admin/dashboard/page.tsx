@@ -87,6 +87,10 @@ export default function AdminDashboardPage() {
                   key={item}
                   type="button"
                   onClick={() => {
+                    if (item === "Clients") {
+                      router.push("/admin/dashboard/clients");
+                      return;
+                    }
                     setSearchFilter(item);
                     if (item === "Projects") {
                       setProjectSearchInput(searchQuery.trim());
@@ -120,7 +124,12 @@ export default function AdminDashboardPage() {
       {buttons.map((btn) => (
         <button
           key={btn}
-          onClick={() => setActiveBtn(btn)}
+          onClick={() => {
+            setActiveBtn(btn);
+            if (btn === "My Clients") {
+              router.push("/admin/dashboard/clients");
+            }
+          }}
           className="px-6 py-3 rounded-xl text-base transition-all duration-200 border border-gray-200 bg-white text-gray-700 hover:border-green-500 hover:text-green-700"
         >
           {btn}

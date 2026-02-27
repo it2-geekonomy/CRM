@@ -44,8 +44,8 @@ export class TaskService {
       .leftJoin('task.assignedTo', 'assignedTo')
       .leftJoin('task.assignedBy', 'assignedBy')
       .leftJoin('task.project', 'project')
-      .leftJoinAndSelect('task.taskType', 'taskType')
-      .leftJoinAndSelect('taskType.department', 'department')
+      .leftJoin('task.taskType', 'taskType')
+      .leftJoin('taskType.department', 'department')
       .select([
         'task.id',
         'task.name',
@@ -91,6 +91,24 @@ export class TaskService {
         OR task.status::text ILIKE :search)`,
         { search: `%${search}%` },
       );
+    }
+
+    if (query.departmentId) {
+      qb.andWhere('department.id = :departmentId', {
+        departmentId: query.departmentId,
+      });
+    }
+
+    if (query.taskTypeId) {
+      qb.andWhere('taskType.id = :taskTypeId', {
+        taskTypeId: query.taskTypeId,
+      });
+    }
+
+    if (query.projectId) {
+      qb.andWhere('project.id = :projectId', {
+        projectId: query.projectId,
+      });
     }
 
     const sortMap = {
@@ -213,14 +231,7 @@ export class TaskService {
 
   async getTasksByProject(projectId: string, query: TaskQueryDto) {
     const qb = this.baseTaskQuery()
-      .leftJoin('taskType.department', 'taskTypeDepartment')
       .where('project.id = :projectId', { projectId });
-
-    if (query.departmentId) {
-      qb.andWhere('taskTypeDepartment.id = :departmentId', {
-        departmentId: query.departmentId,
-      });
-    }
 
     return this.applyCommonFilters(qb, query);
   }

@@ -46,7 +46,6 @@ export class TaskQueryDto {
 
     @ApiPropertyOptional({
         description: 'Filter tasks by department ID',
-        example: 'uuid-department-id',
     })
     @IsOptional()
     @IsUUID()
@@ -59,5 +58,11 @@ export class TaskQueryDto {
     @IsOptional()
     @IsUUID()
     projectId?: string;
+
+    @ApiPropertyOptional({ description: 'Filter tasks by Task Type ID' })
+    @IsOptional()
+    @IsUUID()
+    taskTypeId?: string;
 }
+
 

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
 import { Project } from '../../projects/entities/project.entity';
 import { Department } from '../../department/entities/department.entity';
 
@@ -13,22 +13,21 @@ export class ProjectType {
     @Column({ type: 'text', nullable: true })
     description: string;
 
-    @Column({ type: 'uuid', name: 'department_id', nullable: true })
-    departmentId: string;
-
     @Column({ type: 'boolean', default: true, name: 'is_active' })
     isActive: boolean;
 
-    @ManyToOne(() => Department, (department) => department.projectTypes, { nullable: false })
-    @JoinColumn({ name: 'department_id' })
-    department: Department;
+    @OneToMany(() => Department, (department) => department.projectType)
+    departments: Department[];
 
     @OneToMany(() => Project, (project) => project.projectType)
     projects: Project[];
 
-    @CreateDateColumn({ name: 'created_at' })
+    @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
     createdAt: Date;
 
-    @UpdateDateColumn({ name: 'updated_at' })
+    @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
     updatedAt: Date;
+
+    @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp'})
+    deletedAt: Date;
 }

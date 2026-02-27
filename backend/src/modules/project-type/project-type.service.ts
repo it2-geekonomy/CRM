@@ -1,8 +1,13 @@
-import { Injectable, ConflictException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ProjectType } from './entities/project-type.entity';
-import { Department } from '../department/entities/department.entity'; // Adjust path
+import { Department } from '../department/entities/department.entity';
 import { CreateProjectTypeDto } from './dto/create-project-type.dto';
 import { UpdateProjectTypeDto } from './dto/update-project-type.dto';
 
@@ -18,28 +23,36 @@ export class ProjectTypeService {
 
   async create(dto: CreateProjectTypeDto) {
     try {
-      const department = await this.departmentRepo.findOne({
-        where: { id: dto.departmentId },
+      const departments = await this.departmentRepo.find({
+        where: { id: In(dto.departmentIds) },
       });
-      if (!department) {
-        throw new NotFoundException(`Department with ID ${dto.departmentId} not found`);
+
+      if (departments.length !== dto.departmentIds.length) {
+        throw new NotFoundException('One or more Department IDs were not found');
       }
+
       const existing = await this.repo.findOne({ where: { name: dto.name } });
       if (existing) throw new ConflictException('Project type name already exists');
+
       const projectType = this.repo.create({
         ...dto,
-        department,
+        departments: departments,
       });
-      return await this.repo.save(projectType);
+      const saved = await this.repo.save(projectType);
+
+      return await this.findOne(saved.id);
     } catch (err) {
-      if (err instanceof ConflictException || err instanceof NotFoundException) throw err;
-      throw new InternalServerErrorException(err.message || 'Failed to create project type');
+      if (err instanceof ConflictException || err instanceof NotFoundException)
+        throw err;
+      throw new InternalServerErrorException(
+        err.message || 'Failed to create project type',
+      );
     }
   }
 
   async findAll() {
     return await this.repo.find({
-      relations: ['department'],
+      relations: ['departments'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -47,30 +60,55 @@ export class ProjectTypeService {
   async findOne(id: string) {
     const type = await this.repo.findOne({
       where: { id },
-      relations: ['department'],
+      relations: ['departments'],
     });
-    if (!type) throw new NotFoundException(`Project Type with ID ${id} not found`);
+    if (!type)
+      throw new NotFoundException(`Project Type with ID ${id} not found`);
     return type;
   }
 
   async update(id: string, dto: UpdateProjectTypeDto) {
     const type = await this.findOne(id);
 
-    if (dto.departmentId) {
-      const department = await this.departmentRepo.findOne({
-        where: { id: dto.departmentId },
+    if (dto.departmentIds && Array.isArray(dto.departmentIds)) {
+      const departments = await this.departmentRepo.find({
+        where: { id: In(dto.departmentIds) },
       });
-      if (!department) throw new NotFoundException('Department not found');
-      type.department = department;
+
+      if (departments.length !== dto.departmentIds.length) {
+        throw new NotFoundException('One or more Department IDs were not found');
+      }
+
+      type.departments = departments;
     }
-    Object.assign(type, dto);
-    await this.repo.save(type);
-    return this.findOne(id);
+
+    const { departmentIds, ...updateData } = dto;
+    Object.assign(type, updateData);
+
+    const updated = await this.repo.save(type);
+
+    return await this.findOne(updated.id);
   }
 
   async remove(id: string) {
     const type = await this.findOne(id);
-    await this.repo.remove(type);
-    return { message: 'Project type deleted successfully' };
+    await this.repo.softRemove(type);
+    return { message: 'Project type deactivated successfully' };
+  }
+
+  async restore(id: string) {
+    const type = await this.repo.findOne({
+      where: { id },
+      withDeleted: true,
+    });
+
+    if (!type || !type.deletedAt) {
+      throw new NotFoundException(
+        `Soft-deleted Project Type with ID ${id} not found`,
+      );
+    }
+    await this.repo.restore(id);
+
+    return { message: 'Project type restored successfully' };
   }
 }

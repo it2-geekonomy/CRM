@@ -24,6 +24,7 @@ export class CreateAdminProfilesTable1737744100000 implements MigrationInterface
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE IF EXISTS "admin_profiles"`);
+    // Drop table safely
+    await queryRunner.query(`DROP TABLE IF EXISTS "admin_profiles" CASCADE`);
   }
 }

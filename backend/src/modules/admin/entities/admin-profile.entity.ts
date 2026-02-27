@@ -42,4 +42,5 @@ export class AdminProfile {
 
   @OneToMany(() => Project, (project: Project) => project.creator)
   createdProjects: Project[];
+
 }

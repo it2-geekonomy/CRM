@@ -13,10 +13,14 @@ export class CreateDepartmentsTable1737744900000 implements MigrationInterface {
         "name" character varying(255) NOT NULL,
         "code" character varying(50),
         "description" text,
+        "project_type_id" uuid,
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
         CONSTRAINT "PK_departments" PRIMARY KEY ("id"),
-        CONSTRAINT "UQ_departments_code" UNIQUE ("code")
+        CONSTRAINT "UQ_departments_code" UNIQUE ("code"),
+        CONSTRAINT "FK_departments_project_type" 
+          FOREIGN KEY ("project_type_id") 
+          REFERENCES "project_types"("id") ON DELETE SET NULL
       )
     `);
 
@@ -28,6 +32,7 @@ export class CreateDepartmentsTable1737744900000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`ALTER TABLE "departments" DROP CONSTRAINT "FK_departments_project_type"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "IDX_departments_code"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "departments"`);
   }

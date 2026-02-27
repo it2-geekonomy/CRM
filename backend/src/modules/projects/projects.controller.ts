@@ -28,13 +28,12 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectQueryDto } from './dto/project-query.dto';
-import { multerProjectStorage } from 'src/config/multer.config';
 
 @ApiTags('projects')
 @Controller('projects')
 @ApiBearerAuth('JWT-auth')
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(private readonly projectsService: ProjectsService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -73,7 +72,7 @@ export class ProjectsController {
 
   @Post(':id/documents')
   @ApiOperation({ summary: 'Upload a document for a project' })
-  @UseInterceptors(FileInterceptor('file', multerProjectStorage))
+  @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {

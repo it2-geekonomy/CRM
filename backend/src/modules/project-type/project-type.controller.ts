@@ -26,7 +26,7 @@ import { UpdateProjectTypeDto } from './dto/update-project-type.dto';
 @ApiBearerAuth('JWT-auth')
 @Controller('project-types')
 export class ProjectTypeController {
-  constructor(private readonly projectTypeService: ProjectTypeService) {}
+  constructor(private readonly projectTypeService: ProjectTypeService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -60,6 +60,14 @@ export class ProjectTypeController {
     @Body() updateDto: UpdateProjectTypeDto,
   ) {
     return await this.projectTypeService.update(id, updateDto);
+  }
+
+  @Patch(':id/restore')
+  @ApiOperation({ summary: 'Restore a soft-deleted project type' })
+  @ApiParam({ name: 'id', type: 'string', description: 'Project Type UUID' })
+  @ApiResponse({ status: 200, description: 'Project type restored successfully' })
+  async restore(@Param('id') id: string) {
+    return await this.projectTypeService.restore(id);
   }
 
   @Delete(':id')

@@ -18,11 +18,11 @@ const DEFAULT_DESCRIPTION = "Complete website redesign including homepage, 5 int
 export default function EmployeeProjectConfigurationPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [projectName, setProjectName] = useState(DEFAULT_PROJECT_NAME);
+  const [projectName, setProjectName] = useState("");
   const [projectCode, setProjectCode] = useState(DEFAULT_PROJECT_CODE);
   const [client, setClient] = useState(DEFAULT_CLIENT);
   const [projectType, setProjectType] = useState(DEFAULT_PROJECT_TYPE);
-  const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
+  const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("2026-02-04");
   const [endDate, setEndDate] = useState("2026-05-15");
   const [estimatedHours, setEstimatedHours] = useState(320);

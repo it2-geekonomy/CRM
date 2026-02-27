@@ -12,5 +12,6 @@ export const ADMIN_SIDEBAR_ITEMS: LinkToPage[] = [
       { title: "Departments", path: "/admin/departments", icon: BuildingIcon },
     ],
   },
+
   { title: "Employees", path: "/admin/employees", icon: UsersIcon },
 ];

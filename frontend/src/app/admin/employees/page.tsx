@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
 
 type Employee = {
   id: string;
@@ -9,308 +8,228 @@ type Employee = {
   title?: string;
   department?: string;
   status?: "active" | "inactive" | "onleave" | "terminated";
-  avatar?: string;
 };
 
 const DUMMY_EMPLOYEES: Employee[] = [
-  { id: "1",  name: "Sarah Johnson",    title: "Senior Engineer",       department: "Engineering",      status: "active"     },
-  { id: "2",  name: "Marcus Lee",       title: "Product Manager",       department: "Product",          status: "active"     },
-  { id: "3",  name: "Priya Patel",      title: "UX Designer",           department: "Design",           status: "active"     },
-  { id: "4",  name: "James Okonkwo",    title: "DevOps Engineer",       department: "Engineering",      status: "active"     },
-  { id: "5",  name: "Aisha Rahman",     title: "Marketing Lead",        department: "Marketing",        status: "active"     },
-  { id: "6",  name: "Tom Eriksson",     title: "Sales Executive",       department: "Sales",            status: "active"     },
-  { id: "7",  name: "Nina Castillo",    title: "HR Specialist",         department: "HR",               status: "onleave"    },
-  { id: "8",  name: "David Kim",        title: "Frontend Engineer",     department: "Engineering",      status: "active"     },
-  { id: "9",  name: "Olivia Turner",    title: "Finance Analyst",       department: "Finance",          status: "active"     },
-  { id: "10", name: "Rajan Mehta",      title: "Backend Engineer",      department: "Engineering",      status: "active"     },
-  { id: "11", name: "Chloe Dupont",     title: "Content Strategist",    department: "Marketing",        status: "inactive"   },
-  { id: "12", name: "Ethan Brooks",     title: "QA Engineer",           department: "Engineering",      status: "active"     },
-  { id: "13", name: "Sofia Andersen",   title: "Legal Counsel",         department: "Legal",            status: "active"     },
-  { id: "14", name: "Lucas Ferreira",   title: "Customer Success",      department: "Customer Support", status: "onleave"    },
-  { id: "15", name: "Hannah Müller",    title: "Operations Manager",    department: "Operations",       status: "active"     },
-  { id: "16", name: "Kevin Zhao",       title: "Data Scientist",        department: "Engineering",      status: "active"     },
-  { id: "17", name: "Fatima Al-Hassan", title: "Recruiter",             department: "HR",               status: "active"     },
-  { id: "18", name: "Daniel Park",      title: "Account Executive",     department: "Sales",            status: "terminated" },
-  { id: "19", name: "Elena Russo",      title: "Brand Designer",        department: "Design",           status: "active"     },
-  { id: "20", name: "Chris Nwosu",      title: "Support Specialist",    department: "Customer Support", status: "active"     },
+  { id: "1",  name: "Sarah Johnson",    title: "Senior Engineer",    department: "Engineering",      status: "active"     },
+  { id: "2",  name: "Marcus Lee",       title: "Product Manager",    department: "Product",          status: "active"     },
+  { id: "3",  name: "Priya Patel",      title: "UX Designer",        department: "Design",           status: "active"     },
+  { id: "4",  name: "James Okonkwo",    title: "DevOps Engineer",    department: "Engineering",      status: "active"     },
+  { id: "5",  name: "Aisha Rahman",     title: "Marketing Lead",     department: "Marketing",        status: "active"     },
+  { id: "6",  name: "Tom Eriksson",     title: "Sales Executive",    department: "Sales",            status: "active"     },
+  { id: "7",  name: "Nina Castillo",    title: "HR Specialist",      department: "HR",               status: "onleave"    },
+  { id: "8",  name: "David Kim",        title: "Frontend Engineer",  department: "Engineering",      status: "active"     },
+  { id: "9",  name: "Olivia Turner",    title: "Finance Analyst",    department: "Finance",          status: "active"     },
+  { id: "10", name: "Rajan Mehta",      title: "Backend Engineer",   department: "Engineering",      status: "active"     },
+  { id: "11", name: "Chloe Dupont",     title: "Content Strategist", department: "Marketing",        status: "inactive"   },
+  { id: "12", name: "Ethan Brooks",     title: "QA Engineer",        department: "Engineering",      status: "active"     },
+  { id: "13", name: "Sofia Andersen",   title: "Legal Counsel",      department: "Legal",            status: "active"     },
+  { id: "14", name: "Lucas Ferreira",   title: "Customer Success",   department: "Customer Support", status: "onleave"    },
+  { id: "15", name: "Hannah Müller",    title: "Ops Manager",        department: "Operations",       status: "active"     },
+  { id: "16", name: "Kevin Zhao",       title: "Data Scientist",     department: "Engineering",      status: "active"     },
+  { id: "17", name: "Fatima Al-Hassan", title: "Recruiter",          department: "HR",               status: "active"     },
+  { id: "18", name: "Daniel Park",      title: "Account Executive",  department: "Sales",            status: "terminated" },
+  { id: "19", name: "Elena Russo",      title: "Brand Designer",     department: "Design",           status: "active"     },
+  { id: "20", name: "Chris Nwosu",      title: "Support Specialist", department: "Customer Support", status: "active"     },
+];
+
+type FilterType = "active" | "inactive" | "onleave" | "terminated" | "all";
+
+const FILTERS: { key: FilterType; label: string }[] = [
+  { key: "active",     label: "Active"     },
+  { key: "inactive",   label: "Inactive"   },
+  { key: "onleave",    label: "On Leave"   },
+  { key: "terminated", label: "Terminated" },
+  { key: "all",        label: "All"        },
 ];
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>(DUMMY_EMPLOYEES);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"active" | "inactive" | "onleave" | "terminated" | "all">("active");
+  const [loading, setLoading]     = useState(false);
+  const [query, setQuery]         = useState("");
+  const [filter, setFilter]       = useState<FilterType>("active");
+  const [error, setError]         = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/employees")
-      .then((res) => {
-        if (!res.ok) throw new Error("Network error");
-        return res.json();
-      })
-      .then((data: Employee[]) => {
-        if (data?.length) setEmployees(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        // API unavailable — dummy data already loaded, no error shown
-        setLoading(false);
-      });
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+      .then((data: Employee[]) => { if (data?.length) setEmployees(data); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
   const filtered = employees
-    .filter((e) => (filter === "all" ? true : filter === e.status))
+    .filter((e) => filter === "all" || e.status === filter)
     .filter((e) =>
       `${e.name} ${e.title ?? ""} ${e.department ?? ""}`
-        .toLowerCase()
-        .includes(query.toLowerCase())
+        .toLowerCase().includes(query.toLowerCase())
     );
 
   const stats = {
-    active: employees.filter((e) => e.status === "active").length,
-    onleave: employees.filter((e) => e.status === "onleave").length,
-    total: employees.length,
-    departments: Array.from(new Set(employees.map((e) => e.department).filter(Boolean))).length,
+    active:      employees.filter((e) => e.status === "active").length,
+    onleave:     employees.filter((e) => e.status === "onleave").length,
+    total:       employees.length,
+    departments: new Set(employees.map((e) => e.department).filter(Boolean)).size,
   };
 
   return (
-    <div style={styles.page}>
-      {/* Top KPI cards */}
-      <div style={styles.topGrid}>
-        <StatCard title="Active Employees" value="284" note="↑ 2 from last week" />
-        <StatCard title="New Hires This Month" value="13" note="↑ 5 from last month" />
-        <StatCard title="Avg. Tenure" value="3.2y" note="↑ 0.1y from last year" />
-        <StatCard title="Departments" value="11" note="No change" />
-      </div>
+    <div className="min-h-screen bg-gray-100">
+      <div className="max-w-screen-xl mx-auto px-3 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-5 space-y-3 sm:space-y-4">
 
-      {/* Main panel */}
-      <div style={styles.panel}>
-        {/* Header */}
-        <div style={styles.panelHeader}>
-          <h2 style={styles.panelTitle}>Employees</h2>
-          <div style={styles.headerRight}>
-            <div style={styles.searchWrap}>
+        {/* ── KPI CARDS: 2×2 on mobile, 4×1 on desktop ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          <KpiCard title="Active Employees"  value="284"  note="↑ 2 this week"    />
+          <KpiCard title="New Hires"         value="13"   note="↑ 5 this month"   />
+          <KpiCard title="Avg. Tenure"       value="3.2y" note="↑ 0.1y this year" />
+          <KpiCard title="Departments"       value="11"   note="No change"        />
+        </div>
+
+        {/* ── MAIN PANEL ── */}
+        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-black/[0.04]">
+
+          {/* Panel header */}
+          <div className="px-4 pt-4 pb-3 sm:px-5 sm:pt-5 border-b border-gray-100">
+
+            {/* Row 1: Title + New button */}
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold text-gray-900 sm:text-lg">Employees</h2>
+              <button
+                onClick={() => { if (typeof window !== "undefined") window.location.href = "/employees/new"; }}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg transition-colors cursor-pointer sm:px-4 sm:text-sm"
+              >
+                <span className="text-base leading-none">+</span>
+                <span>New Employee</span>
+              </button>
+            </div>
+
+            {/* Row 2: Search bar — full width */}
+            <div className="flex">
               <input
                 aria-label="Search employees"
                 placeholder="Search employees..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                style={styles.searchInput}
+                className="flex-1 min-w-0 px-3.5 py-2.5 text-sm border border-gray-200 border-r-0 rounded-l-xl outline-none text-gray-700 placeholder-gray-400 bg-white focus:border-green-400 transition-colors"
               />
-              <button style={styles.searchBtn}>Search</button>
+              <button className="px-4 py-2.5 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white rounded-r-xl transition-colors whitespace-nowrap cursor-pointer">
+                Search
+              </button>
             </div>
-            {/* ← Navigates to /employees/new */}
-            <Link href="/employees/new">
-              <button style={styles.newBtn}>+ New Employee</button>
-            </Link>
           </div>
-        </div>
 
-        {/* Filter tabs */}
-        <div style={styles.tabs}>
-          {(["active", "inactive", "onleave", "terminated", "all"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setFilter(t)}
-              style={{ ...styles.tab, ...(filter === t ? styles.tabActive : {}) }}
-            >
-              {t === "active" ? "Active" : t === "inactive" ? "Inactive" : t === "onleave" ? "On Leave" : t === "terminated" ? "Terminated" : "All"}
-            </button>
-          ))}
-        </div>
+          {/* Filter tabs — scroll on mobile */}
+          <div className="px-4 sm:px-5 pt-3 pb-0">
+            <div className="flex gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {FILTERS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className={[
+                    "shrink-0 px-3.5 py-1.5 text-xs font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap sm:text-sm",
+                    filter === key
+                      ? "bg-green-50 border-green-200 text-green-700 font-semibold"
+                      : "bg-white border-gray-200 text-gray-500 hover:border-gray-300",
+                  ].join(" ")}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        {/* Inner stats */}
-        <div style={styles.statsRow}>
-          <SmallStat title="Active Employees" value={String(stats.active || 0)} />
-          <SmallStat title="On Leave" value={String(stats.onleave || 0)} />
-          <SmallStat title="Total Employees" value={String(stats.total || 0)} />
-          <SmallStat title="Departments" value={String(stats.departments || 0)} />
-        </div>
+          {/* Inner stat boxes: 2×2 always, tiny on mobile */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 px-4 pb-4 sm:px-5 sm:gap-3 sm:pb-4">
+            <InnerStat title="Active"      value={String(stats.active)}      />
+            <InnerStat title="On Leave"    value={String(stats.onleave)}     />
+            <InnerStat title="Total"       value={String(stats.total)}       />
+            <InnerStat title="Departments" value={String(stats.departments)} />
+          </div>
 
-        {/* Employee cards */}
-        <div style={{ marginTop: 18 }}>
-          {loading ? (
-            <div style={{ padding: 24 }}>Loading...</div>
-          ) : (
-            <>
-              {filtered.length === 0 && !error && (
-                <div style={{ padding: 24, color: "#666" }}>No employees found.</div>
-              )}
-              {filtered.length > 0 && (
-                <div style={styles.grid}>
-                  {filtered.map((emp) => (
-                    <div key={emp.id} style={styles.card}>
-                      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                        <div style={styles.avatar}>{emp.name.charAt(0)}</div>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: 14 }}>{emp.name}</div>
-                          <div style={{ fontSize: 13, color: "#6b7280" }}>
-                            {emp.title ?? "—"} · {emp.department ?? "—"}
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <StatusBadge status={emp.status} />
-                        <button style={styles.smallBtn}>View</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {error && (
-                <div style={{ color: "#c0392b", marginTop: 18, fontSize: 14, fontWeight: 500 }}>
-                  {error}
-                </div>
-              )}
-            </>
-          )}
+          {/* Divider */}
+          <div className="border-t border-gray-100 mx-4 sm:mx-5" />
+
+          {/* Employee list */}
+          <div className="px-4 py-4 sm:px-5 sm:py-5">
+            {loading ? (
+              <p className="text-sm text-gray-400 text-center py-10">Loading...</p>
+            ) : filtered.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-10">No employees found.</p>
+            ) : (
+              // 2-col on mobile, 3-col on md, 4-col on xl
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
+                {filtered.map((emp) => <EmployeeCard key={emp.id} emp={emp} />)}
+              </div>
+            )}
+            {error && <p className="mt-3 text-xs text-red-600 font-medium">{error}</p>}
+          </div>
+
         </div>
       </div>
     </div>
   );
 }
 
-function StatCard({ title, value, note }: { title: string; value: string; note?: string }) {
+/* ── KPI card — compact on mobile ── */
+function KpiCard({ title, value, note }: { title: string; value: string; note: string }) {
   return (
-    <div style={styles.statCard}>
-      <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>{title}</div>
-      <div style={{ fontSize: 30, fontWeight: 700, color: "#111827", lineHeight: 1 }}>{value}</div>
-      {note && <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 8 }}>{note}</div>}
+    <div className="bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-4 shadow-sm ring-1 ring-black/[0.04]">
+      <p className="text-xs text-gray-500 mb-1.5 leading-tight sm:text-sm sm:mb-2">{title}</p>
+      <p className="text-2xl font-bold text-gray-900 leading-none sm:text-3xl">{value}</p>
+      <p className="text-xs text-gray-400 mt-1.5 sm:mt-2">{note}</p>
     </div>
   );
 }
 
-function SmallStat({ title, value }: { title: string; value: string }) {
+/* ── Inner stat box ── */
+function InnerStat({ title, value }: { title: string; value: string }) {
   return (
-    <div style={styles.smallStat}>
-      <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>{title}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>{value}</div>
+    <div className="rounded-xl border border-gray-100 px-3 py-2.5 sm:px-4 sm:py-3">
+      <p className="text-xs text-gray-500 mb-1 leading-tight">{title}</p>
+      <p className="text-lg font-bold text-gray-900 sm:text-2xl">{value}</p>
     </div>
   );
 }
 
+/* ── Employee card — 2-col grid friendly ── */
+function EmployeeCard({ emp }: { emp: Employee }) {
+  const initials = emp.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 p-3 flex flex-col gap-2.5 hover:border-gray-200 hover:shadow-sm transition-all">
+      {/* Avatar + name */}
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-green-100 flex items-center justify-center font-bold text-xs text-green-800 shrink-0 select-none">
+          {initials}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-gray-900 truncate sm:text-sm">{emp.name}</p>
+          <p className="text-xs text-gray-400 truncate mt-0.5 leading-tight">{emp.title ?? "—"}</p>
+        </div>
+      </div>
+
+      {/* Department tag */}
+      <p className="text-xs text-gray-400 truncate leading-tight">{emp.department ?? "—"}</p>
+
+      {/* Status + View */}
+      <div className="flex items-center justify-between pt-0.5">
+        <StatusBadge status={emp.status} />
+        <button className="text-xs font-medium text-gray-500 border border-gray-200 px-2.5 py-1 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+          View
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Status badge ── */
 function StatusBadge({ status }: { status?: string }) {
-  const map: Record<string, { label: string; color: string; bg: string }> = {
-    active:     { label: "Active",     color: "#059669", bg: "#ecfdf5" },
-    inactive:   { label: "Inactive",   color: "#6b7280", bg: "#f3f4f6" },
-    onleave:    { label: "On Leave",   color: "#d97706", bg: "#fffbeb" },
-    terminated: { label: "Terminated", color: "#dc2626", bg: "#fef2f2" },
+  const map: Record<string, { label: string; cls: string }> = {
+    active:     { label: "Active",     cls: "bg-emerald-50 text-emerald-700" },
+    inactive:   { label: "Inactive",   cls: "bg-gray-100 text-gray-500"     },
+    onleave:    { label: "On Leave",   cls: "bg-amber-50 text-amber-600"    },
+    terminated: { label: "Terminated", cls: "bg-red-50 text-red-600"        },
   };
-  const s = map[status ?? ""] ?? { label: status ?? "—", color: "#6b7280", bg: "#f3f4f6" };
+  const { label, cls } = map[status ?? ""] ?? { label: "—", cls: "bg-gray-100 text-gray-500" };
   return (
-    <span style={{ fontSize: 12, fontWeight: 600, color: s.color, background: s.bg, padding: "3px 10px", borderRadius: 999 }}>
-      {s.label}
-    </span>
+    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    padding: 20,
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    background: "#f3f4f6",
-    minHeight: "100vh",
-    boxSizing: "border-box",
-  },
-  topGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 18 },
-  statCard: {
-    background: "#fff",
-    padding: "22px 22px 20px",
-    borderRadius: 14,
-    boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)",
-  },
-  panel: {
-    background: "#fff",
-    borderRadius: 14,
-    padding: "22px 24px 28px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)",
-  },
-  panelHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
-  panelTitle: { margin: 0, fontSize: 20, fontWeight: 700, color: "#111827" },
-  headerRight: { display: "flex", gap: 10, alignItems: "center" },
-  searchWrap: { display: "flex" },
-  searchInput: {
-    padding: "10px 14px",
-    fontSize: 14,
-    border: "1px solid #e5e7eb",
-    borderRight: "none",
-    borderRadius: "8px 0 0 8px",
-    outline: "none",
-    width: 320,
-    color: "#374151",
-    background: "#fff",
-    boxSizing: "border-box",
-  },
-  searchBtn: {
-    padding: "10px 18px",
-    fontSize: 14,
-    fontWeight: 600,
-    background: "#16a34a",
-    color: "#fff",
-    border: "none",
-    borderRadius: "0 8px 8px 0",
-    cursor: "pointer",
-  },
-  newBtn: {
-    padding: "10px 18px",
-    fontSize: 14,
-    fontWeight: 600,
-    background: "#16a34a",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    textDecoration: "none",
-    display: "inline-block",
-  },
-  tabs: { display: "flex", gap: 8, marginBottom: 16 },
-  tab: {
-    padding: "7px 16px",
-    fontSize: 14,
-    borderRadius: 999,
-    border: "1px solid #e5e7eb",
-    background: "#fff",
-    cursor: "pointer",
-    color: "#374151",
-    fontWeight: 500,
-  },
-  tabActive: { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#16a34a", fontWeight: 600 },
-  statsRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 4 },
-  smallStat: { background: "#fff", padding: "16px 18px", borderRadius: 10, border: "1px solid #f1f5f9" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 16 },
-  card: {
-    background: "#fff",
-    padding: 14,
-    borderRadius: 10,
-    border: "1px solid #f3f4f6",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    minHeight: 120,
-    boxSizing: "border-box",
-  },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 8,
-    background: "#dcfce7",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: 700,
-    fontSize: 16,
-    color: "#166534",
-    flexShrink: 0,
-  },
-  smallBtn: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    padding: "5px 12px",
-    borderRadius: 7,
-    cursor: "pointer",
-    fontSize: 13,
-    color: "#374151",
-    fontWeight: 500,
-  },
-};

@@ -1,15 +1,9 @@
 import type { LinkToPage } from "@/utils/type";
-import { BuildingIcon, CogIcon, DashboardIcon, UsersIcon } from "../components/icons";
+import { CogIcon, DashboardIcon, UsersIcon } from "../components/icons";
 
-/** CRM Admin sidebar: Dashboard, Configuration (with Departments), Employees */
+/** CRM Admin sidebar: Dashboard, Configuration, Employees */
 export const ADMIN_SIDEBAR_ITEMS: LinkToPage[] = [
   { title: "Dashboard", path: "/admin/dashboard", icon: DashboardIcon },
-  { 
-    title: "Configuration", 
-    icon: CogIcon,
-    children: [
-      { title: "Departments", path: "/admin/departments", icon: BuildingIcon },
-    ],
-  },
+  { title: "Configuration", path: "/admin/configuration", icon: CogIcon },
   { title: "Employees", path: "/admin/employees", icon: UsersIcon },
 ];

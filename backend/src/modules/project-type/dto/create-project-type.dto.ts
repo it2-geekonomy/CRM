@@ -1,24 +1,31 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, IsBoolean, MaxLength, IsUUID } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsUUID, IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
 
 export class CreateProjectTypeDto {
-  @ApiProperty({ example: 'Website Development', description: 'The unique name of the project type' })
+  @ApiProperty({ example: 'Enterprise ERP' })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(100)
   name: string;
 
-  @ApiProperty({ example: 'uuid-here', description: 'The ID of the department this type belongs to' })
-  @IsUUID()
+  @ApiProperty({ 
+    description: 'List of Department UUIDs',
+    example: [
+      'c93170eb-e04f-4769-a902-b0a24071b3d5', 
+      'acee0e13-8538-48d8-927c-5dcf0451fdca'
+    ],
+    type: [String] 
+  })
+  @IsArray()
+  @IsUUID(undefined, { each: true })
   @IsNotEmpty()
-  departmentId: string;
+  departmentIds: string[];
 
-  @ApiPropertyOptional({ example: 'Projects related to web app development', description: 'Detailed description' })
+  @ApiProperty({ required: false, example: 'High-level business systems' })
   @IsString()
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ default: true })
+  @ApiProperty({ default: true })
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;

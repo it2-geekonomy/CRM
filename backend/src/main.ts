@@ -8,15 +8,34 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Enable CORS: allow comma-separated origins; CORS allows only ONE value in
-  // Access-Control-Allow-Origin, so we pass an array and the middleware picks the matching origin.
+  // Access-Control-Allow-Origin. With credentials: true, origin cannot be '*' — use explicit origins.
   const corsOrigin = process.env.CORS_ORIGIN;
-  const origin = corsOrigin
+  const defaultOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+  let originList = corsOrigin
     ? corsOrigin.split(',').map((s) => s.trim()).filter(Boolean)
-    : '*';
+    : defaultOrigins;
+  if (process.env.NODE_ENV !== 'production') {
+    originList = Array.from(new Set([...defaultOrigins, ...originList]));
+  }
+  const allowedSet = new Set(originList.map((o) => o.replace(/\/$/, '')));
+
+  const originAllowed = (reqOrigin: string | undefined): boolean => {
+    if (!reqOrigin) return false;
+    const normalized = reqOrigin.replace(/\/$/, '');
+    return allowedSet.has(normalized);
+  };
 
   app.enableCors({
-    origin,
+    origin: (origin, callback) => {
+      if (originAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   // Global validation pipe
@@ -37,7 +56,7 @@ async function bootstrap() {
   }
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   console.log(`🚀 Application is running on: http://localhost:${port}`);
   if (process.env.NODE_ENV !== 'production') {

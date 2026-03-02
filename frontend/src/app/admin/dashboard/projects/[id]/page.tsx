@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useGetProjectQuery } from "@/store/api/projectApiSlice";
@@ -14,7 +14,7 @@ import {
 import { useGetEmployeesQuery } from "@/store/api/employeeApiSlice";
 import { useGetTaskTypesQuery } from "@/store/api/taskTypeApiSlice";
 import type { TaskDepartment, CreateTaskFormData, TaskStatus } from "./_components/taskTypes";
-import { INITIAL_TASK_DEPARTMENTS, TASK_TYPE_TO_SUBSECTION } from "./_components/taskData";
+import { INITIAL_TASK_DEPARTMENTS, TASK_TYPE_TO_SUBSECTION, buildDepartmentsFromTaskTypes } from "./_components/taskData";
 import { transformTasksToDepartments } from "./_utils/taskTransformers";
 import CreateTaskModal from "./_components/CreateTaskModal";
 import TaskDepartmentList from "./_components/TaskDepartmentList";
@@ -35,6 +35,7 @@ function formatDate(s: string | undefined): string {
 }
 
 export default function ProjectDetailPage() {
+  const router = useRouter();
   const params = useParams();
   const idParam = params?.id;
   const projectId = Array.isArray(idParam) ? idParam?.[0] : idParam;
@@ -167,21 +168,48 @@ export default function ProjectDetailPage() {
 
   const [activeTab, setActiveTab] = useState("Project Info");
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
-  const [departments, setDepartments] = useState<TaskDepartment[]>(INITIAL_TASK_DEPARTMENTS);
-  const departmentsRef = useRef<TaskDepartment[]>(INITIAL_TASK_DEPARTMENTS);
+  
+  // Initialize with empty array - will be populated from backend task types
+  const [departments, setDepartments] = useState<TaskDepartment[]>([]);
+  const departmentsRef = useRef<TaskDepartment[]>([]);
+  const [departmentsInitialized, setDepartmentsInitialized] = useState(false);
 
-  const [expandedDepts, setExpandedDepts] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(INITIAL_TASK_DEPARTMENTS.map((d) => [d.name, true]))
-  );
-  const [expandedSubSections, setExpandedSubSections] = useState<Record<string, boolean>>(() => {
-    const map: Record<string, boolean> = {};
-    INITIAL_TASK_DEPARTMENTS.forEach((d) =>
-      d.subSections.forEach((s) => {
-        map[`${d.name}::${s.name}`] = true;
-      })
-    );
-    return map;
-  });
+  const [expandedDepts, setExpandedDepts] = useState<Record<string, boolean>>({});
+  const [expandedSubSections, setExpandedSubSections] = useState<Record<string, boolean>>({});
+
+  // Build departments from backend task types when they load - ALWAYS use backend data when available
+  useEffect(() => {
+    if (taskTypesData && taskTypesData.length > 0) {
+      const newDepartments = buildDepartmentsFromTaskTypes(taskTypesData);
+      departmentsRef.current = newDepartments;
+      
+      // Always update departments from backend (ensures refresh shows correct data)
+      setDepartments((prev) => {
+        // Preserve expanded states
+        setExpandedDepts((prevDepts) => {
+          const newExpandedDepts: Record<string, boolean> = {};
+          newDepartments.forEach((dept) => {
+            newExpandedDepts[dept.name] = prevDepts[dept.name] ?? true;
+          });
+          return newExpandedDepts;
+        });
+        
+        setExpandedSubSections((prevSubs) => {
+          const newExpandedSubSections: Record<string, boolean> = {};
+          newDepartments.forEach((dept) => {
+            dept.subSections.forEach((sub) => {
+              const key = `${dept.name}::${sub.name}`;
+              newExpandedSubSections[key] = prevSubs[key] ?? true;
+            });
+          });
+          return newExpandedSubSections;
+        });
+        
+        setDepartmentsInitialized(true);
+        return newDepartments;
+      });
+    }
+  }, [taskTypesData]);
   const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(new Set());
 
   // Track previous tasks data to prevent unnecessary updates
@@ -205,7 +233,7 @@ export default function ProjectDetailPage() {
     prevTasksDataLengthRef.current = currentLength;
 
     if (tasksData && tasksData.length > 0) {
-      // Only transform if taskTypes are loaded (needed for department mapping)
+      // Only transform if taskTypes are loaded and departments are initialized
       if (!taskTypesData || taskTypesData.length === 0) {
         if (process.env.NODE_ENV === 'development') {
           console.warn('TaskTypes not loaded yet, skipping transformation. Will retry when taskTypes are available.');
@@ -213,7 +241,13 @@ export default function ProjectDetailPage() {
         return;
       }
       
-      const transformed = transformTasksToDepartments(tasksData, INITIAL_TASK_DEPARTMENTS, taskTypesData);
+      // Ensure departments are built from task types (not hardcoded)
+      // Always rebuild from backend task types to ensure we have the latest data
+      const baseDepartments = buildDepartmentsFromTaskTypes(taskTypesData);
+      departmentsRef.current = baseDepartments;
+      
+      // Transform tasks using departments built from backend task types
+      const transformed = transformTasksToDepartments(tasksData, baseDepartments, taskTypesData);
       setDepartments(transformed);
       departmentsRef.current = transformed;
 
@@ -305,14 +339,12 @@ export default function ProjectDetailPage() {
         return subMap;
       });
     } else if (tasksData && tasksData.length === 0) {
-      // No tasks, use initial empty structure
-      setDepartments((prevDepts) => {
-        if (prevDepts.length === INITIAL_TASK_DEPARTMENTS.length) {
-          return prevDepts;
-        }
-        departmentsRef.current = INITIAL_TASK_DEPARTMENTS;
-        return INITIAL_TASK_DEPARTMENTS;
-      });
+      // No tasks, but still use departments built from backend task types
+      if (taskTypesData && taskTypesData.length > 0) {
+        const emptyDepartments = buildDepartmentsFromTaskTypes(taskTypesData);
+        setDepartments(emptyDepartments);
+        departmentsRef.current = emptyDepartments;
+      }
     }
   }, [tasksData, taskTypesData]); // Also depend on taskTypesData
 
@@ -444,11 +476,12 @@ export default function ProjectDetailPage() {
       const priority = priorityMap[formData.priority] || "Medium";
 
       try {
-        // Store department and taskType in taskDescription as JSON metadata
-        // Format: JSON string with department and taskType
+        // Store department, taskType, and user description in taskDescription as JSON metadata
+        // Format: JSON string with department, taskType, and description
         const taskDescription = JSON.stringify({
           department: formData.department,
           taskType: formData.taskType,
+          description: formData.description || "",
           originalDescription: formData.taskName,
         });
 
@@ -456,7 +489,7 @@ export default function ProjectDetailPage() {
         // This will automatically invalidate the Task cache and trigger refetch
         const taskPayload = {
           name: formData.taskName, // Backend expects 'name'
-          description: taskDescription, // Use task name as description, or you can add a description field to the form
+          description: taskDescription, // Includes user description and metadata
           startDate: startDateStr,
           startTime: "09:00",
           endDate: endDateStr,
@@ -544,8 +577,29 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="bg-gray-100 flex flex-col overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
+      {/* Back Button - Top Left, Outside Header */}
+      <div className="pl-8 pt-6 pb-2">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
       {/* Fixed: Top Header + Breadcrumbs */}
-      <div className="shrink-0 bg-gray-100 pt-6 pb-4">
+      <div className="shrink-0 bg-gray-100 pt-2 pb-4">
         <div className="max-w-[1600px] mx-auto px-8">
           {/* Top Header - Single row with icons */}
           <div className="mb-4 pb-2 border-b border-gray-200">

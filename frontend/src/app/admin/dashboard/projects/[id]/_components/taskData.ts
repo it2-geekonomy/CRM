@@ -1,5 +1,6 @@
 import type { Task, TaskDepartment } from "./taskTypes";
 import { ASSIGNEES } from "./taskTypes";
+import type { TaskTypeApi } from "@/store/api/taskTypeApiSlice";
 
 /** Find a task by ID from departments. Replace with API call when backend is ready. */
 export function getTaskById(departments: TaskDepartment[], taskId: string): Task | null {
@@ -26,6 +27,60 @@ export const TASK_TYPE_TO_SUBSECTION: Record<string, string> = {
   "Content Creation": "CONTENT CREATION",
   "Publishing & Reporting": "PUBLISHING & REPORTING",
 };
+
+/** Department color mapping */
+const DEPARTMENT_COLORS: Record<string, { color: string; progressColor: string }> = {
+  Sales: { color: "bg-pink-500", progressColor: "bg-green-500" },
+  Design: { color: "bg-purple-400", progressColor: "bg-blue-500" },
+  Development: { color: "bg-green-400", progressColor: "bg-purple-500" },
+  "Social Media": { color: "bg-orange-400", progressColor: "bg-orange-500" },
+};
+
+/** Convert task type name to subsection name (uppercase) */
+function taskTypeToSubSection(taskTypeName: string): string {
+  // Use mapping if available, otherwise convert to uppercase
+  return TASK_TYPE_TO_SUBSECTION[taskTypeName] || taskTypeName.toUpperCase();
+}
+
+/** Build departments dynamically from backend task types - only shows task types that exist in backend */
+export function buildDepartmentsFromTaskTypes(taskTypes: TaskTypeApi[]): TaskDepartment[] {
+  // Group task types by department
+  const deptMap = new Map<string, { taskTypes: TaskTypeApi[] }>();
+  
+  taskTypes.forEach((taskType) => {
+    if (!taskType.department?.name) return;
+    
+    const deptName = taskType.department.name;
+    if (!deptMap.has(deptName)) {
+      deptMap.set(deptName, { taskTypes: [] });
+    }
+    deptMap.get(deptName)!.taskTypes.push(taskType);
+  });
+  
+  // Build departments array
+  const departments: TaskDepartment[] = [];
+  
+  deptMap.forEach((deptData, deptName) => {
+    const colors = DEPARTMENT_COLORS[deptName] || { color: "bg-gray-500", progressColor: "bg-gray-500" };
+    
+    // Create subSections from task types - only task types that exist in backend
+    const subSections = deptData.taskTypes.map((taskType) => ({
+      name: taskTypeToSubSection(taskType.name),
+      tasks: [] as Task[],
+    }));
+    
+    departments.push({
+      name: deptName,
+      color: colors.color,
+      progressColor: colors.progressColor,
+      taskCount: 0,
+      progress: 0,
+      subSections,
+    });
+  });
+  
+  return departments;
+}
 
 export const INITIAL_TASK_DEPARTMENTS: TaskDepartment[] = [
   {

@@ -18,6 +18,7 @@ type CreateTaskModalProps = {
 
 const getInitialForm = (firstEmployeeName?: string, firstTaskType?: string): CreateTaskFormData => ({
   taskName: "",
+  description: "",
   department: "Sales",
   taskType: firstTaskType || "",
   assignTo: firstEmployeeName || "",
@@ -179,6 +180,20 @@ export default function CreateTaskModal({
               }`}
             />
             {errors.taskName && <p className="mt-1 text-sm text-red-500">{errors.taskName}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              id="description"
+              value={form.description}
+              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+              placeholder="Enter task description..."
+              rows={4}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-none"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

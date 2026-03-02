@@ -3,7 +3,7 @@
 import { useAppSelector } from "@/store/hooks";
 import { useGetProjectsQuery, type ProjectStatus } from "@/store/api/projectApiSlice";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 const SEARCH_FILTERS = ["All", "Projects", "Clients", "Employee", "Leads", "Sales"];
 const QUICK_FILTERS = ["Active", "Inactive", "Pipeline", "Completed", "Total"];
@@ -18,12 +18,50 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const [activeBtn, setActiveBtn] = useState("My Active Projects");
   const [searchFilter, setSearchFilter] = useState<string | null>(null);
+  const [previousFilter, setPreviousFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [projectSearchInput, setProjectSearchInput] = useState("");
   const [quickFilter, setQuickFilter] = useState<string>("Active");
   const isProjectsView = searchFilter === "Projects";
   const user = useAppSelector((s) => s.auth.currentUser?.user);
   const displayName = (user as { name?: string } | undefined)?.name ?? getDisplayName(user?.email);
+
+  // Restore filter state from sessionStorage when component mounts
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedFilter = sessionStorage.getItem("dashboardFilter");
+    if (savedFilter) {
+      setSearchFilter(savedFilter);
+      sessionStorage.removeItem("dashboardFilter"); // Clear after restoring
+    }
+  }, []);
+
+  // Handle back button - restore previous filter (go back to "All" or null)
+  const handleBack = () => {
+    setSearchFilter(null); // Reset to default (All)
+    setProjectSearchInput("");
+    setSearchQuery("");
+  };
+
+  // Track previous filter when filter changes
+  const handleFilterChange = (filter: string) => {
+    if (filter === "Clients") {
+      router.push("/admin/dashboard/clients");
+      return;
+    }
+    if (filter === "All") {
+      // Reset to default state
+      setSearchFilter(null);
+      setProjectSearchInput("");
+      setSearchQuery("");
+      return;
+    }
+    setPreviousFilter(searchFilter); // Save current filter as previous
+    setSearchFilter(filter);
+    if (filter === "Projects") {
+      setProjectSearchInput(searchQuery.trim());
+    }
+  };
   const buttons = [
     "My Active Projects",
     "Due This Week",
@@ -54,6 +92,29 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="bg-gray-100 min-h-screen py-8">
+      {/* Back Button - Always reserve space to prevent layout shift */}
+      <div className="mb-4 pl-8 h-10">
+        {searchFilter && (
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
       {/* WIDER CONTAINER */}
       <div className="max-w-[1400px] mx-auto px-8">
         {/* Top Card */}
@@ -74,6 +135,7 @@ export default function AdminDashboardPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
+                  setPreviousFilter(searchFilter);
                   setProjectSearchInput(searchQuery.trim());
                   setSearchFilter("Projects");
                 }
@@ -86,16 +148,7 @@ export default function AdminDashboardPage() {
                 <button
                   key={item}
                   type="button"
-                  onClick={() => {
-                    if (item === "Clients") {
-                      router.push("/admin/dashboard/clients");
-                      return;
-                    }
-                    setSearchFilter(item);
-                    if (item === "Projects") {
-                      setProjectSearchInput(searchQuery.trim());
-                    }
-                  }}
+                  onClick={() => handleFilterChange(item)}
                   className={`px-5 py-3 text-base rounded-lg transition-colors ${
                     searchFilter === item
                       ? "bg-white shadow text-gray-900"
@@ -254,7 +307,13 @@ export default function AdminDashboardPage() {
                   <button
                     key={project.id}
                     type="button"
-                    onClick={() => router.push(`/admin/dashboard/projects/${project.id}`)}
+                    onClick={() => {
+                      // Save current filter state before navigating
+                      if (typeof window !== "undefined" && searchFilter) {
+                        sessionStorage.setItem("dashboardFilter", searchFilter);
+                      }
+                      router.push(`/admin/dashboard/projects/${project.id}`);
+                    }}
                     className="w-full text-left rounded-xl border border-gray-200 p-5 hover:border-green-500 transition-colors group relative"
                   >
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-xl group-hover:bg-green-600" />

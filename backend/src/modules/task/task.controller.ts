@@ -36,7 +36,7 @@ import { CreateTaskChecklistDto } from './dto/create-task-checklist.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateTaskFileDto } from './dto/create-task-file.dto';
 
- @ApiTags('Tasks')
+@ApiTags('Tasks')
 @ApiBearerAuth('JWT-auth')
 @Controller('tasks')
 export class TaskController {
@@ -68,6 +68,15 @@ export class TaskController {
   getCalendar(@Query() query: GetCalendarDto, @Req() req: Request) {
     const user = (req as any).user;
     return this.taskService.findCalendar(query, user.sub, user.role);
+  }
+
+  @Get('assignee/:assignedToId')
+  @ApiOperation({ summary: 'Get all tasks assigned to a specific employee' })
+  async findByAssignee(
+    @Param('assignedToId') assignedToId: string,
+    @Query() query: TaskQueryDto,
+  ) {
+    return this.taskService.getTasksByAssignee(assignedToId, query);
   }
 
   @Get('project/:projectId')

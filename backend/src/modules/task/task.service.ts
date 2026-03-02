@@ -93,9 +93,22 @@ export class TaskService {
       );
     }
 
+    if (query.date) {
+      qb.andWhere(
+        ':clickedDate BETWEEN task.startDate AND task.endDate',
+        { clickedDate: query.date }
+      );
+    }
+
     if (query.departmentId) {
       qb.andWhere('department.id = :departmentId', {
         departmentId: query.departmentId,
+      });
+    }
+
+    if (query.priority) {
+      qb.andWhere('task.priority = :priority', {
+        priority: query.priority,
       });
     }
 

@@ -4,7 +4,7 @@ import {
   HttpStatus,
   ConflictException,
   BadRequestException,
-  NotFoundException
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
@@ -21,12 +21,18 @@ import { ProjectType } from '../project-type/entities/project-type.entity';
 @Injectable()
 export class ProjectsService {
   constructor(
-    @InjectRepository(Project) private readonly projectRepository: Repository<Project>,
-    @InjectRepository(AdminProfile) private readonly adminProfileRepository: Repository<AdminProfile>,
-    @InjectRepository(EmployeeProfile) private readonly employeeProfileRepository: Repository<EmployeeProfile>,
-    @InjectRepository(ProjectDocument) private readonly documentRepository: Repository<ProjectDocument>,
-    @InjectRepository(Client) private readonly clientRepository: Repository<Client>,
-    @InjectRepository(ProjectType) private readonly projectTypeRepository: Repository<ProjectType>,
+    @InjectRepository(Project)
+    private readonly projectRepository: Repository<Project>,
+    @InjectRepository(AdminProfile)
+    private readonly adminProfileRepository: Repository<AdminProfile>,
+    @InjectRepository(EmployeeProfile)
+    private readonly employeeProfileRepository: Repository<EmployeeProfile>,
+    @InjectRepository(ProjectDocument)
+    private readonly documentRepository: Repository<ProjectDocument>,
+    @InjectRepository(Client)
+    private readonly clientRepository: Repository<Client>,
+    @InjectRepository(ProjectType)
+    private readonly projectTypeRepository: Repository<ProjectType>,
   ) { }
 
   async create(dto: CreateProjectDto, userId: string) {
@@ -36,8 +42,19 @@ export class ProjectsService {
         if (existing) throw new ConflictException(`Project code "${dto.code}" already exists`);
       }
 
-      const adminProfile = await this.adminProfileRepository.findOne({ where: { user: { id: userId } } });
-      if (!adminProfile) throw new HttpException('Admin profile not found.', HttpStatus.FORBIDDEN);
+      const [adminProfile, client, projectType, manager, lead] = await Promise.all([
+        this.adminProfileRepository.findOne({ where: { user: { id: userId } } }),
+        dto.clientId ? this.clientRepository.findOne({ where: { id: dto.clientId } }) : Promise.resolve(null),
+        dto.projectTypeId ? this.projectTypeRepository.findOne({ where: { id: dto.projectTypeId } }) : Promise.resolve(null),
+        dto.projectManagerId ? this.adminProfileRepository.findOne({ where: { id: dto.projectManagerId } }) : Promise.resolve(null),
+        dto.projectLeadId ? this.employeeProfileRepository.findOne({ where: { id: dto.projectLeadId } }) : Promise.resolve(null),
+      ]);
+
+      if (!adminProfile) throw new NotFoundException('Admin profile not found');
+      if (dto.clientId && !client) throw new NotFoundException('Client not found');
+      if (dto.projectTypeId && !projectType) throw new NotFoundException('Project type not found');
+      if (dto.projectManagerId && !manager) throw new NotFoundException('Project manager not found');
+      if (dto.projectLeadId && !lead) throw new NotFoundException('Project lead not found');
 
       const project = this.projectRepository.create({
         ...dto,
@@ -46,7 +63,6 @@ export class ProjectsService {
       });
 
       const saved = await this.projectRepository.save(project);
-
       return {
         id: saved.id,
         name: saved.name,
@@ -54,67 +70,44 @@ export class ProjectsService {
         status: saved.status,
         createdAt: saved.createdAt,
       };
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof HttpException) throw error;
-      throw new BadRequestException(`Database Error: ${error.message}`);
+      throw new BadRequestException(error.message || 'Failed to create project');
     }
   }
 
   async findAll(filterDto: ProjectQueryDto) {
-    try {
-      const { status, projectTypeId, managerId, search, fromDate, toDate, page, limit, sortOrder } = filterDto;
-      const skip = (page - 1) * limit;
+    const { page = 1, limit = 10, sortOrder = 'ASC', search } = filterDto;
+    const skip = (page - 1) * limit;
 
-      const query = this.projectRepository.createQueryBuilder('project')
-        .leftJoinAndSelect('project.projectType', 'projectType')
-        .leftJoinAndSelect('projectType.departments', 'departments')
-        .leftJoinAndSelect('project.projectManager', 'projectManager')
-        .leftJoinAndSelect('project.projectLead', 'projectLead')
-        .leftJoinAndSelect('project.creator', 'creator')
-        .leftJoinAndSelect('project.client', 'client');
+    const query = this.projectRepository.createQueryBuilder('project')
+      .leftJoinAndSelect('project.projectType', 'projectType')
+      .leftJoinAndSelect('project.projectManager', 'projectManager')
+      .leftJoinAndSelect('project.projectLead', 'projectLead')
+      .leftJoinAndSelect('project.creator', 'creator')
+      .leftJoinAndSelect('project.client', 'client')
+      .loadRelationCountAndMap('project.taskCount', 'project.tasks')
+      .loadRelationCountAndMap('project.documentCount', 'project.documents');
 
-      if (status) query.andWhere('project.status = :status', { status });
-      if (projectTypeId) query.andWhere('project.projectTypeId = :projectTypeId', { projectTypeId });
-      if (managerId) query.andWhere('project.projectManagerId = :managerId', { managerId });
-
-      if (search) {
-        query.andWhere('(project.name ILIKE :search OR project.code ILIKE :search)', { search: `%${search}%` });
-      }
-
-      if (fromDate) query.andWhere('project.startDate >= :fromDate', { fromDate });
-      if (toDate) query.andWhere('project.endDate <= :toDate', { toDate });
-
-      query.orderBy('project.createdAt', sortOrder).skip(skip).take(limit);
-      const [items, total] = await query.getManyAndCount();
-
-      const cleanedItems = items.map(project => {
-        const {
-          projectTypeId,
-          projectManagerId,
-          projectLeadId,
-          clientId,
-          createdBy,
-          ...cleanProject
-        } = project as any;
-
-        return {
-          ...cleanProject,
-          projectType: project.projectType ?? 'deactivated',
-        };
-      });
-
-      return {
-        data: cleanedItems,
-        meta: {
-          totalItems: total,
-          totalPages: Math.ceil(total / limit),
-          currentPage: page
-        }
-      };
-
-    } catch (error) {
-      throw new HttpException(error.message || 'Failed to fetch projects', HttpStatus.INTERNAL_SERVER_ERROR);
+    if (search) {
+      query.andWhere('project.name ILIKE :search', { search: `%${search}%` });
     }
+
+    query.skip(skip).take(limit).orderBy('project.createdAt', sortOrder);
+
+    const [projects, total] = await query.getManyAndCount();
+
+    return {
+      data: projects.map(p => {
+        if (!p.projectType) (p as any).projectType = 'deactivated';
+        return p;
+      }),
+      meta: {
+        totalItems: total,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    };
   }
 
   async findOne(id: string) {
@@ -128,25 +121,19 @@ export class ProjectsService {
         'documents',
         'tasks',
         'projectType',
-        'projectType.departments'
+        'projectType.departments',
       ],
     });
 
-    if (!project) throw new NotFoundException(`Project with ID "${id}" not found`);
+    if (!project) {
+      throw new NotFoundException(`Project with ID "${id}" not found`);
+    }
 
-    const {
-      projectTypeId,
-      projectManagerId,
-      projectLeadId,
-      clientId,
-      createdBy,
-      ...cleanProject
-    } = project as any;
+    if (!project.projectType) {
+      (project as any).projectType = 'deactivated';
+    }
 
-    return {
-      ...cleanProject,
-      projectType: project.projectType ?? 'deactivated',
-    };
+    return project;
   }
 
   async update(id: string, dto: UpdateProjectDto) {
@@ -154,17 +141,39 @@ export class ProjectsService {
     if (!project) throw new NotFoundException(`Project with ID "${id}" not found`);
 
     if (dto.code) {
-      const existingByCode = await this.projectRepository.findOne({
-        where: { code: dto.code, id: Not(id) },
-      });
+      const existingByCode = await this.projectRepository.findOne({ where: { code: dto.code, id: Not(id) } });
       if (existingByCode) throw new ConflictException(`Project code "${dto.code}" is already taken`);
     }
 
     try {
+      if (dto.projectTypeId) {
+        const projectType = await this.projectTypeRepository.findOne({ where: { id: dto.projectTypeId } });
+        if (!projectType) throw new NotFoundException('Project type not found');
+        project.projectType = projectType;
+      }
+
+      if (dto.clientId) {
+        const client = await this.clientRepository.findOne({ where: { id: dto.clientId } });
+        if (!client) throw new NotFoundException('Client not found');
+        project.client = client;
+      }
+
+      if (dto.projectManagerId) {
+        const manager = await this.adminProfileRepository.findOne({ where: { id: dto.projectManagerId } });
+        if (!manager) throw new NotFoundException('Project manager not found');
+        project.projectManager = manager;
+      }
+
+      if (dto.projectLeadId) {
+        const lead = await this.employeeProfileRepository.findOne({ where: { id: dto.projectLeadId } });
+        if (!lead) throw new NotFoundException('Project lead not found');
+        project.projectLead = lead;
+      }
+
       this.projectRepository.merge(project, dto);
       await this.projectRepository.save(project);
       return this.findOne(id);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof HttpException) throw error;
       throw new BadRequestException(`Database Error: ${error.message}`);
     }
@@ -206,7 +215,7 @@ export class ProjectsService {
   async findOneDocument(documentId: string) {
     const document = await this.documentRepository.findOne({
       where: { id: documentId },
-      relations: ['project']
+      relations: ['project'],
     });
     if (!document) throw new NotFoundException(`Document with ID "${documentId}" not found`);
     return document;

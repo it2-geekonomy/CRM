@@ -4,8 +4,9 @@ export class CreateProjectsTable1770792048680 implements MigrationInterface {
     name = 'CreateProjectsTable1770792048680'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+        // 1. Create the Enum Type including 'Archived'
         await queryRunner.query(`
-            CREATE TYPE "public"."projects_status_enum" AS ENUM('Draft', 'Active', 'Completed')
+            CREATE TYPE "public"."projects_status_enum" AS ENUM('Draft', 'Active', 'Completed', 'Archived')
         `);
 
         // 2. Create the Projects Table

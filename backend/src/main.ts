@@ -1,5 +1,5 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
+import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { setupSwagger } from './swagger';
@@ -7,8 +7,7 @@ import { setupSwagger } from './swagger';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Enable CORS: allow comma-separated origins; CORS allows only ONE value in
-  // Access-Control-Allow-Origin, so we pass an array and the middleware picks the matching origin.
+  // Enable CORS
   const corsOrigin = process.env.CORS_ORIGIN;
   const origin = corsOrigin
     ? corsOrigin.split(',').map((s) => s.trim()).filter(Boolean)
@@ -19,19 +18,23 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // ✅ Enable Class Serializer (IMPORTANT for @Exclude)
+  app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector)),
+  );
+
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Strip properties that don't have decorators
-      forbidNonWhitelisted: true, // Throw error if non-whitelisted properties are sent
-      transform: true, // Automatically transform payloads to DTO instances
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
       transformOptions: {
-        enableImplicitConversion: true, // Enable implicit type conversion
+        enableImplicitConversion: true,
       },
     }),
   );
 
-  // Setup Swagger documentation (only in development)
   if (process.env.NODE_ENV !== 'production') {
     setupSwagger(app);
   }

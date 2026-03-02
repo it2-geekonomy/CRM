@@ -12,7 +12,7 @@ export class CreateProjectTypesTable1737744800000 implements MigrationInterface 
                 "is_active" boolean NOT NULL DEFAULT true,
                 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
                 "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
-                "deleted_at" TIMESTAMP, -- ADD THIS LINE
+                "deleted_at" TIMESTAMP, 
                 CONSTRAINT "UQ_project_type_name" UNIQUE ("name"),
                 CONSTRAINT "PK_project_types" PRIMARY KEY ("id")
             )

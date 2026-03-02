@@ -12,6 +12,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Department } from '../../department/entities/department.entity';
 import { Project } from '../../projects/entities/project.entity';
+import { Client } from '../../client/entities/client.entity';
 
 @Entity('employee_profiles')
 export class EmployeeProfile {
@@ -24,7 +25,7 @@ export class EmployeeProfile {
 
     @ManyToOne(() => Department, (department) => department.employees, {
         nullable: true,
-        onDelete: 'SET NULL', 
+        onDelete: 'SET NULL',
     })
     @JoinColumn({ name: 'department_id' })
     department: Department | null;
@@ -77,4 +78,7 @@ export class EmployeeProfile {
 
     @OneToMany(() => Project, (project) => project.projectLead)
     ledProjects: Project[];
+
+    @OneToMany(() => Client, (client) => client.salesManager)
+    managedClients: Client[];
 }

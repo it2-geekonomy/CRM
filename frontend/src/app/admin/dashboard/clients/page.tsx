@@ -13,46 +13,117 @@ export default function ClientsPage() {
   const filteredClients = clients?.filter(
     (client) =>
       client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (isLoading) {
     return (
-      <div className="p-8">
-        <p className="text-gray-500">Loading clients...</p>
+      <div className="bg-gray-100 min-h-screen py-8">
+        <div className="h-10 mb-4 pl-8 flex items-center">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="max-w-[1400px] mx-auto px-8">
+          <div className="p-8">
+            <p className="text-gray-500">Loading clients...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="p-8">
-        <p className="text-red-500">Error loading clients</p>
+      <div className="bg-gray-100 min-h-screen py-8">
+        <div className="h-10 mb-4 pl-8 flex items-center">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="max-w-[1400px] mx-auto px-8">
+          <div className="p-8">
+            <p className="text-red-500">Error loading clients</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800 mb-2">Clients</h1>
-          <p className="text-gray-500 text-sm">Manage your client relationships</p>
-        </div>
-        <Link
-          href="/admin/dashboard/clients/new/configuration"
-          className="px-4 py-2.5 sm:px-5 bg-[#69AE44] text-white text-sm font-semibold rounded-lg hover:bg-[#538935] transition text-center inline-block w-full sm:w-auto"
+    <div className="bg-gray-100 min-h-screen py-8">
+      {/* Back Button Container - Always reserve space */}
+      <div className="h-10 mb-4 pl-8 flex items-center">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
         >
-          + Add Client
-        </Link>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
       </div>
+      
+      <div className="max-w-[1400px] mx-auto px-8">
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800 mb-2">Clients</h1>
+              <p className="text-gray-500 text-sm">Manage your client relationships</p>
+            </div>
+            <Link
+              href="/admin/dashboard/clients/new/configuration"
+              className="px-4 py-2.5 sm:px-5 bg-[#69AE44] text-white text-sm font-semibold rounded-lg hover:bg-[#538935] transition text-center inline-block w-full sm:w-auto"
+            >
+              + Add Client
+            </Link>
+          </div>
 
       {/* Search */}
       <div className="mb-6">
         <input
           type="text"
-          placeholder="Search clients by name, company, or email..."
+          placeholder="Search clients by name or email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
@@ -72,7 +143,7 @@ export default function ClientsPage() {
                       Client
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Company
+                      Industry
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Email
@@ -95,7 +166,7 @@ export default function ClientsPage() {
                         <div className="text-sm font-medium text-gray-900">{client.name}</div>
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{client.company || "—"}</div>
+                        <div className="text-sm text-gray-500">{client.industry || "—"}</div>
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500 truncate max-w-[200px]">
@@ -142,8 +213,8 @@ export default function ClientsPage() {
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
                     <h3 className="text-base font-semibold text-gray-900 mb-1">{client.name}</h3>
-                    {client.company && (
-                      <p className="text-sm text-gray-500 mb-2">{client.company}</p>
+                    {client.industry && (
+                      <p className="text-sm text-gray-500 mb-2">{client.industry}</p>
                     )}
                   </div>
                   <span
@@ -192,6 +263,8 @@ export default function ClientsPage() {
           )}
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

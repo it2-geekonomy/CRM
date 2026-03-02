@@ -5,8 +5,9 @@ export type ClientContact = {
   name: string;
   email?: string;
   phone?: string;
-  role?: string;
-  contactType?: string; // "Primary" | "Billing" | "Technical"
+  title?: string; // Job title (e.g., "CEO")
+  role?: string; // Contact role (e.g., "Primary", "Billing", "Technical")
+  // Note: Backend uses "role" for contact type, "title" for job title
 };
 
 export type ClientApi = {
@@ -14,10 +15,10 @@ export type ClientApi = {
   name: string;
   email?: string;
   phone?: string;
-  company?: string;
   status: boolean;
   // Extended fields
   logo?: string;
+  logoUrl?: string; // Backend may return logoUrl instead of logo
   clientCode?: string;
   industry?: string;
   companySize?: string;
@@ -31,28 +32,27 @@ export type ClientApi = {
   paymentTerms?: string;
   currency?: string;
   paymentMethod?: string;
-  creditLimit?: string;
+  creditLimit?: number; // Backend returns number
   billingNotes?: string;
-  enablePortalAccess?: boolean;
-  sendNotifications?: boolean;
-  sendMonthlyReports?: boolean;
-  autoSendInvoices?: boolean;
-  ndaSigned?: boolean;
   clientSince?: string;
-  accountManagerId?: string;
+  salesManagerId?: string; // Backend uses salesManagerId
   internalNotes?: string;
-  isDraft?: boolean;
-  contacts?: ClientContact[];
+  contacts?: Array<{
+    name?: string;
+    title?: string;
+    email?: string;
+    phone?: string;
+    role?: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 };
 
 export type CreateClientDto = {
   name: string;
-  email?: string;
+  email: string; // Required by backend
   phone?: string;
-  company?: string;
-  logo?: string;
+  logo?: string; // Base64 string or file
   clientCode?: string;
   industry?: string;
   companySize?: string;
@@ -66,18 +66,19 @@ export type CreateClientDto = {
   paymentTerms?: string;
   currency?: string;
   paymentMethod?: string;
-  creditLimit?: string;
+  creditLimit?: number; // Backend expects number, not string
   billingNotes?: string;
-  enablePortalAccess?: boolean;
-  sendNotifications?: boolean;
-  sendMonthlyReports?: boolean;
-  autoSendInvoices?: boolean;
-  ndaSigned?: boolean;
   clientSince?: string;
-  accountManagerId?: string;
+  salesManagerId?: string; // Backend expects salesManagerId, not accountManagerId
   internalNotes?: string;
-  isDraft?: boolean;
-  contacts?: ClientContact[];
+  status?: boolean; // Backend uses status instead of isDraft
+  contacts?: Array<{
+    name?: string;
+    title?: string; // Job title
+    email?: string; // Must be valid email if provided
+    phone?: string;
+    role?: string; // Contact type: "Primary", "Billing", "Technical"
+  }>;
 };
 
 export type UpdateClientDto = Partial<CreateClientDto>;
@@ -123,6 +124,16 @@ export const clientApiSlice = apiSlice.injectEndpoints({
         { type: "Project", id: `CLIENT-${id}` },
       ],
     }),
+    deleteClient: builder.mutation<{ message: string }, string>({
+      query: (id) => ({
+        url: `/clients/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Project", id: "CLIENTS" },
+        { type: "Project", id: `CLIENT-${id}` },
+      ],
+    }),
   }),
 });
 
@@ -131,4 +142,5 @@ export const {
   useGetClientQuery,
   useCreateClientMutation,
   useUpdateClientMutation,
+  useDeleteClientMutation,
 } = clientApiSlice;

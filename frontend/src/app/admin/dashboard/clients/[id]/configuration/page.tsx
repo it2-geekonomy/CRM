@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 import {
   useGetClientQuery,
@@ -9,7 +9,7 @@ import {
   useUpdateClientMutation,
   type ClientContact,
 } from "@/store/api/clientApiSlice";
-import { useGetAdminsQuery } from "@/store/api/adminApiSlice";
+import { useGetEmployeesQuery } from "@/store/api/employeeApiSlice";
 import Link from "next/link";
 
 const INDUSTRIES = [
@@ -57,6 +57,15 @@ const PAYMENT_METHODS = [
 
 const CONTACT_TYPES = ["Primary", "Billing", "Technical"];
 
+// Common CSS classes
+const INPUT_CLASS = "w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10";
+const LABEL_CLASS = "block text-sm font-semibold text-gray-700 mb-2";
+const SECTION_HEADER_CLASS = "text-base sm:text-lg font-semibold text-gray-800";
+const CARD_CLASS = "bg-white border border-gray-200 rounded-xl p-4 sm:p-6 lg:p-7 mb-6";
+
+// Email validation regex
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function ClientConfigurationPage() {
   const router = useRouter();
   const params = useParams();
@@ -68,8 +77,9 @@ export default function ClientConfigurationPage() {
     skip: isNewClient,
   });
 
-  const { data: adminsData } = useGetAdminsQuery();
-  const admins = Array.isArray(adminsData) ? adminsData : [];
+  // Use employees instead of admins - salesManagerId must reference employee_profiles
+  const { data: employeesData } = useGetEmployeesQuery({ limit: 100 });
+  const employees = employeesData?.data || [];
 
   const [createClient, { isLoading: isCreating }] = useCreateClientMutation();
   const [updateClient, { isLoading: isUpdating }] = useUpdateClientMutation();
@@ -97,96 +107,100 @@ export default function ClientConfigurationPage() {
   const [creditLimit, setCreditLimit] = useState("");
   const [billingNotes, setBillingNotes] = useState("");
 
-  const [enablePortalAccess, setEnablePortalAccess] = useState(true);
-  const [sendNotifications, setSendNotifications] = useState(true);
-  const [sendMonthlyReports, setSendMonthlyReports] = useState(true);
-  const [autoSendInvoices, setAutoSendInvoices] = useState(true);
-  const [ndaSigned, setNdaSigned] = useState(false);
-
   const [clientSince, setClientSince] = useState("");
   const [accountManagerId, setAccountManagerId] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
 
   const [contacts, setContacts] = useState<ClientContact[]>([]);
   const [editingContactIndex, setEditingContactIndex] = useState<number | null>(null);
-  const [isDraft, setIsDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Load client data if editing
   useEffect(() => {
-    if (client && !isNewClient) {
-      setCompanyName(client.company || client.name || "");
-      setClientCode(client.clientCode || "");
-      setIndustry(client.industry || "");
-      setCompanySize(client.companySize || "");
-      setWebsite(client.website || "");
-      setTaxId(client.taxId || "");
-      setLogoUrl(client.logo || null);
-
-      setStreetAddress(client.streetAddress || "");
-      setCity(client.city || "");
-      setState(client.state || "");
-      setPostalCode(client.postalCode || "");
-      setCountry(client.country || "India");
-      setPhone(client.phone || "");
-      setEmail(client.email || "");
-
-      setPaymentTerms(client.paymentTerms || "Net 30");
-      setCurrency(client.currency || "INR - Indian Rupee");
-      setPaymentMethod(client.paymentMethod || "Bank Transfer");
-      setCreditLimit(client.creditLimit || "");
-      setBillingNotes(client.billingNotes || "");
-
-      setEnablePortalAccess(client.enablePortalAccess ?? true);
-      setSendNotifications(client.sendNotifications ?? true);
-      setSendMonthlyReports(client.sendMonthlyReports ?? true);
-      setAutoSendInvoices(client.autoSendInvoices ?? true);
-      setNdaSigned(client.ndaSigned ?? false);
-
-      setClientSince(client.clientSince ? client.clientSince.split("T")[0] : "");
-      setAccountManagerId(client.accountManagerId || "");
-      setInternalNotes(client.internalNotes || "");
-
-      setContacts(client.contacts || []);
-      setIsDraft(client.isDraft ?? false);
-    }
+    if (!client || isNewClient) return;
+    
+    setCompanyName(client.name || "");
+    setClientCode(client.clientCode || "");
+    setIndustry(client.industry || "");
+    setCompanySize(client.companySize || "");
+    setWebsite(client.website || "");
+    setTaxId(client.taxId || "");
+    setLogoUrl(client.logo || client.logoUrl || null);
+    setStreetAddress(client.streetAddress || "");
+    setCity(client.city || "");
+    setState(client.state || "");
+    setPostalCode(client.postalCode || "");
+    setCountry(client.country || "India");
+    setPhone(client.phone || "");
+    setEmail(client.email || "");
+    setPaymentTerms(client.paymentTerms || "Net 30");
+    setCurrency(client.currency || "INR - Indian Rupee");
+    setPaymentMethod(client.paymentMethod || "Bank Transfer");
+    setCreditLimit(client.creditLimit?.toString() || "");
+    setBillingNotes(client.billingNotes || "");
+    setClientSince(client.clientSince ? client.clientSince.split("T")[0] : "");
+    setAccountManagerId((client as any).salesManagerId || (client as any).accountManagerId || "");
+    setInternalNotes(client.internalNotes || "");
+    setContacts((client.contacts || []).map((c) => ({ name: c.name || "", title: c.title, email: c.email, phone: c.phone, role: c.role })));
   }, [client, isNewClient]);
 
-  // Set default account manager
-  useEffect(() => {
-    if (admins.length > 0 && !accountManagerId) {
-      setAccountManagerId(admins[0].id);
-    }
-  }, [admins, accountManagerId]);
-
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Logo file size must be less than 5MB");
-        return;
-      }
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please upload an image file");
-        return;
-      }
+  const compressImage = (file: File, maxWidth = 400, maxHeight = 400, quality = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoUrl(reader.result as string);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let { width, height } = img;
+          if (width > height && width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          } else if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return reject(new Error("Could not get canvas context"));
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
       };
+      reader.onerror = reject;
       reader.readAsDataURL(file);
+    });
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Logo file size must be less than 5MB");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+    try {
+      const compressedBase64 = await compressImage(file, 400, 400, 0.7);
+      if (compressedBase64.length > 500 * 1024) {
+        setLogoUrl(await compressImage(file, 300, 300, 0.6));
+        toast.info("Image compressed to reduce size");
+      } else {
+        setLogoUrl(compressedBase64);
+      }
+    } catch (error) {
+      toast.error("Failed to process image");
+      console.error("Image compression error:", error);
     }
   };
 
   const handleAddContact = () => {
-    const newContact: ClientContact = {
-      name: "",
-      email: "",
-      phone: "",
-      role: "",
-      contactType: "Primary",
-    };
-    setContacts([...contacts, newContact]);
+    setContacts([...contacts, { name: "", email: "", phone: "", title: "", role: "Primary" }]);
     setEditingContactIndex(contacts.length);
   };
 
@@ -202,45 +216,66 @@ export default function ClientConfigurationPage() {
 
   const handleSave = async (saveAsDraft: boolean = false) => {
     setError(null);
-
+    
     if (!saveAsDraft && !companyName.trim()) {
-      setError("Company Name is required");
-      toast.error("Company Name is required");
+      const msg = "Company Name is required";
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
+    
+    if (!email.trim()) {
+      const msg = "Email is required";
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
+    
+    if (!EMAIL_REGEX.test(email.trim())) {
+      const msg = "Please enter a valid email address";
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
-    const clientData = {
+    const finalLogoUrl = logoUrl && logoUrl.length > 500 * 1024 ? (toast.warning("Logo is too large and will not be saved. Please use a smaller image."), undefined) : logoUrl || undefined;
+    
+    const preparedContacts = contacts
+      .filter((c) => c.name.trim())
+      .map((c) => ({ name: c.name.trim(), title: c.title?.trim(), email: c.email?.trim(), phone: c.phone?.trim(), role: c.role?.trim() }))
+      .filter((c) => !c.email || EMAIL_REGEX.test(c.email));
+
+    const trimOrUndef = (val: string) => val.trim() || undefined;
+    const clientData: any = {
       name: companyName.trim(),
-      email: email.trim() || undefined,
-      phone: phone.trim() || undefined,
-      company: companyName.trim(),
-      logo: logoUrl || undefined,
-      clientCode: clientCode.trim() || undefined,
+      email: email.trim(),
+      phone: trimOrUndef(phone),
+      logo: finalLogoUrl,
+      clientCode: trimOrUndef(clientCode),
       industry: industry || undefined,
       companySize: companySize || undefined,
-      website: website.trim() || undefined,
-      taxId: taxId.trim() || undefined,
-      streetAddress: streetAddress.trim() || undefined,
-      city: city.trim() || undefined,
-      state: state.trim() || undefined,
-      postalCode: postalCode.trim() || undefined,
+      website: trimOrUndef(website),
+      taxId: trimOrUndef(taxId),
+      streetAddress: trimOrUndef(streetAddress),
+      city: trimOrUndef(city),
+      state: trimOrUndef(state),
+      postalCode: trimOrUndef(postalCode),
       country: country || undefined,
       paymentTerms: paymentTerms || undefined,
       currency: currency || undefined,
       paymentMethod: paymentMethod || undefined,
-      creditLimit: creditLimit.trim() || undefined,
-      billingNotes: billingNotes.trim() || undefined,
-      enablePortalAccess,
-      sendNotifications,
-      sendMonthlyReports,
-      autoSendInvoices,
-      ndaSigned,
+      creditLimit: creditLimit.trim() ? parseFloat(creditLimit.trim()) : undefined,
+      billingNotes: trimOrUndef(billingNotes),
       clientSince: clientSince || undefined,
-      accountManagerId: accountManagerId || undefined,
-      internalNotes: internalNotes.trim() || undefined,
-      isDraft: saveAsDraft,
-      contacts: contacts.filter((c) => c.name.trim()),
+      salesManagerId: accountManagerId.trim() || undefined,
+      internalNotes: trimOrUndef(internalNotes),
+      status: !saveAsDraft,
+      contacts: preparedContacts.length > 0 ? preparedContacts : undefined,
     };
+    
+    Object.keys(clientData).forEach((key) => {
+      if (clientData[key] === undefined || clientData[key] === "") delete clientData[key];
+    });
 
     try {
       if (isNewClient) {
@@ -252,26 +287,14 @@ export default function ClientConfigurationPage() {
         toast.success(saveAsDraft ? "Client saved as draft" : "Client updated successfully");
       }
     } catch (err: any) {
-      const errorMsg =
-        err?.data?.message || err?.message || "Failed to save client. Please try again.";
+      const errorMsg = err?.data?.message || err?.message || "Failed to save client. Please try again.";
       setError(errorMsg);
       toast.error(errorMsg);
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const getContactAvatarColor = (index: number) => {
-    const colors = ["#69AE44", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899"];
-    return colors[index % colors.length];
-  };
+  const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  const getContactAvatarColor = (index: number) => ["#69AE44", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899"][index % 5];
 
   if (!isNewClient && isLoadingClient) {
     return (
@@ -314,9 +337,9 @@ export default function ClientConfigurationPage() {
         )}
 
         {/* Company Information */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 lg:p-7 mb-6">
+        <div className={CARD_CLASS}>
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-800">Company Information</h2>
+            <h2 className={SECTION_HEADER_CLASS}>Company Information</h2>
             <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-md w-fit">
               Active
             </span>
@@ -324,9 +347,7 @@ export default function ClientConfigurationPage() {
 
           {/* Logo Upload */}
           <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Company Logo
-            </label>
+            <label className={LABEL_CLASS}>Company Logo</label>
             <div
               onClick={() => fileInputRef.current?.click()}
               className="w-[120px] h-[120px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#69AE44] hover:bg-green-50/5 transition-colors"
@@ -353,58 +374,32 @@ export default function ClientConfigurationPage() {
           {/* Form Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Company Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="e.g., ABC Corporation"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <label className={LABEL_CLASS}>Company Name <span className="text-red-500">*</span></label>
+              <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="e.g., ABC Corporation" className={INPUT_CLASS} />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Client Code</label>
-              <input
-                type="text"
-                value={clientCode}
-                onChange={(e) => setClientCode(e.target.value)}
-                placeholder="e.g., ABC-001"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <label className={LABEL_CLASS}>Client Code</label>
+              <input type="text" value={clientCode} onChange={(e) => setClientCode(e.target.value)} placeholder="e.g., ABC-001" className={INPUT_CLASS} />
               <p className="text-xs text-gray-500 mt-1">Auto-generated if left blank</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Industry</label>
-              <select
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              >
+              <label className={LABEL_CLASS}>Industry</label>
+              <select value={industry} onChange={(e) => setIndustry(e.target.value)} className={INPUT_CLASS}>
                 <option value="">Select Industry</option>
                 {INDUSTRIES.map((ind) => (
-                  <option key={ind} value={ind}>
-                    {ind}
-                  </option>
+                  <option key={ind} value={ind}>{ind}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Company Size</label>
-              <select
-                value={companySize}
-                onChange={(e) => setCompanySize(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              >
+              <label className={LABEL_CLASS}>Company Size</label>
+              <select value={companySize} onChange={(e) => setCompanySize(e.target.value)} className={INPUT_CLASS}>
                 <option value="">Select Size</option>
                 {COMPANY_SIZES.map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
+                  <option key={size} value={size}>{size}</option>
                 ))}
               </select>
             </div>
@@ -412,98 +407,52 @@ export default function ClientConfigurationPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Website</label>
-              <input
-                type="url"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                placeholder="https://www.example.com"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <label className={LABEL_CLASS}>Website</label>
+              <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://www.example.com" className={INPUT_CLASS} />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Tax ID / Registration Number
               </label>
-              <input
-                type="text"
-                value={taxId}
-                onChange={(e) => setTaxId(e.target.value)}
-                placeholder="e.g., 12-3456789"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <input type="text" value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="e.g., 12-3456789" className={INPUT_CLASS} />
             </div>
           </div>
         </div>
 
         {/* Address & Contact */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 lg:p-7 mb-6">
+        <div className={CARD_CLASS}>
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-800">Address & Contact</h2>
+            <h2 className={SECTION_HEADER_CLASS}>Address & Contact</h2>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:gap-5 mb-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Street Address
-              </label>
-              <input
-                type="text"
-                value={streetAddress}
-                onChange={(e) => setStreetAddress(e.target.value)}
-                placeholder="Street address"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <label className={LABEL_CLASS}>Street Address</label>
+              <input type="text" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="Street address" className={INPUT_CLASS} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="City"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <label className={LABEL_CLASS}>City</label>
+              <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className={INPUT_CLASS} />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                State / Province
-              </label>
-              <input
-                type="text"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                placeholder="State"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <label className={LABEL_CLASS}>State / Province</label>
+              <input type="text" value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className={INPUT_CLASS} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Postal Code</label>
-              <input
-                type="text"
-                value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
-                placeholder="Postal code"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <label className={LABEL_CLASS}>Postal Code</label>
+              <input type="text" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="Postal code" className={INPUT_CLASS} />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
-              <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              >
+              <label className={LABEL_CLASS}>Country</label>
+              <select value={country} onChange={(e) => setCountry(e.target.value)} className={INPUT_CLASS}>
                 {COUNTRIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
+                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
@@ -511,32 +460,20 @@ export default function ClientConfigurationPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 (555) 123-4567"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <label className={LABEL_CLASS}>Phone Number</label>
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 123-4567" className={INPUT_CLASS} />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">General Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="info@company.com"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <label className={LABEL_CLASS}>General Email</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="info@company.com" className={INPUT_CLASS} />
             </div>
           </div>
         </div>
 
         {/* Primary Contacts */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 lg:p-7 mb-6">
+        <div className={CARD_CLASS}>
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-800">Primary Contacts</h2>
+            <h2 className={SECTION_HEADER_CLASS}>Primary Contacts</h2>
             <button
               onClick={handleAddContact}
               className="px-4 sm:px-5 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition w-full sm:w-auto"
@@ -577,9 +514,9 @@ export default function ClientConfigurationPage() {
                             <div className="flex flex-col sm:flex-row gap-2 mt-2">
                               <input
                                 type="text"
-                                value={contact.role || ""}
-                                onChange={(e) => handleUpdateContact(index, "role", e.target.value)}
-                                placeholder="Role (e.g., CEO)"
+                                value={contact.title || ""}
+                                onChange={(e) => handleUpdateContact(index, "title", e.target.value)}
+                                placeholder="Title (e.g., CEO)"
                                 className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#69AE44]"
                               />
                               <input
@@ -604,7 +541,7 @@ export default function ClientConfigurationPage() {
                               {contact.name}
                             </div>
                             <div className="text-xs text-gray-500 truncate">
-                              {[contact.role, contact.email, contact.phone]
+                              {[contact.title, contact.email, contact.phone]
                                 .filter(Boolean)
                                 .join(" • ")}
                             </div>
@@ -614,8 +551,8 @@ export default function ClientConfigurationPage() {
                     </div>
                     <div className="flex items-center gap-2 sm:gap-3">
                       <select
-                        value={contact.contactType || "Primary"}
-                        onChange={(e) => handleUpdateContact(index, "contactType", e.target.value)}
+                        value={contact.role || "Primary"}
+                        onChange={(e) => handleUpdateContact(index, "role", e.target.value)}
                         className="px-2.5 py-1 bg-gray-50 border border-gray-300 rounded-md text-xs font-semibold text-gray-700"
                       >
                         {CONTACT_TYPES.map((type) => (
@@ -658,37 +595,25 @@ export default function ClientConfigurationPage() {
         </div>
 
         {/* Billing Information */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 lg:p-7 mb-6">
+        <div className={CARD_CLASS}>
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-800">Billing Information</h2>
+            <h2 className={SECTION_HEADER_CLASS}>Billing Information</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Payment Terms</label>
-              <select
-                value={paymentTerms}
-                onChange={(e) => setPaymentTerms(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              >
+              <label className={LABEL_CLASS}>Payment Terms</label>
+              <select value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className={INPUT_CLASS}>
                 {PAYMENT_TERMS.map((term) => (
-                  <option key={term} value={term}>
-                    {term}
-                  </option>
+                  <option key={term} value={term}>{term}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Currency</label>
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              >
+              <label className={LABEL_CLASS}>Currency</label>
+              <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={INPUT_CLASS}>
                 {CURRENCIES.map((curr) => (
-                  <option key={curr} value={curr}>
-                    {curr}
-                  </option>
+                  <option key={curr} value={curr}>{curr}</option>
                 ))}
               </select>
             </div>
@@ -696,102 +621,44 @@ export default function ClientConfigurationPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Payment Method</label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              >
+              <label className={LABEL_CLASS}>Payment Method</label>
+              <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={INPUT_CLASS}>
                 {PAYMENT_METHODS.map((method) => (
-                  <option key={method} value={method}>
-                    {method}
-                  </option>
+                  <option key={method} value={method}>{method}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Credit Limit</label>
-              <input
-                type="text"
-                value={creditLimit}
-                onChange={(e) => setCreditLimit(e.target.value)}
-                placeholder="e.g., $50,000"
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <label className={LABEL_CLASS}>Credit Limit</label>
+              <input type="text" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="e.g., $50,000" className={INPUT_CLASS} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Billing Notes</label>
-              <textarea
-                value={billingNotes}
-                onChange={(e) => setBillingNotes(e.target.value)}
-                placeholder="Add any special billing instructions or notes..."
-                rows={4}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10 resize-y"
-              />
+              <label className={LABEL_CLASS}>Billing Notes</label>
+              <textarea value={billingNotes} onChange={(e) => setBillingNotes(e.target.value)} placeholder="Add any special billing instructions or notes..." rows={4} className={INPUT_CLASS + " resize-y"} />
             </div>
-          </div>
-        </div>
-
-        {/* Client Preferences */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 lg:p-7 mb-6">
-          <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-800">Client Preferences & Settings</h2>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {[
-              { key: "portal", label: "Enable Client Portal Access", value: enablePortalAccess, setter: setEnablePortalAccess },
-              { key: "notifications", label: "Send Project Notifications", value: sendNotifications, setter: setSendNotifications },
-              { key: "reports", label: "Send Monthly Reports", value: sendMonthlyReports, setter: setSendMonthlyReports },
-              { key: "invoices", label: "Auto-send Invoices", value: autoSendInvoices, setter: setAutoSendInvoices },
-              { key: "nda", label: "NDA Signed", value: ndaSigned, setter: setNdaSigned },
-            ].map(({ key, label, value, setter }) => (
-              <label
-                key={key}
-                className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition"
-              >
-                <input
-                  type="checkbox"
-                  checked={value}
-                  onChange={(e) => setter(e.target.checked)}
-                  className="w-[18px] h-[18px] cursor-pointer accent-[#69AE44]"
-                />
-                <span className="flex-1 text-sm text-gray-700 cursor-pointer">{label}</span>
-              </label>
-            ))}
           </div>
         </div>
 
         {/* Additional Information */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 lg:p-7 mb-6">
+        <div className={CARD_CLASS}>
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-800">Additional Information</h2>
+            <h2 className={SECTION_HEADER_CLASS}>Additional Information</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Client Since</label>
-              <input
-                type="date"
-                value={clientSince}
-                onChange={(e) => setClientSince(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              />
+              <label className={LABEL_CLASS}>Client Since</label>
+              <input type="date" value={clientSince} onChange={(e) => setClientSince(e.target.value)} className={INPUT_CLASS} />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Account Manager</label>
-              <select
-                value={accountManagerId}
-                onChange={(e) => setAccountManagerId(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10"
-              >
-                {admins.map((admin) => (
-                  <option key={admin.id} value={admin.id}>
-                    {admin.name}
-                  </option>
+              <label className={LABEL_CLASS}>Account Manager <span className="text-gray-400 text-xs">(Optional)</span></label>
+              <select value={accountManagerId} onChange={(e) => setAccountManagerId(e.target.value)} className={INPUT_CLASS}>
+                <option value="">-- Select Account Manager --</option>
+                {employees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>{employee.name} {employee.designation ? `(${employee.designation})` : ""}</option>
                 ))}
               </select>
             </div>
@@ -799,14 +666,8 @@ export default function ClientConfigurationPage() {
 
           <div className="grid grid-cols-1 gap-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Internal Notes</label>
-              <textarea
-                value={internalNotes}
-                onChange={(e) => setInternalNotes(e.target.value)}
-                placeholder="Add internal notes about this client (not visible to client)..."
-                rows={4}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#69AE44] focus:ring-2 focus:ring-[#69AE44]/10 resize-y"
-              />
+              <label className={LABEL_CLASS}>Internal Notes</label>
+              <textarea value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} placeholder="Add internal notes about this client (not visible to client)..." rows={4} className={INPUT_CLASS + " resize-y"} />
             </div>
           </div>
         </div>

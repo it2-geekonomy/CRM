@@ -22,6 +22,7 @@
     "migration:generate": "pnpm typeorm migration:generate -d typeOrm/config.ts",
     "migration:run": "pnpm typeorm migration:run -d typeOrm/config.ts",
     "migration:revert": "pnpm typeorm migration:revert -d typeOrm/config.ts",
+    "migration:revert:all": "node typeOrm/revert-all-migrations.js",
     "migration:create": "pnpm typeorm migration:create typeOrm/migrations/",
     "seed:users": "ts-node -r tsconfig-paths/register typeOrm/seeders/create-users.seeder.ts",
     "seed:departments": "ts-node -r tsconfig-paths/register typeOrm/seeders/create-departments.seeder.ts",

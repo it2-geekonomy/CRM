@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode, HttpStatus, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth, ApiConsumes, } from '@nestjs/swagger';
 import { ClientService } from './client.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('clients')
 @Controller('clients')
@@ -12,13 +13,16 @@ export class ClientController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('logo'))
   @ApiOperation({ summary: 'Create a new client' })
-  @ApiResponse({ status: 201, description: 'Client created successfully' })
-  @ApiResponse({ status: 409, description: 'Client with email already exists' })
-  @ApiBody({ type: CreateClientDto })
-  create(@Body() dto: CreateClientDto) {
-    return this.clientService.create(dto);
+  async create(
+    @Body() dto: CreateClientDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.clientService.create(dto, file);
   }
+
 
   @Get()
   @ApiOperation({ summary: 'Get all clients' })
@@ -38,6 +42,7 @@ export class ClientController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update client' })
+  @ApiConsumes('multipart/form-data')
   @ApiParam({ name: 'id', type: 'string', description: 'Client UUID' })
   @ApiBody({ type: UpdateClientDto })
   @ApiResponse({ status: 200, description: 'Client updated successfully' })

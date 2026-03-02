@@ -1,10 +1,12 @@
 "use client";
 
-import { Configuration, Department } from "../types";
+import { Configuration } from "../types";
 import ConfigForm from "./ConfigForm";
+import type { DepartmentWithTaskTypesApi } from "@/store/api/departmentApiSlice";
 
+/** Receives the full department from API (id, name, code, description, projectTypeId, createdAt, updatedAt, taskTypes). */
 interface Props {
-  department: Department;
+  department: DepartmentWithTaskTypesApi;
   onSubmit: (config: Configuration) => void;
   onClose: () => void;
 }

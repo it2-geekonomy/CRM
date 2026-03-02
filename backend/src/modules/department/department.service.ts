@@ -56,6 +56,14 @@ export class DepartmentService {
     });
   }
 
+  /** Get all departments with their task types (single query, optimal for config UI). */
+  async findAllWithTaskTypes() {
+    return this.departmentRepository.find({
+      relations: ['taskTypes'],
+      order: { name: 'ASC', taskTypes: { name: 'ASC' } },
+    });
+  }
+
   async findOne(id: string) {
     const department = await this.departmentRepository.findOne({
       where: { id },

@@ -93,9 +93,22 @@ export class TaskService {
       );
     }
 
+    if (query.date) {
+      qb.andWhere(
+        ':clickedDate BETWEEN task.startDate AND task.endDate',
+        { clickedDate: query.date }
+      );
+    }
+
     if (query.departmentId) {
       qb.andWhere('department.id = :departmentId', {
         departmentId: query.departmentId,
+      });
+    }
+
+    if (query.priority) {
+      qb.andWhere('task.priority = :priority', {
+        priority: query.priority,
       });
     }
 
@@ -227,6 +240,13 @@ export class TaskService {
       .orderBy('task.startDate', 'ASC')
       .addOrderBy('task.startTime', 'ASC')
       .getMany();
+  }
+
+  async getTasksByAssignee(assignedToId: string, query: TaskQueryDto) {
+    const qb = this.baseTaskQuery()
+      .where('assignedTo.id = :assignedToId', { assignedToId });
+
+    return this.applyCommonFilters(qb, query);
   }
 
   async getTasksByProject(projectId: string, query: TaskQueryDto) {

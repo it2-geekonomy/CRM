@@ -1,7 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsInt, Min, IsString, IsIn } from 'class-validator';
+import { IsOptional, IsInt, Min, IsString, IsIn, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { IsUUID } from 'class-validator';
+import { TaskPriority } from '../../../shared/enum/task/task-priority.enum';
 
 export class TaskQueryDto {
     @ApiPropertyOptional({ example: 1 })
@@ -63,6 +64,27 @@ export class TaskQueryDto {
     @IsOptional()
     @IsUUID()
     taskTypeId?: string;
+
+    @ApiPropertyOptional({
+        enum: TaskPriority,
+        description: 'Filter tasks by priority level'
+    })
+
+    @IsOptional()
+    @IsEnum(TaskPriority)
+    priority?: TaskPriority;
+
+    @ApiPropertyOptional({
+        type: String,
+        description: 'Filter tasks active on a specific date (YYYY-MM-DD)'
+    })
+    @IsOptional()
+    @IsString()
+    date?: string;
 }
+
+
+
+
 
 

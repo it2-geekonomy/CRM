@@ -21,7 +21,8 @@
    ```bash
    cp .env.example .env
    ```
-   Edit `.env` if needed (database name, port, etc.).
+   Edit `.env` if needed (database name, port, etc.).  
+   **CORS:** If your frontend runs on a different URL (e.g. another machine), set `CORS_ORIGIN` to that URL, or comma-separated list (e.g. `http://localhost:3000,http://10.0.0.251:3000`).
 
 3. **Start PostgreSQL (Docker):**
    ```powershell

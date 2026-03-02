@@ -2,65 +2,22 @@
 
 import { useEffect, useState } from "react";
 import DepartmentAccordion from "./components/DepartmentAccordion";
-import { Department, Configuration } from "./types";
+import { Configuration } from "./types";
+import {
+  useGetDepartmentsWithTaskTypesQuery,
+  type DepartmentWithTaskTypesApi,
+  type DepartmentTaskTypeApi,
+} from "@/store/api/departmentApiSlice";
 
 export default function ConfigPage() {
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departments, setDepartments] = useState<DepartmentWithTaskTypesApi[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
+  const { data: apiDepartments, isLoading, isError, error } = useGetDepartmentsWithTaskTypesQuery();
+
   useEffect(() => {
-    setDepartments([
-      {
-        id: "1",
-        name: "Sales",
-        configurations: [
-          {
-            id: "c1",
-            name: "Lead Qualification",
-            description: "Qualify incoming leads",
-            billable: true,
-            slaHours: "24",
-            status: "Active",
-            tasks: "Call, Email",
-          },
-          {
-            id: "c2",
-            name: "Client Follow-up",
-            description: "Follow up with potential clients",
-            billable: false,
-            slaHours: "48",
-            status: "Active",
-            tasks: "Email reminder",
-          },
-        ],
-      },
-      {
-        id: "2",
-        name: "Design",
-        configurations: [
-          {
-            id: "c3",
-            name: "UI Design",
-            description: "Create UI mockups",
-            billable: true,
-            slaHours: "72",
-            status: "Active",
-            tasks: "Figma draft",
-          },
-        ],
-      },
-      {
-        id: "3",
-        name: "Development",
-        configurations: [],
-      },
-      {
-        id: "4",
-        name: "Social Media",
-        configurations: [],
-      },
-    ]);
-  }, []);
+    if (apiDepartments) setDepartments(apiDepartments);
+  }, [apiDepartments]);
 
   const toggleDept = (id: string) => {
     setExpandedIds((prev) => {
@@ -83,10 +40,18 @@ export default function ConfigPage() {
   };
 
   const addConfiguration = (departmentId: string, config: Configuration) => {
+    const newTaskType: DepartmentTaskTypeApi = {
+      id: crypto.randomUUID(),
+      name: config.name,
+      description: config.description || undefined,
+      billable: config.billable,
+      slaHours: config.slaHours ? Number(config.slaHours) : undefined,
+      status: config.status,
+    };
     setDepartments((prev) =>
       prev.map((dept) =>
         dept.id === departmentId
-          ? { ...dept, configurations: [...dept.configurations, config] }
+          ? { ...dept, taskTypes: [...(dept.taskTypes ?? []), newTaskType] }
           : dept
       )
     );
@@ -98,7 +63,7 @@ export default function ConfigPage() {
         dept.id === departmentId
           ? {
               ...dept,
-              configurations: dept.configurations.filter((c) => c.id !== configId),
+              taskTypes: (dept.taskTypes ?? []).filter((tt) => tt.id !== configId),
             }
           : dept
       )
@@ -140,9 +105,19 @@ export default function ConfigPage() {
           </div>
         </div>
 
+        {/* Loading / error */}
+        {isLoading && (
+          <div className="text-sm text-gray-500 py-4">Loading departments…</div>
+        )}
+        {isError && (
+          <div className="text-sm text-red-600 py-4">
+            Failed to load departments. {error && "data" in error && String((error as { data?: { message?: string } }).data?.message)}
+          </div>
+        )}
+
         {/* Department list */}
         <div className="space-y-3">
-          {departments.map((dept, index) => (
+          {!isLoading && !isError && departments.map((dept, index) => (
             <DepartmentAccordion
               key={dept.id}
               department={dept}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Department, Configuration } from "../types";
+import { Configuration } from "../types";
+import type { DepartmentWithTaskTypesApi } from "@/store/api/departmentApiSlice";
 import ConfigModal from "./ConfigModal";
 import ConfirmModal from "./ConfirmModal";
 
@@ -20,7 +21,7 @@ interface Task {
 }
 
 interface Props {
-  department: Department;
+  department: DepartmentWithTaskTypesApi;
   colorIndex: number;
   isExpanded: boolean;
   onToggle: () => void;
@@ -46,9 +47,12 @@ export default function DepartmentAccordion({
   const [addingTaskFor, setAddingTaskFor] = useState<string | null>(null);
   const [newTaskName, setNewTaskName] = useState("");
 
+  console.log("department", department);
+
   const color = DEPT_COLORS[colorIndex % DEPT_COLORS.length];
-  const configCount = department.configurations.length;
-  const activeCount = department.configurations.filter((c) => c.status === "Active").length;
+  const taskTypes = department.taskTypes ?? [];
+  const configCount = taskTypes.length;
+  const activeCount = taskTypes.filter((tt) => tt.status === "Active").length;
   const progressPercent = configCount > 0 ? Math.round((activeCount / configCount) * 100) : 0;
 
   const toggleConfig = (configId: string) => {
@@ -156,17 +160,17 @@ export default function DepartmentAccordion({
           )}
 
           {configCount > 0 ? (
-            department.configurations.map((config) => {
-              const isConfigExpanded = expandedConfigs.has(config.id);
-              const tasks = configTasks[config.id] || [];
+            taskTypes.map((taskType) => {
+              const isConfigExpanded = expandedConfigs.has(taskType.id);
+              const tasks = configTasks[taskType.id] || [];
 
               return (
-                <div key={config.id} className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+                <div key={taskType.id} className="border border-gray-200 rounded-lg bg-white overflow-hidden">
 
                   {/* Config Header */}
                   <div
                     className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 cursor-pointer hover:bg-gray-50 transition-colors select-none"
-                    onClick={() => toggleConfig(config.id)}
+                    onClick={() => toggleConfig(taskType.id)}
                   >
                     {/* Config chevron */}
                     <svg
@@ -185,15 +189,15 @@ export default function DepartmentAccordion({
 
                     {/* Config info */}
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-gray-800 truncate">{config.name}</div>
+                      <div className="font-medium text-sm text-gray-800 truncate">{taskType.name}</div>
                       {/* Meta row — wraps gracefully on small screens */}
                       <div className="text-xs text-gray-400 flex flex-wrap items-center gap-x-1 gap-y-0.5 mt-0.5">
-                        <span>SLA: {config.slaHours}h</span>
+                        <span>SLA: {taskType.slaHours ?? 0}h</span>
                         <span className="text-gray-300">•</span>
-                        <span className={config.status === "Active" ? "text-green-500" : "text-gray-400"}>
-                          {config.status}
+                        <span className={taskType.status === "Active" ? "text-green-500" : "text-gray-400"}>
+                          {taskType.status}
                         </span>
-                        {config.billable && (
+                        {taskType.billable && (
                           <>
                             <span className="text-gray-300">•</span>
                             <span className="text-blue-400">Billable</span>
@@ -210,7 +214,7 @@ export default function DepartmentAccordion({
 
                     {/* Delete config */}
                     <button
-                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteConfig(config.id); }}
+                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteConfig(taskType.id); }}
                       className="text-red-400 hover:text-red-600 transition-colors flex items-center gap-1 flex-shrink-0 ml-1"
                       aria-label="Delete configuration"
                     >
@@ -235,7 +239,7 @@ export default function DepartmentAccordion({
                               <span className="text-sm text-gray-700 truncate">{task.name}</span>
                             </div>
                             <button
-                              onClick={() => handleDeleteTask(config.id, task.id)}
+                              onClick={() => handleDeleteTask(taskType.id, task.id)}
                               className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0 ml-2
                                          opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                               aria-label="Remove task"
@@ -251,7 +255,7 @@ export default function DepartmentAccordion({
                       )}
 
                       {/* Inline Add Task */}
-                      {addingTaskFor === config.id ? (
+                      {addingTaskFor === taskType.id ? (
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
                           <input
                             autoFocus
@@ -260,14 +264,14 @@ export default function DepartmentAccordion({
                             value={newTaskName}
                             onChange={(e) => setNewTaskName(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") handleAddTask(config.id);
+                              if (e.key === "Enter") handleAddTask(taskType.id);
                               if (e.key === "Escape") { setAddingTaskFor(null); setNewTaskName(""); }
                             }}
                             className="flex-1 text-sm border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-400"
                           />
                           <div className="flex gap-2">
                             <button
-                              onClick={() => handleAddTask(config.id)}
+                              onClick={() => handleAddTask(taskType.id)}
                               className="flex-1 sm:flex-none px-3 py-1.5 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 transition"
                             >
                               Add
@@ -283,7 +287,7 @@ export default function DepartmentAccordion({
                       ) : (
                         <div className="flex justify-end pt-1">
                           <button
-                            onClick={() => { setAddingTaskFor(config.id); setNewTaskName(""); }}
+                            onClick={() => { setAddingTaskFor(taskType.id); setNewTaskName(""); }}
                             className="text-green-600 text-xs font-medium hover:text-green-700 transition-colors flex items-center gap-1"
                           >
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -299,7 +303,7 @@ export default function DepartmentAccordion({
               );
             })
           ) : (
-            <p className="text-sm text-gray-400 py-3 text-center">No configurations yet</p>
+            <p className="text-sm text-gray-400 py-3 text-center">No task types yet</p>
           )}
 
           {/* Add Task Type */}
@@ -329,7 +333,7 @@ export default function DepartmentAccordion({
       {confirmDeleteDept && (
         <ConfirmModal
           title="Delete Department"
-          message={`Are you sure you want to delete "${department.name}"? This will also remove all its configurations.`}
+          message={`Are you sure you want to delete "${department.name}"? This will also remove all its task types.`}
           onConfirm={() => { onDelete(); setConfirmDeleteDept(false); }}
           onCancel={() => setConfirmDeleteDept(false)}
         />

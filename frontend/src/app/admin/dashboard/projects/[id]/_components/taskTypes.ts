@@ -28,6 +28,7 @@ export type TaskDepartment = {
 
 export type CreateTaskFormData = {
   taskName: string;
+  description: string;
   department: string;
   taskType: string;
   assignTo: string;

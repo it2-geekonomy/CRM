@@ -81,12 +81,12 @@ export default function TaskCalendarPage() {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen py-10">
+    <div className="bg-gray-100 min-h-screen py-6">
       <div className="max-w-[1200px] mx-auto px-8">
 
         {/* HEADER */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-semibold text-gray-900">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">
             Task Calendar
           </h1>
 
@@ -103,9 +103,9 @@ export default function TaskCalendarPage() {
         </div>
 
         {/* CALENDAR CARD */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl border border-gray-200 p-4">
           {/* Month & Year jump */}
-          <div className="flex flex-wrap items-center gap-4 mb-4 pb-4 border-b border-gray-200">
+          <div className="flex flex-wrap items-center gap-3 mb-3 pb-3 border-b border-gray-200">
             <span className="text-sm font-medium text-gray-600">Go to:</span>
             <select
               value={currentMonth}
@@ -139,7 +139,7 @@ export default function TaskCalendarPage() {
             events={tasks}
             startAccessor="start"
             endAccessor="end"
-            style={{ height: selectedDate ? 350 : 600 }}
+            style={{ height: selectedDate ? 250 : 400 }}
             date={currentDate}
             onNavigate={handleNavigate}
             view={view}
@@ -154,7 +154,7 @@ export default function TaskCalendarPage() {
 
         {/* TASK TABLE */}
         {selectedDate && (
-  <div className="bg-white rounded-2xl border border-gray-200 p-6 mt-8">
+  <div className="bg-white rounded-2xl border border-gray-200 p-6 mt-6">
     <h2 className="text-xl font-semibold mb-6">
       Tasks for {moment(selectedDate).format("MMMM DD, YYYY")}
     </h2>

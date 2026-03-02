@@ -150,7 +150,7 @@ export default function AdminDashboardPage() {
                   type="button"
                   onClick={() => handleFilterChange(item)}
                   className={`px-5 py-3 text-base rounded-lg transition-colors ${
-                    searchFilter === item
+                    (item === "All" && searchFilter === null) || searchFilter === item
                       ? "bg-white shadow text-gray-900"
                       : "text-gray-500 hover:text-gray-900"
                   }`}
@@ -330,9 +330,9 @@ export default function AdminDashboardPage() {
         )}
         {/* BELOW DASHBOARD SECTION */}
 {!isProjectsView && (
-<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-10">
+<div className="mt-10">
   {/* Today's Schedule */}
-  <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-8">
+  <div className="bg-white rounded-2xl border border-gray-200 p-8">
     <div className="flex items-center justify-between mb-6">
       <h3 className="text-lg font-semibold text-gray-900">
         Today's Schedule
@@ -399,67 +399,6 @@ export default function AdminDashboardPage() {
           </p>
         </div>
       </div>
-    </div>
-  </div>
-
-  {/* Quick Actions */}
-  <div className="bg-white rounded-2xl border border-gray-200 p-8">
-    <h3 className="text-lg font-semibold text-gray-900 mb-6">
-      Quick Actions
-    </h3>
-
-    <span className="inline-block mb-5 px-3 py-1 text-sm border border-gray-200 rounded-lg text-gray-700">
-      Designer
-    </span>
-
-    <div className="space-y-4">
-      {[
-        {
-          title: "New Design",
-          desc: "Start a design task",
-          icon: "🎨",
-        },
-        {
-          title: "Upload Assets",
-          desc: "Add files to project",
-          icon: "📤",
-        },
-        {
-          title: "Submit Review",
-          desc: "Send to client",
-          icon: "✅",
-        },
-        {
-          title: "Log Time",
-          desc: "Track hours",
-          icon: "⏱️",
-        },
-        {
-          title: "Request Feedback",
-          desc: "Get team input",
-          icon: "💬",
-        },
-        {
-          title: "My Projects",
-          desc: "View all work",
-          icon: "📊",
-        },
-      ].map((item) => (
-        <div
-          key={item.title}
-          className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl transition-colors cursor-pointer hover:bg-gray-50 hover:border-green-500"
-        >
-          <div className="text-2xl">{item.icon}</div>
-          <div>
-            <p className="font-medium text-gray-900">
-              {item.title}
-            </p>
-            <p className="text-sm text-gray-500">
-              {item.desc}
-            </p>
-          </div>
-        </div>
-      ))}
     </div>
   </div>
 </div>

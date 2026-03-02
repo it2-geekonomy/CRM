@@ -24,7 +24,7 @@ import { TaskFile } from './entities/task-file.entity';
     ]),
     AuthModule,
     MulterModule.register({
-      dest: './uploads',        
+      dest: './uploads/tasks',        
       limits: { fileSize: 25 * 1024 * 1024 }, 
     }),
   ],

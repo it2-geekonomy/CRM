@@ -46,7 +46,14 @@ export class ProjectsService {
       });
 
       const saved = await this.projectRepository.save(project);
-      return this.findOne(saved.id);
+
+      return {
+        id: saved.id,
+        name: saved.name,
+        code: saved.code,
+        status: saved.status,
+        createdAt: saved.createdAt,
+      };
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new BadRequestException(`Database Error: ${error.message}`);

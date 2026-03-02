@@ -229,6 +229,13 @@ export class TaskService {
       .getMany();
   }
 
+  async getTasksByAssignee(assignedToId: string, query: TaskQueryDto) {
+    const qb = this.baseTaskQuery()
+      .where('assignedTo.id = :assignedToId', { assignedToId });
+
+    return this.applyCommonFilters(qb, query);
+  }
+
   async getTasksByProject(projectId: string, query: TaskQueryDto) {
     const qb = this.baseTaskQuery()
       .where('project.id = :projectId', { projectId });

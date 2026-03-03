@@ -8,6 +8,7 @@ import {
     JoinColumn,
     OneToMany,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { ProjectStatus } from '../../../shared/enum/project/project-status.enum';
 import { AdminProfile } from '../../admin/entities/admin-profile.entity';
 import { EmployeeProfile } from '../../employee/entities/employee-profile.entity';
@@ -28,6 +29,7 @@ export class Project {
     code: string;
 
     @Column({ name: 'project_type_id', type: 'uuid' })
+    @Exclude()
     projectTypeId: string;
 
     @ManyToOne(() => ProjectType, (projectType) => projectType.projects, { onDelete: 'RESTRICT' })
@@ -50,6 +52,7 @@ export class Project {
     estimatedHours?: number;
 
     @Column({ name: 'project_manager_id', type: 'uuid' })
+    @Exclude()
     projectManagerId: string;
 
     @ManyToOne(() => AdminProfile, (admin) => admin.managedProjects, { onDelete: 'RESTRICT' })
@@ -57,6 +60,7 @@ export class Project {
     projectManager: AdminProfile;
 
     @Column({ name: 'project_lead_id', type: 'uuid' })
+    @Exclude()
     projectLeadId: string;
 
     @ManyToOne(() => EmployeeProfile, (emp) => emp.ledProjects, { onDelete: 'RESTRICT' })
@@ -73,6 +77,7 @@ export class Project {
     enableClientPortal: boolean;
 
     @Column({ name: 'created_by', type: 'uuid' })
+    @Exclude()
     createdBy: string;
 
     @ManyToOne(() => AdminProfile, (admin) => admin.createdProjects, { onDelete: 'RESTRICT' })
@@ -92,6 +97,7 @@ export class Project {
     documents: ProjectDocument[];
 
     @Column({ name: 'client_id', type: 'uuid', nullable: true })
+    @Exclude()
     clientId: string;
 
     @ManyToOne(() => Client, (client) => client.projects, { onDelete: 'SET NULL' })

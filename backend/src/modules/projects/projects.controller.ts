@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseUUIDPipe,
+  ClassSerializerInterceptor,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -32,6 +33,7 @@ import { ProjectQueryDto } from './dto/project-query.dto';
 @ApiTags('projects')
 @Controller('projects')
 @ApiBearerAuth('JWT-auth')
+@UseInterceptors(ClassSerializerInterceptor)
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) { }
 

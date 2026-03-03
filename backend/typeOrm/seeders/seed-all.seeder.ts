@@ -5,6 +5,7 @@ import { seedEmployeeProfiles } from './create-employee-profiles.seeder';
 import { seedTaskTypes } from './create-task-type.seeder';
 import { seedClients } from './create-clients.seeder';
 import { seedProjectTypes } from './create-project-type.seeder';
+import { seedProjects } from './create-projects.seeder';
 import { seedTasks } from './create-tasks.seeder';
 
 /**
@@ -22,7 +23,8 @@ const SEEDERS = [
   { name: 'Clients', run: seedClients },
   { name: 'Task Types', run: seedTaskTypes },
   { name: 'Project Types', run: seedProjectTypes },
-  { name: 'tasks',run:seedTasks},
+  { name: 'Projects', run: seedProjects },
+  { name: 'tasks', run: seedTasks },
 
 ] as const;
 

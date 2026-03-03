@@ -7,6 +7,7 @@ import {
     ManyToOne,
     JoinColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Project } from './project.entity';
 
 @Entity('project_documents')
@@ -27,6 +28,7 @@ export class ProjectDocument {
     mimeType: string;
 
     @Column({ name: 'project_id', type: 'uuid' })
+    @Exclude() 
     projectId: string;
 
     @ManyToOne(() => Project, (project) => project.documents, {

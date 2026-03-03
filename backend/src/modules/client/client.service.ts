@@ -55,33 +55,39 @@ export class ClientService {
 
   async update(id: string, dto: UpdateClientDto, file?: Express.Multer.File) {
     const client = await this.findOne(id);
+    const { logo, ...dtoData } = dto;
+    const filteredData = Object.fromEntries(
+      Object.entries(dtoData).filter(([_, value]) => value !== '' && value !== undefined)
+    );
 
-    if (dto.clientCode && dto.clientCode !== client.clientCode) {
+    if (filteredData.clientCode && filteredData.clientCode !== client.clientCode) {
       const exists = await this.clientRepository.findOne({
-        where: { clientCode: dto.clientCode, id: Not(id) },
+        where: { clientCode: filteredData.clientCode as string, id: Not(id) },
       });
       if (exists) throw new ConflictException('Client code already in use');
     }
 
-    if (dto.email && dto.email !== client.email) {
+    if (filteredData.email && filteredData.email !== client.email) {
       const exists = await this.clientRepository.findOne({
-        where: { email: dto.email, id: Not(id) },
+        where: { email: filteredData.email as string, id: Not(id) },
       });
       if (exists) throw new ConflictException('Email already exists');
     }
 
     let logoUrl = client.logoUrl;
-
     if (file) {
       if (client.logoUrl) {
         const oldPath = path.join(process.cwd(), client.logoUrl);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        try {
+          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        } catch (err) {
+          console.warn('Failed to delete old logo:', err.message);
+        }
       }
       logoUrl = `/uploads/clients/${file.filename}`;
     }
 
-    const { logo, ...dtoData } = dto;
-    Object.assign(client, { ...dtoData, logoUrl });
+    Object.assign(client, { ...filteredData, logoUrl });
 
     return this.clientRepository.save(client);
   }

@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -37,10 +38,21 @@ export class DepartmentController {
     return this.departmentService.create(dto);
   }
 
+  @Get('list/with-task-types')
+  @ApiOperation({ summary: 'Get all departments with their task types' })
+  @ApiResponse({ status: 200, description: 'List of departments with nested taskTypes' })
+  findAllWithTaskTypes() {
+    return this.departmentService.findAllWithTaskTypes();
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all departments' })
   @ApiResponse({ status: 200, description: 'List of departments' })
-  findAll() {
+  findAll(@Query('include') include?: string) {
+    const withTaskTypes = include?.toLowerCase().split(',').map((s) => s.trim()).includes('tasktypes');
+    if (withTaskTypes) {
+      return this.departmentService.findAllWithTaskTypes();
+    }
     return this.departmentService.findAll();
   }
 

@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Department, ConfigFormData, Configuration } from "../types";
+import { ConfigFormData, Configuration } from "../types";
+import { useCreateTaskTypeMutation } from "@/store/api/taskTypeApiSlice";
+import type { DepartmentWithTaskTypesApi } from "@/store/api/departmentApiSlice";
 
+/** Receives the full department from API (id, name, code, description, projectTypeId, createdAt, updatedAt, taskTypes). */
 interface Props {
-  department: Department;
+  department: DepartmentWithTaskTypesApi;
   onSubmit: (config: Configuration) => void;
   onClose: () => void;
 }
@@ -22,6 +25,7 @@ const selectClass =
 const labelClass = "block text-sm font-semibold text-gray-800 mb-1.5";
 
 export default function ConfigForm({ department, onSubmit, onClose }: Props) {
+  const [createTaskType, { isLoading }] = useCreateTaskTypeMutation();
   const [form, setForm] = useState<ConfigFormData>({
     name: "",
     description: "",
@@ -32,20 +36,32 @@ export default function ConfigForm({ department, onSubmit, onClose }: Props) {
     tasks: "",
   });
 
-  const handleChange = (key: keyof ConfigFormData, value: any) => {
+  const handleChange = (key: keyof ConfigFormData, value: unknown) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = () => {
     if (!form.name.trim()) return;
-    onSubmit({
-      id: Date.now().toString(),
+    createTaskType({
       name: form.name,
-      description: form.description,
+      description: form.description || undefined,
+      departmentId: form.departmentId,
       billable: form.billable,
-      slaHours: form.slaHours,
-      status: form.status,
-      tasks: form.tasks,
+      slaHours: form.slaHours ? Number(form.slaHours) : undefined,
+      status: form.status === "Active" ? "Active" : "Inactive",
+    }).then((res) => {
+      const data = res.data as { id: string; name: string; description?: string; billable?: boolean; slaHours?: number; status?: string } | undefined;
+      if (data) {
+        onSubmit({
+          id: data.id,
+          name: data.name,
+          description: data.description ?? "",
+          billable: data.billable ?? false,
+          slaHours: data.slaHours != null ? String(data.slaHours) : "",
+          status: (data.status === "Inactive" ? "Inactive" : "Active") as "Active" | "Inactive",
+          tasks: "",
+        });
+      }
     });
     onClose();
   };

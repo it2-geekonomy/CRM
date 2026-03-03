@@ -49,6 +49,10 @@ export default function AdminDashboardPage() {
       router.push("/admin/dashboard/clients");
       return;
     }
+    if (filter === "Employee") {
+      router.push("/admin/employees");
+      return;
+    }
     if (filter === "All") {
       // Reset to default state
       setSearchFilter(null);

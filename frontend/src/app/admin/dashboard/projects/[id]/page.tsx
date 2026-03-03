@@ -207,7 +207,7 @@ export default function ProjectDetailPage() {
         
         setDepartmentsInitialized(true);
         return newDepartments;
-      });
+  });
     }
   }, [taskTypesData]);
   const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(new Set());

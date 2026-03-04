@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import moment from "moment";
 import { Calendar, momentLocalizer, Views } from "react-big-calendar";
 import type { SlotInfo } from "react-big-calendar";
@@ -18,6 +18,21 @@ import { useGetTaskTypesQuery } from "@/store/api/taskTypeApiSlice";
 import { toast } from "react-toastify";
 
 const localizer = momentLocalizer(moment);
+
+// Static arrays - moved outside component to prevent recreation on every render
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// Helper function to check if two dates are the same day (optimized)
+const isSameDay = (date1: Date, date2: Date): boolean => {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+};
 
 // Calendar event format
 type CalendarTask = {
@@ -199,34 +214,39 @@ export default function TaskCalendarPage() {
     return transformed;
   }, [tasksData]);
 
-  const tasksForSelectedDate = selectedDate
-    ? calendarTasks.filter((task) =>
-        moment(task.start).isSame(selectedDate, "day")
-      )
-    : [];
+  // Memoize filtered tasks for selected date (optimized date comparison)
+  const tasksForSelectedDate = useMemo(() => {
+    if (!selectedDate) return [];
+    return calendarTasks.filter((task) => isSameDay(task.start, selectedDate));
+  }, [calendarTasks, selectedDate]);
 
-  const handleNavigate = (newDate: Date) => setCurrentDate(newDate);
-  const handleSelectSlot = (slotInfo: SlotInfo) => {
+  // Memoize years array to prevent recreation on every render
+  const years = useMemo(() => {
+    const yearRange = 10;
+    return Array.from(
+      { length: yearRange * 2 + 1 },
+      (_, i) => new Date().getFullYear() - yearRange + i
+    );
+  }, []);
+
+  // Memoize event handlers to prevent unnecessary re-renders
+  const handleNavigate = useCallback((newDate: Date) => {
+    setCurrentDate(newDate);
+  }, []);
+
+  const handleSelectSlot = useCallback((slotInfo: SlotInfo) => {
     // When clicking on an empty date slot, show tasks for that date
     setSelectedDate(slotInfo.start);
-  };
-  const handleSelectEvent = (event: any) => {
+  }, []);
+
+  const handleSelectEvent = useCallback((event: any) => {
     // When clicking on a task event, show tasks for that event's start date
     const task = event as CalendarTask;
     setSelectedDate(task.start);
-  };
+  }, []);
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
-  const yearRange = 10;
-  const years = Array.from(
-    { length: yearRange * 2 + 1 },
-    (_, i) => new Date().getFullYear() - yearRange + i
-  );
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-  ];
 
   const goToMonthYear = (month: number, year: number) => {
     setCurrentDate(new Date(year, month, 1));
@@ -313,7 +333,7 @@ export default function TaskCalendarPage() {
               onChange={(e) => goToMonthYear(Number(e.target.value), currentYear)}
               className="px-3 py-2 rounded-lg border border-[#69AE44] bg-[#69AE44]/5 text-sm focus:ring-2 focus:ring-[#69AE44] outline-none"
             >
-              {monthNames.map((name, i) => (
+              {MONTH_NAMES.map((name, i) => (
                 <option key={name} value={i}>{name}</option>
               ))}
             </select>

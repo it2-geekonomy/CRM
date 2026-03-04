@@ -255,7 +255,7 @@ export const taskApiSlice = apiSlice.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: [{ type: "Task", id: "LIST" }],
+      invalidatesTags: [{ type: "Task", id: "LIST" }, { type: "Task", id: "CALENDAR" }],
     }),
     updateTask: builder.mutation<{ id: string; taskName: string; taskStatus: BackendTaskStatus; updatedAt: string }, { id: string; body: UpdateTaskBody }>({
       query: ({ id, body }) => ({

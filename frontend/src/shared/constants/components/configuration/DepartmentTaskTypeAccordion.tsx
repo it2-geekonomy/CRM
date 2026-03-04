@@ -87,14 +87,14 @@ export default function DepartmentTaskTypeAccordion({
       >
         {/* Chevron */}
         <svg
-          className={`w-5 h-5 sm:w-5 sm:h-5 text-gray-500 flex-shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+          className={`w-5 h-5 sm:w-5 sm:h-5 text-gray-500 shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
 
         {/* Color icon */}
-        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${color.bg} ${color.text}`}>
+        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0 ${color.bg} ${color.text}`}>
           <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z" clipRule="evenodd" />
           </svg>
@@ -102,7 +102,7 @@ export default function DepartmentTaskTypeAccordion({
 
         {/* Name */}
         <div className="flex-1 min-w-0">
-          <span className="font-medium text-gray-800 text-sm sm:text-base block break-words">
+          <span className="font-medium text-gray-800 text-sm sm:text-base block text-wrap">
             {department.name}
           </span>
           <span className="text-xs text-gray-400 sm:hidden">
@@ -112,7 +112,7 @@ export default function DepartmentTaskTypeAccordion({
 
         {/* Right side */}
         <div
-          className="flex items-center gap-1 sm:gap-2 md:gap-3 ml-auto flex-shrink-0"
+          className="flex items-center gap-1 sm:gap-2 md:gap-3 ml-auto shrink-0"
           onClick={(e) => e.stopPropagation()}
         >
           <span className="hidden sm:inline text-xs text-gray-400 whitespace-nowrap">
@@ -159,20 +159,20 @@ export default function DepartmentTaskTypeAccordion({
                     onClick={() => toggleConfig(taskType.id)}
                   >
                     <svg
-                      className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 mt-0.5 sm:mt-0 ${isConfigExpanded ? "rotate-90" : ""}`}
+                      className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200 mt-0.5 sm:mt-0 ${isConfigExpanded ? "rotate-90" : ""}`}
                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
 
-                    <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${color.bg} ${color.text}`}>
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${color.bg} ${color.text}`}>
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
                       </svg>
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm sm:text-base text-gray-800 break-words">{taskType.name}</div>
+                      <div className="font-medium text-sm sm:text-base text-gray-800 text-wrap">{taskType.name}</div>
                       <div className="text-xs text-gray-400 flex flex-wrap items-center gap-x-1 gap-y-0.5 mt-1">
                         <span>SLA: {taskType.slaHours ?? 0}h</span>
                         <span className="text-gray-300">•</span>
@@ -196,7 +196,7 @@ export default function DepartmentTaskTypeAccordion({
 
                     <button
                       onClick={(e) => { e.stopPropagation(); setConfirmDeleteConfig(taskType.id); }}
-                      className="text-red-400 hover:text-red-600 transition-colors flex items-center gap-1 flex-shrink-0"
+                      className="text-red-400 hover:text-red-600 transition-colors flex items-center gap-1 shrink-0"
                       aria-label="Delete configuration"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -216,12 +216,12 @@ export default function DepartmentTaskTypeAccordion({
                             className="flex items-center justify-between py-1.5 px-2 rounded-md bg-white border border-gray-100 group"
                           >
                             <div className="flex items-center gap-2 min-w-0">
-                              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${color.bg}`} />
+                              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${color.bg}`} />
                               <span className="text-sm text-gray-700 truncate">{task.name}</span>
                             </div>
                             <button
                               onClick={() => handleDeleteTask(taskType.id, task.id)}
-                              className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0 ml-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                              className="text-gray-300 hover:text-red-400 transition-colors shrink-0 ml-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                               aria-label="Remove task"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

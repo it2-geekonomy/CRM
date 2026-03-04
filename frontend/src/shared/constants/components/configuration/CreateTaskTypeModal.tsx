@@ -26,7 +26,7 @@ export default function CreateTaskTypeModal({ department, onSubmit, onClose }: P
         <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-200 rounded-full sm:hidden" />
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 sm:px-7 pt-5 sm:pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 sm:px-7 pt-5 sm:pt-6 pb-4 border-b border-gray-100 shrink-0">
           <h2 className="text-base sm:text-lg font-bold text-gray-900">Create Task Type</h2>
           <button
             onClick={onClose}

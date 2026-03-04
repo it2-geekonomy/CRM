@@ -63,14 +63,14 @@ export default function ProjectTypeAccordion({
       >
         {/* Chevron */}
         <svg
-          className={`w-5 h-5 text-gray-500 flex-shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+          className={`w-5 h-5 text-gray-500 shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
 
         {/* Color icon */}
-        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${color.bg} ${color.text}`}>
+        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0 ${color.bg} ${color.text}`}>
           <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
           </svg>
@@ -78,10 +78,10 @@ export default function ProjectTypeAccordion({
 
         {/* Name & Description */}
         <div className="flex-1 min-w-0">
-          <span className="font-medium text-gray-800 text-sm sm:text-base block break-words">
+          <span className="font-medium text-gray-800 text-sm sm:text-base block text-wrap">
             {projectType.name}
           </span>
-          <span className="text-xs text-gray-400 block break-words">
+          <span className="text-xs text-gray-400 block text-wrap">
             {projectType.description}
           </span>
           <span className="text-xs text-gray-500 sm:hidden mt-0.5 block">
@@ -91,7 +91,7 @@ export default function ProjectTypeAccordion({
 
         {/* Right side */}
         <div
-          className="flex items-center gap-1 ml-auto flex-shrink-0"
+          className="flex items-center gap-1 ml-auto shrink-0"
           onClick={(e) => e.stopPropagation()}
         >
           <span className="hidden sm:inline text-xs text-gray-400 whitespace-nowrap">
@@ -125,12 +125,12 @@ export default function ProjectTypeAccordion({
                     className="flex items-center justify-between p-2.5 sm:p-3 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${color.bg}`} />
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${color.bg}`} />
                       <span className="text-sm text-gray-700 truncate">{dept.name}</span>
                     </div>
                     <button
                       onClick={() => onRemoveDepartment(projectType.id, dept.id)}
-                      className="text-gray-400 hover:text-red-600 transition-colors flex-shrink-0 ml-2"
+                      className="text-gray-400 hover:text-red-600 transition-colors shrink-0 ml-2"
                       title="Remove department"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

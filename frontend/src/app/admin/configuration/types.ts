@@ -12,9 +12,24 @@ export type TaskStatus = "Active" | "Inactive";
 export interface TaskTypeFormData {
   name: string;
   description?: string;
+  departmentId?: string;
   billable: boolean;
   slaHours: string;
   status: TaskStatus;
+  tasks?: string;
+}
+
+/**
+ * Local type for task types (configurations)
+ */
+export interface TaskType {
+  id: string;
+  name: string;
+  description?: string;
+  billable: boolean;
+  slaHours: string;
+  status: TaskStatus;
+  tasks?: string;
 }
 
 /**

@@ -215,7 +215,7 @@ export default function ConfigPage() {
           <h2 className="text-sm sm:text-base md:text-lg font-semibold text-green-600">
             Departments
           </h2>
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={deptExpandAll}
               className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700 transition font-medium whitespace-nowrap"
@@ -254,7 +254,7 @@ export default function ConfigPage() {
           <h2 className="text-sm sm:text-base md:text-lg font-semibold text-green-600">
             Project Types
           </h2>
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={projectExpandAll}
               className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700 transition font-medium whitespace-nowrap"

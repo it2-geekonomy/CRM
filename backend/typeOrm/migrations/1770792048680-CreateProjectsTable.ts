@@ -4,12 +4,13 @@ export class CreateProjectsTable1770792048680 implements MigrationInterface {
     name = 'CreateProjectsTable1770792048680'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // 1. Create the Enum Type including 'Archived'
+        // 1️⃣ Create Updated Enum Type
         await queryRunner.query(`
-            CREATE TYPE "public"."projects_status_enum" AS ENUM('Draft', 'Active', 'Completed', 'Archived')
+            CREATE TYPE "public"."projects_status_enum" 
+            AS ENUM('Active', 'Inactive', 'Pipeline', 'Completed')
         `);
 
-        // 2. Create the Projects Table
+        // 2️⃣ Create Projects Table
         await queryRunner.query(`
             CREATE TABLE "projects" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(), 
@@ -17,7 +18,7 @@ export class CreateProjectsTable1770792048680 implements MigrationInterface {
                 "code" character varying(50) NOT NULL, 
                 "project_type_id" uuid NOT NULL, 
                 "description" text, 
-                "status" "public"."projects_status_enum" NOT NULL DEFAULT 'Draft', 
+                "status" "public"."projects_status_enum" NOT NULL DEFAULT 'Pipeline', 
                 "start_date" date NOT NULL, 
                 "end_date" date NOT NULL, 
                 "estimated_hours" integer, 
@@ -35,7 +36,7 @@ export class CreateProjectsTable1770792048680 implements MigrationInterface {
             )
         `);
 
-        // 3. Add Foreign Key for Project Type (Dynamic Relationship)
+        // 3️⃣ Foreign Keys
         await queryRunner.query(`
             ALTER TABLE "projects" 
             ADD CONSTRAINT "FK_project_type" 
@@ -43,7 +44,6 @@ export class CreateProjectsTable1770792048680 implements MigrationInterface {
             REFERENCES "project_types"("id") ON DELETE RESTRICT
         `);
 
-        // 4. Add Foreign Keys for Managers, Leads, Creators, and Clients
         await queryRunner.query(`
             ALTER TABLE "projects" 
             ADD CONSTRAINT "FK_project_manager" 
@@ -74,17 +74,14 @@ export class CreateProjectsTable1770792048680 implements MigrationInterface {
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        // Drop Constraints first
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_client"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_creator"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_lead"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_manager"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_type"`);
-        
-        // Drop Table
+
         await queryRunner.query(`DROP TABLE "projects"`);
-        
-        // Drop Enum
+
         await queryRunner.query(`DROP TYPE "public"."projects_status_enum"`);
     }
 }

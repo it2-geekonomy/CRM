@@ -39,7 +39,7 @@ export class Project {
     @Column({ name: 'description', type: 'text', nullable: true })
     description?: string;
 
-    @Column({ name: 'status', type: 'enum', enum: ProjectStatus, default: ProjectStatus.DRAFT })
+    @Column({ name: 'status', type: 'enum', enum: ProjectStatus, default: ProjectStatus.PIPELINE })
     status: ProjectStatus;
 
     @Column({ name: 'start_date', type: 'date' })

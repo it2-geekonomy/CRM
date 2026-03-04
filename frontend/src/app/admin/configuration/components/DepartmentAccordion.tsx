@@ -52,8 +52,6 @@ export default function DepartmentAccordion({
   const color = DEPT_COLORS[colorIndex % DEPT_COLORS.length];
   const taskTypes = department.taskTypes ?? [];
   const configCount = taskTypes.length;
-  const activeCount = taskTypes.filter((tt) => tt.status === "Active").length;
-  const progressPercent = configCount > 0 ? Math.round((activeCount / configCount) * 100) : 0;
 
   const toggleConfig = (configId: string) => {
     setExpandedConfigs((prev) => {
@@ -119,16 +117,6 @@ export default function DepartmentAccordion({
             {configCount} {configCount === 1 ? "config" : "configs"}
           </span>
 
-          {/* Progress bar — hidden on xs, visible md+ */}
-          <div className="hidden md:flex items-center gap-2">
-            <div className="w-20 lg:w-28 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-green-500 rounded-full transition-all duration-300"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <span className="text-xs text-gray-400 w-8 text-right">{progressPercent}%</span>
-          </div>
 
           {/* Delete button — icon only on mobile, icon+text on sm+ */}
           <button
@@ -148,14 +136,10 @@ export default function DepartmentAccordion({
       {isExpanded && (
         <div className="border-t border-gray-100 px-3 sm:px-4 py-3 space-y-2 bg-gray-50/50">
 
-          {/* Mobile-only: config count + progress */}
+          {/* Mobile-only: config count */}
           {configCount > 0 && (
             <div className="flex items-center gap-2 mb-2 sm:hidden">
               <span className="text-xs text-gray-400">{configCount} {configCount === 1 ? "config" : "configs"}</span>
-              <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 rounded-full" style={{ width: `${progressPercent}%` }} />
-              </div>
-              <span className="text-xs text-gray-400">{progressPercent}%</span>
             </div>
           )}
 

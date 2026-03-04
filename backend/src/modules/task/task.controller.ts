@@ -188,7 +188,7 @@ export class TaskController {
 
   @Post(':taskId/files')
   @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor('file', { dest: './uploads' }))
+  @UseInterceptors(FileInterceptor('file', { dest: './uploads/tasks' }))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload task file' })
   @ApiParam({ name: 'taskId', type: 'string' })

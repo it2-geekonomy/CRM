@@ -409,7 +409,7 @@ export class TaskService {
     const taskFile = this.taskFileRepo.create({
       task,
       name: file.originalname,
-      url: `/uploads/${file.filename}`,
+      url: `/uploads/tasks/${file.filename}`,
       type: file.mimetype,
       uploadedBy,
     });

@@ -1,6 +1,6 @@
 export enum ProjectStatus {
-  DRAFT = 'Draft',
   ACTIVE = 'Active',
+  INACTIVE = 'Inactive',
+  PIPELINE = 'Pipeline',
   COMPLETED = 'Completed',
-  ARCHIVED = 'Archived',
 }

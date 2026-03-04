@@ -18,7 +18,7 @@ export class CreateProjectsTable1770792048680 implements MigrationInterface {
                 "code" character varying(50) NOT NULL, 
                 "project_type_id" uuid NOT NULL, 
                 "description" text, 
-                "status" "public"."projects_status_enum" NOT NULL DEFAULT 'Pipeline', 
+                "status" "public"."projects_status_enum" NOT NULL DEFAULT 'Active', 
                 "start_date" date NOT NULL, 
                 "end_date" date NOT NULL, 
                 "estimated_hours" integer, 

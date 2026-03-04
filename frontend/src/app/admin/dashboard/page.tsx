@@ -2,8 +2,10 @@
 
 import { useAppSelector } from "@/store/hooks";
 import { useGetProjectsQuery, type ProjectStatus } from "@/store/api/projectApiSlice";
+import { useGetClientsQuery } from "@/store/api/clientApiSlice";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useEffect } from "react";
+import EmployeesPage from "@/app/admin/employees/page";
 
 const SEARCH_FILTERS = ["All", "Projects", "Clients", "Employee", "Leads", "Sales"];
 const QUICK_FILTERS = ["Active", "Inactive", "Pipeline", "Completed", "Total"];
@@ -22,7 +24,10 @@ export default function AdminDashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [projectSearchInput, setProjectSearchInput] = useState("");
   const [quickFilter, setQuickFilter] = useState<string>("Active");
+  const [clientSearchInput, setClientSearchInput] = useState("");
   const isProjectsView = searchFilter === "Projects";
+  const isClientsView = searchFilter === "Clients";
+  const isEmployeesView = searchFilter === "Employee";
   const user = useAppSelector((s) => s.auth.currentUser?.user);
   const displayName = (user as { name?: string } | undefined)?.name ?? getDisplayName(user?.email);
 
@@ -45,18 +50,11 @@ export default function AdminDashboardPage() {
 
   // Track previous filter when filter changes
   const handleFilterChange = (filter: string) => {
-    if (filter === "Clients") {
-      router.push("/admin/dashboard/clients");
-      return;
-    }
-    if (filter === "Employee") {
-      router.push("/admin/employees");
-      return;
-    }
     if (filter === "All") {
       // Reset to default state
       setSearchFilter(null);
       setProjectSearchInput("");
+      setClientSearchInput("");
       setSearchQuery("");
       return;
     }
@@ -64,6 +62,9 @@ export default function AdminDashboardPage() {
     setSearchFilter(filter);
     if (filter === "Projects") {
       setProjectSearchInput(searchQuery.trim());
+    }
+    if (filter === "Clients") {
+      setClientSearchInput(searchQuery.trim());
     }
   };
   const buttons = [
@@ -94,11 +95,28 @@ export default function AdminDashboardPage() {
   const draftCount = data?.data?.filter((p) => p.status === "Draft").length ?? 0;
   const totalCount = data?.meta?.totalItems ?? data?.data?.length ?? 0;
 
+  // Fetch clients data
+  const { data: clientsData, isLoading: isLoadingClients, isError: isErrorClients } = useGetClientsQuery(undefined, {
+    skip: !isClientsView,
+  });
+  const clients = clientsData || [];
+  const filteredClients = useMemo(() => {
+    if (!clientSearchInput.trim()) return clients;
+    const search = clientSearchInput.toLowerCase();
+    return clients.filter(
+      (client) =>
+        client.name?.toLowerCase().includes(search) ||
+        client.email?.toLowerCase().includes(search) ||
+        client.clientCode?.toLowerCase().includes(search)
+    );
+  }, [clients, clientSearchInput]);
+
+
   return (
     <div className="bg-gray-100 min-h-screen py-8">
       {/* Back Button - Always reserve space to prevent layout shift */}
       <div className="mb-4 pl-8 h-10">
-        {searchFilter && (
+        {(isProjectsView || isClientsView || isEmployeesView) && (
           <button
             type="button"
             onClick={handleBack}
@@ -195,46 +213,49 @@ export default function AdminDashboardPage() {
     </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-          <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
-            <p className="text-base text-gray-500">Active Projects</p>
-            <h3 className="text-3xl font-semibold text-gray-900 mt-3">
-              12
-            </h3>
-            <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">
-              ↑ 3 from last week
-            </p>
-          </div>
+        {/* Stats Cards - Hide when Projects, Clients, or Employees view is active */}
+        {!isProjectsView && !isClientsView && !isEmployeesView && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+            <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
+              <p className="text-base text-gray-500">Active Projects</p>
+              <h3 className="text-3xl font-semibold text-gray-900 mt-3">
+                12
+              </h3>
+              <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">
+                ↑ 3 from last week
+              </p>
+            </div>
 
-          <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
-            <p className="text-base text-gray-500">Tasks This Week</p>
-            <h3 className="text-3xl font-semibold text-gray-900 mt-3">
-              24
-            </h3>
-            <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">
-              ↑ 8 completed
-            </p>
-          </div>
+            <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
+              <p className="text-base text-gray-500">Tasks This Week</p>
+              <h3 className="text-3xl font-semibold text-gray-900 mt-3">
+                24
+              </h3>
+              <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">
+                ↑ 8 completed
+              </p>
+            </div>
 
-          <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
-            <p className="text-base text-gray-500">Hours Logged</p>
-            <h3 className="text-3xl font-semibold text-gray-900 mt-3">
-              32h
-            </h3>
-            <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">
-              ↑ 4h from last week
-            </p>
-          </div>
+            <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
+              <p className="text-base text-gray-500">Hours Logged</p>
+              <h3 className="text-3xl font-semibold text-gray-900 mt-3">
+                32h
+              </h3>
+              <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">
+                ↑ 4h from last week
+              </p>
+            </div>
 
-          <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
-            <p className="text-base text-gray-500">Team Members</p>
-            <h3 className="text-3xl font-semibold text-gray-900 mt-3">
-              8
-            </h3>
-            <p className="text-sm text-gray-500 mt-2">No change</p>
+            <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
+              <p className="text-base text-gray-500">Team Members</p>
+              <h3 className="text-3xl font-semibold text-gray-900 mt-3">
+                8
+              </h3>
+              <p className="text-sm text-gray-500 mt-2">No change</p>
+            </div>
           </div>
-        </div>
+        )}
+
         {isProjectsView && (
           <div className="bg-white rounded-2xl border border-gray-200 p-6 mt-8">
             <div className="flex items-center justify-between mb-6">
@@ -281,21 +302,25 @@ export default function AdminDashboardPage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-6 mb-6">
               <div className="rounded-xl border border-gray-200 p-4">
-                <p className="text-sm text-gray-500">Active Projects</p>
+                <p className="text-sm text-gray-500">Active</p>
                 <p className="text-2xl font-semibold text-gray-900 mt-1">{activeCount}</p>
               </div>
               <div className="rounded-xl border border-gray-200 p-4">
-                <p className="text-sm text-gray-500">Draft Projects</p>
+                <p className="text-sm text-gray-500">Inactive</p>
                 <p className="text-2xl font-semibold text-gray-900 mt-1">{draftCount}</p>
               </div>
               <div className="rounded-xl border border-gray-200 p-4">
-                <p className="text-sm text-gray-500">Total Projects</p>
+                <p className="text-sm text-gray-500">Pipeline</p>
                 <p className="text-2xl font-semibold text-gray-900 mt-1">{totalCount}</p>
               </div>
               <div className="rounded-xl border border-gray-200 p-4">
-                <p className="text-sm text-gray-500">Team Members</p>
+                <p className="text-sm text-gray-500">Completed</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">—</p>
+              </div>
+              <div className="rounded-xl border border-gray-200 p-4">
+                <p className="text-sm text-gray-500">Total</p>
                 <p className="text-2xl font-semibold text-gray-900 mt-1">—</p>
               </div>
             </div>
@@ -332,8 +357,79 @@ export default function AdminDashboardPage() {
             )}
           </div>
         )}
+
+        {/* Clients View Section */}
+        {isClientsView && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mt-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Clients</h3>
+              <button
+                type="button"
+                onClick={() => router.push("/admin/dashboard/clients/new/configuration")}
+                className="px-5 py-2.5 rounded-xl bg-green-600 text-white hover:bg-green-700"
+              >
+                + New Client
+              </button>
+            </div>
+
+            <div className="mt-2 flex flex-col sm:flex-row gap-4">
+              <input
+                type="text"
+                placeholder="Search clients..."
+                value={clientSearchInput}
+                onChange={(e) => setClientSearchInput(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
+              />
+              <button
+                type="button"
+                className="px-6 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 shrink-0"
+              >
+                Search
+              </button>
+            </div>
+
+            {isLoadingClients && <div className="text-gray-500 py-6">Loading clients...</div>}
+            {isErrorClients && <div className="text-red-600 py-6">Failed to load clients.</div>}
+            {!isLoadingClients && !isErrorClients && filteredClients.length === 0 && (
+              <div className="text-gray-500 py-6">No clients found.</div>
+            )}
+            {!isLoadingClients && !isErrorClients && filteredClients.length > 0 && (
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1 mt-6">
+                {filteredClients.map((client) => (
+                  <button
+                    key={client.id}
+                    type="button"
+                    onClick={() => {
+                      // Save current filter state before navigating
+                      if (typeof window !== "undefined" && searchFilter) {
+                        sessionStorage.setItem("dashboardFilter", searchFilter);
+                      }
+                      router.push(`/admin/dashboard/clients/${client.id}/configuration`);
+                    }}
+                    className="w-full text-left rounded-xl border border-gray-200 p-5 hover:border-green-500 transition-colors group relative"
+                  >
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-xl group-hover:bg-green-600" />
+                    <div className="pl-4">
+                      <p className="text-sm text-gray-500">{client.clientCode || "—"}</p>
+                      <p className="text-base font-semibold text-gray-900">{client.name}</p>
+                      <p className="text-sm text-gray-500">{client.email || "—"} • {client.status ? "Active" : "Inactive"}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Employees View Section */}
+        {isEmployeesView && (
+          <div className="mt-8">
+            <EmployeesPage />
+          </div>
+        )}
+
         {/* BELOW DASHBOARD SECTION */}
-{!isProjectsView && (
+{!isProjectsView && !isClientsView && !isEmployeesView && (
 <div className="mt-10">
   {/* Today's Schedule */}
   <div className="bg-white rounded-2xl border border-gray-200 p-8">

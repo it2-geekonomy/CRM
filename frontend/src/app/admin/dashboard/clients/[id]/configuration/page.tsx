@@ -306,6 +306,33 @@ export default function ClientConfigurationPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      {/* Back Button */}
+      <div className="mb-4 pl-8 pt-8 h-10">
+        <button
+          type="button"
+          onClick={() => {
+            // Save Clients filter to sessionStorage so dashboard restores it
+            if (typeof window !== "undefined") {
+              sessionStorage.setItem("dashboardFilter", "Clients");
+            }
+            router.push("/admin/dashboard");
+          }}
+          className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Breadcrumb */}
         <div className="mb-4">

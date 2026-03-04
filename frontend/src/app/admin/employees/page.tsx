@@ -75,27 +75,6 @@ export default function EmployeesPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Back Button Container - Always reserve space */}
-      <div className="h-10 mb-4 pl-8 flex items-center">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </button>
-      </div>
       <div className="max-w-screen-xl mx-auto px-3 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-5 space-y-3 sm:space-y-4">
 
         {/* ── KPI CARDS: 2×2 on mobile, 4×1 on desktop ── */}

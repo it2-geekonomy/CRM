@@ -48,8 +48,13 @@ export class ClientController {
   @ApiResponse({ status: 200, description: 'Client updated successfully' })
   @ApiResponse({ status: 404, description: 'Client not found' })
   @ApiResponse({ status: 409, description: 'Email conflict' })
-  update(@Param('id') id: string, @Body() dto: UpdateClientDto) {
-    return this.clientService.update(id, dto);
+  @UseInterceptors(FileInterceptor('logo')) 
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateClientDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.clientService.update(id, dto, file);
   }
 
   @Delete(':id')

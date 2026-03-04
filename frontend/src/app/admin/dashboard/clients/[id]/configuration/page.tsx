@@ -281,10 +281,22 @@ export default function ClientConfigurationPage() {
       if (isNewClient) {
         const result = await createClient(clientData).unwrap();
         toast.success("Client created successfully");
-        router.push(`/admin/dashboard/clients/${result.id}/configuration`);
+        // After creating a client, return to the Admin Dashboard with the Clients tab active
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("dashboardFilter", "Clients");
+        }
+        router.push("/admin/dashboard");
       } else {
-        await updateClient({ id: clientId!, data: clientData }).unwrap();
+        const updatedClient = await updateClient({ id: clientId!, data: clientData }).unwrap();
         toast.success(saveAsDraft ? "Client saved as draft" : "Client updated successfully");
+        // After updating a client, go to the client details page (showing updated info)
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("dashboardFilter", "Clients");
+          // Store the updated client data to ensure fresh data is shown
+          sessionStorage.setItem(`client_${clientId}_updated`, JSON.stringify(updatedClient));
+        }
+        // Navigate with a timestamp to force fresh fetch
+        router.push(`/admin/dashboard/clients/${clientId}?t=${Date.now()}`);
       }
     } catch (err: any) {
       const errorMsg = err?.data?.message || err?.message || "Failed to save client. Please try again.";

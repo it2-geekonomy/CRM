@@ -62,7 +62,7 @@ async function seedProjects() {
         name: 'Online Examination System',
         code: 'EXAM-001',
         description: 'Digital examination system',
-        status: ProjectStatus.PIPELINE,
+        status: ProjectStatus.ACTIVE,
         startDate: new Date('2026-02-01'),
         endDate: new Date('2026-07-01'),
         estimatedHours: 300,

@@ -38,7 +38,7 @@ export class CreateProjectDto {
 
     @ApiProperty({
         enum: ProjectStatus,
-        example: ProjectStatus.PIPELINE,
+        example: ProjectStatus.ACTIVE,
     })
     @IsEnum(ProjectStatus)
     status: ProjectStatus;

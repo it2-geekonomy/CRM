@@ -24,7 +24,7 @@ export function SideBar({ items, secondaryItems, onClose, variant = "persistent"
     >
       <div className="py-6 px-6">
         <a href="/" className="text-white font-semibold text-lg">
-          Course Portal
+          CRM 
         </a>
       </div>
       <div className="flex-1 overflow-y-auto flex flex-col">

@@ -82,6 +82,48 @@ export type TaskQueryParams = {
   sortOrder?: "ASC" | "DESC";
 };
 
+/** Query params for GET /tasks/calendar */
+export type CalendarQueryParams = {
+  year?: string;
+  month?: string;
+  employeeId?: string;
+};
+
+/** Calendar Task Response (nested objects from backend) */
+export type CalendarTaskApi = {
+  id: string;
+  name: string;
+  status: BackendTaskStatus;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  priority?: TaskPriority;
+  createdAt: string;
+  updatedAt: string;
+  assignedTo?: {
+    id: string;
+    name: string;
+    designation?: string;
+  };
+  assignedBy?: {
+    id: string;
+    name: string;
+  };
+  project?: {
+    id: string;
+    name: string;
+  };
+  taskType?: {
+    id: string;
+    name: string;
+    department?: {
+      id: string;
+      name: string;
+    };
+  };
+};
+
 /** TaskPriority enum values from backend */
 export type TaskPriority = "Low" | "Medium" | "High";
 
@@ -179,13 +221,41 @@ export const taskApiSlice = apiSlice.injectEndpoints({
       query: (id) => ({ url: `/tasks/${id}` }),
       providesTags: (_result, _err, id) => [{ type: "Task", id }],
     }),
+    getCalendarTasks: builder.query<CalendarTaskApi[], CalendarQueryParams | void>({
+      query: (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params?.year) searchParams.set("year", params.year);
+        if (params?.month) searchParams.set("month", params.month);
+        if (params?.employeeId) searchParams.set("employeeId", params.employeeId);
+        const qs = searchParams.toString();
+        return { url: `/tasks/calendar${qs ? `?${qs}` : ""}` };
+      },
+      transformResponse: (response: CalendarTaskApi[] | { data?: CalendarTaskApi[] }): CalendarTaskApi[] => {
+        if (Array.isArray(response)) {
+          return response;
+        }
+        if (response && typeof response === 'object' && 'data' in response) {
+          return Array.isArray(response.data) ? response.data : [];
+        }
+        return [];
+      },
+      // Cache for 30 seconds to improve performance
+      keepUnusedDataFor: 30,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map((t) => ({ type: "Task" as const, id: t.id })),
+              { type: "Task", id: "CALENDAR" },
+            ]
+          : [{ type: "Task", id: "CALENDAR" }],
+    }),
     createTask: builder.mutation<{ id: string; taskName: string; taskStatus: BackendTaskStatus; createdAt: string }, CreateTaskBody>({
       query: (body) => ({
         url: "/tasks",
         method: "POST",
         body,
       }),
-      invalidatesTags: [{ type: "Task", id: "LIST" }],
+      invalidatesTags: [{ type: "Task", id: "LIST" }, { type: "Task", id: "CALENDAR" }],
     }),
     updateTask: builder.mutation<{ id: string; taskName: string; taskStatus: BackendTaskStatus; updatedAt: string }, { id: string; body: UpdateTaskBody }>({
       query: ({ id, body }) => ({
@@ -248,6 +318,7 @@ export const {
   useGetTasksQuery,
   useLazyGetTasksQuery,
   useGetTaskQuery,
+  useGetCalendarTasksQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useUpdateTaskStatusMutation,

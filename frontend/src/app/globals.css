@@ -33,6 +33,22 @@ body {
   background-color: rgba(105, 174, 68, 0.15) !important;
 }
 
+/* Selected date highlight */
+.rbc-day-bg.rbc-selected-date,
+.rbc-day-bg[class*="bg-[#69AE44]"] {
+  background-color: rgba(105, 174, 68, 0.3) !important;
+}
+
+.rbc-date-cell.rbc-selected-date {
+  background-color: rgba(105, 174, 68, 0.2) !important;
+  border-radius: 4px;
+}
+
+/* Task count indicator */
+.rbc-day-bg {
+  position: relative;
+}
+
 .rbc-event {
   background-color: #69AE44 !important;
   border-color: #69AE44 !important;

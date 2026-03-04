@@ -34,6 +34,17 @@ const isSameDay = (date1: Date, date2: Date): boolean => {
   );
 };
 
+// Helper function to check if a date falls within a task's date range (inclusive)
+const isDateInRange = (selectedDate: Date, taskStart: Date, taskEnd: Date): boolean => {
+  // Normalize dates to start of day for comparison (ignore time)
+  const selected = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+  const start = new Date(taskStart.getFullYear(), taskStart.getMonth(), taskStart.getDate());
+  const end = new Date(taskEnd.getFullYear(), taskEnd.getMonth(), taskEnd.getDate());
+  
+  // Check if selected date is between start and end (inclusive)
+  return selected >= start && selected <= end;
+};
+
 // Calendar event format
 type CalendarTask = {
   id: string;
@@ -214,11 +225,146 @@ export default function TaskCalendarPage() {
     return transformed;
   }, [tasksData]);
 
-  // Memoize filtered tasks for selected date (optimized date comparison)
+  // Memoize filtered tasks for selected date (show tasks that fall within the date range)
   const tasksForSelectedDate = useMemo(() => {
     if (!selectedDate) return [];
-    return calendarTasks.filter((task) => isSameDay(task.start, selectedDate));
+    return calendarTasks.filter((task) => 
+      isDateInRange(selectedDate, task.start, task.end)
+    );
   }, [calendarTasks, selectedDate]);
+
+  // Create a map of dates to task counts for efficient lookup
+  const dateTaskCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    calendarTasks.forEach((task) => {
+      // Get all dates in the task's range
+      const start = new Date(task.start.getFullYear(), task.start.getMonth(), task.start.getDate());
+      const end = new Date(task.end.getFullYear(), task.end.getMonth(), task.end.getDate());
+      
+      // Iterate through each date in the range
+      const currentDate = new Date(start);
+      while (currentDate <= end) {
+        const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`;
+        map.set(dateKey, (map.get(dateKey) || 0) + 1);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
+    return map;
+  }, [calendarTasks]);
+
+  // Add task counts and highlight selected date after calendar renders
+  useEffect(() => {
+    if (view !== Views.MONTH) return; // Only apply to month view
+    
+    // Small delay to ensure calendar is fully rendered
+    const timer = setTimeout(() => {
+      // Remove previous highlights and counts
+      document.querySelectorAll('.rbc-day-bg').forEach((cell) => {
+        const bg = cell as HTMLElement;
+        // Reset background only if it's not today's date (preserve today highlight)
+        const isToday = bg.classList.contains('rbc-today');
+        if (!isToday) {
+          bg.style.backgroundColor = '';
+        }
+        const existingCount = bg.querySelector('.task-count-indicator');
+        if (existingCount) {
+          existingCount.remove();
+        }
+      });
+
+      // Get all rows in the calendar
+      const rows = document.querySelectorAll('.rbc-month-row');
+      
+      if (rows.length === 0) return; // Calendar not ready yet
+      
+      rows.forEach((row) => {
+        const dateCells = row.querySelectorAll('.rbc-date-cell');
+        const dayBgs = row.querySelectorAll('.rbc-day-bg');
+        
+        // Match each day-bg with its corresponding date-cell
+        dayBgs.forEach((bg, index) => {
+          const bgElement = bg as HTMLElement;
+          const dateCell = dateCells[index] as HTMLElement;
+          
+          if (!dateCell) return;
+          
+          // First check: Look for off-range classes that react-big-calendar uses
+          // to mark dates from other months (these are typically grayed out)
+          const isOffRange = dateCell.classList.contains('rbc-off-range') || 
+                            bgElement.classList.contains('rbc-off-range-bg') ||
+                            dateCell.closest('.rbc-off-range') !== null;
+          
+          if (isOffRange) {
+            return; // Skip dates from other months
+          }
+          
+          // Get the date number from the date cell
+          const dateLink = dateCell.querySelector('a');
+          const dayNumberText = dateLink?.textContent?.trim() || dateCell.textContent?.trim();
+          
+          if (!dayNumberText) return;
+          
+          const dayNumber = parseInt(dayNumberText);
+          if (isNaN(dayNumber)) return;
+          
+          // Calculate the actual date
+          const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNumber);
+          
+          // Check if this date is from previous/next month
+          // If the calculated month doesn't match current month, it's from another month
+          // This happens when dayNumber (e.g., 1-3) appears at the start but belongs to next month
+          // or when dayNumber (e.g., 29-31) appears at the end but belongs to previous month
+          if (cellDate.getMonth() !== currentDate.getMonth() || 
+              cellDate.getFullYear() !== currentDate.getFullYear()) {
+            return; // Skip dates from other months
+          }
+          
+          // Additional check: Check if the date link has reduced opacity (typical for off-range dates)
+          if (dateLink) {
+            const computedStyle = window.getComputedStyle(dateLink);
+            const opacity = parseFloat(computedStyle.opacity);
+            // Off-range dates typically have opacity < 1 (usually 0.3 or similar)
+            if (opacity < 0.5) {
+              return; // Skip grayed out dates from other months
+            }
+          }
+          
+          const dateKey = `${cellDate.getFullYear()}-${cellDate.getMonth()}-${cellDate.getDate()}`;
+          const taskCount = dateTaskCountMap.get(dateKey) || 0;
+          
+          // Highlight selected date
+          if (selectedDate && isSameDay(cellDate, selectedDate)) {
+            bgElement.style.backgroundColor = 'rgba(105, 174, 68, 0.3)';
+            bgElement.style.borderRadius = '4px';
+          }
+          
+          // Add task count indicator (only for current month dates)
+          if (taskCount > 0) {
+            const countEl = document.createElement('span');
+            countEl.className = 'task-count-indicator';
+            countEl.textContent = `+${taskCount}`;
+            countEl.style.cssText = `
+              position: absolute;
+              bottom: 2px;
+              right: 2px;
+              font-size: 10px;
+              font-weight: 600;
+              color: #69AE44;
+              background-color: rgba(105, 174, 68, 0.1);
+              padding: 2px 6px;
+              border-radius: 4px;
+              z-index: 10;
+              pointer-events: none;
+            `;
+            bgElement.style.position = 'relative';
+            bgElement.appendChild(countEl);
+          }
+        });
+      });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [calendarTasks, selectedDate, currentDate, dateTaskCountMap, view]);
 
   // Memoize years array to prevent recreation on every render
   const years = useMemo(() => {
@@ -235,14 +381,8 @@ export default function TaskCalendarPage() {
   }, []);
 
   const handleSelectSlot = useCallback((slotInfo: SlotInfo) => {
-    // When clicking on an empty date slot, show tasks for that date
+    // When clicking on a date slot, show tasks for that date
     setSelectedDate(slotInfo.start);
-  }, []);
-
-  const handleSelectEvent = useCallback((event: any) => {
-    // When clicking on a task event, show tasks for that event's start date
-    const task = event as CalendarTask;
-    setSelectedDate(task.start);
   }, []);
 
   const currentYear = currentDate.getFullYear();
@@ -255,6 +395,12 @@ export default function TaskCalendarPage() {
   // Handle create task form submission
   const handleCreateTask = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (isCreatingTask) {
+      return;
+    }
+    
     const formData = new FormData(e.currentTarget);
     
     const projectId = formData.get("projectId") as string;
@@ -288,12 +434,25 @@ export default function TaskCalendarPage() {
       };
 
       await createTask(taskData).unwrap();
+      
+      // Success - close modal and reset form
       toast.success("Task created successfully!");
       setIsModalOpen(false);
-      // Reset form
       e.currentTarget.reset();
     } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to create task");
+      // Only show error if it's a real HTTP error (4xx or 5xx)
+      // This prevents showing errors for network issues that might occur after successful creation
+      const errorStatus = error?.status;
+      const isHttpError = errorStatus && (errorStatus >= 400 && errorStatus < 600);
+      
+      if (isHttpError) {
+        const errorMessage = error?.data?.message || error?.message || "Failed to create task";
+        toast.error(errorMessage);
+      } else {
+        // For non-HTTP errors (network issues, etc.), log but don't show error toast
+        // The task might have been created successfully
+        console.error("Task creation error:", error);
+      }
     }
   };
 
@@ -386,7 +545,7 @@ export default function TaskCalendarPage() {
                  <div className="min-w-[600px] sm:min-w-0 px-4 sm:px-0">
                    <Calendar
                      localizer={localizer}
-                     events={calendarTasks}
+                     events={[]}
                      startAccessor="start"
                      endAccessor="end"
                      style={{ height: selectedDate ? 250 : 400 }}
@@ -397,7 +556,6 @@ export default function TaskCalendarPage() {
                      views={[Views.MONTH, Views.WEEK, Views.DAY]}
                      selectable
                      onSelectSlot={handleSelectSlot}
-                     onSelectEvent={handleSelectEvent}
                      popup
                    />
                  </div>

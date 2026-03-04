@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ConfigFormData, Configuration } from "../types";
-import { useCreateTaskTypeMutation } from "@/store/api/taskTypeApiSlice";
+import type { TaskTypeFormData, TaskType } from "@/app/admin/configuration/types";
 import type { DepartmentWithTaskTypesApi } from "@/store/api/departmentApiSlice";
 
-/** Receives the full department from API (id, name, code, description, projectTypeId, createdAt, updatedAt, taskTypes). */
 interface Props {
   department: DepartmentWithTaskTypesApi;
-  onSubmit: (config: Configuration) => void;
+  onSubmit: (config: TaskType) => void;
   onClose: () => void;
 }
 
@@ -24,9 +22,8 @@ const selectClass =
 
 const labelClass = "block text-sm font-semibold text-gray-800 mb-1.5";
 
-export default function ConfigForm({ department, onSubmit, onClose }: Props) {
-  const [createTaskType, { isLoading }] = useCreateTaskTypeMutation();
-  const [form, setForm] = useState<ConfigFormData>({
+export default function TaskTypeForm({ department, onSubmit, onClose }: Props) {
+  const [form, setForm] = useState<TaskTypeFormData>({
     name: "",
     description: "",
     departmentId: department.id,
@@ -36,32 +33,20 @@ export default function ConfigForm({ department, onSubmit, onClose }: Props) {
     tasks: "",
   });
 
-  const handleChange = (key: keyof ConfigFormData, value: unknown) => {
+  const handleChange = (key: keyof TaskTypeFormData, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = () => {
     if (!form.name.trim()) return;
-    createTaskType({
+    onSubmit({
+      id: Date.now().toString(),
       name: form.name,
-      description: form.description || undefined,
-      departmentId: form.departmentId,
+      description: form.description,
       billable: form.billable,
-      slaHours: form.slaHours ? Number(form.slaHours) : undefined,
-      status: form.status === "Active" ? "Active" : "Inactive",
-    }).then((res) => {
-      const data = res.data as { id: string; name: string; description?: string; billable?: boolean; slaHours?: number; status?: string } | undefined;
-      if (data) {
-        onSubmit({
-          id: data.id,
-          name: data.name,
-          description: data.description ?? "",
-          billable: data.billable ?? false,
-          slaHours: data.slaHours != null ? String(data.slaHours) : "",
-          status: (data.status === "Inactive" ? "Inactive" : "Active") as "Active" | "Inactive",
-          tasks: "",
-        });
-      }
+      slaHours: form.slaHours,
+      status: form.status,
+      tasks: form.tasks,
     });
     onClose();
   };
@@ -79,13 +64,11 @@ export default function ConfigForm({ department, onSubmit, onClose }: Props) {
 
       {/* Name */}
       <div>
-        <label className={labelClass}>
-          Name <span className="text-red-500">*</span>
-        </label>
+        <label className={labelClass}>Name <span className="text-red-500">*</span></label>
         <input
           type="text"
           className={inputClass}
-          placeholder="Configuration name"
+          placeholder="Task type name"
           value={form.name}
           onChange={(e) => handleChange("name", e.target.value)}
         />
@@ -97,7 +80,7 @@ export default function ConfigForm({ department, onSubmit, onClose }: Props) {
         <textarea
           rows={3}
           className={inputClass}
-          placeholder="Describe this configuration..."
+          placeholder="Describe this task type..."
           value={form.description}
           onChange={(e) => handleChange("description", e.target.value)}
         />
@@ -113,7 +96,7 @@ export default function ConfigForm({ department, onSubmit, onClose }: Props) {
         />
       </div>
 
-      {/* SLA Hours + Status — stacked on xs, side-by-side on sm+ */}
+      {/* SLA Hours + Status */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div>
           <label className={labelClass}>SLA Hours</label>
@@ -125,7 +108,6 @@ export default function ConfigForm({ department, onSubmit, onClose }: Props) {
             onChange={(e) => handleChange("slaHours", e.target.value)}
           />
         </div>
-
         <div>
           <label className={labelClass}>Status</label>
           <div className="relative">
@@ -174,7 +156,7 @@ export default function ConfigForm({ department, onSubmit, onClose }: Props) {
         </button>
       </div>
 
-      {/* Action Buttons — full-width stacked on xs, right-aligned row on sm+ */}
+      {/* Buttons */}
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pt-2">
         <button
           onClick={onClose}

@@ -103,7 +103,7 @@ export default function AddTimestampModal({ isOpen, onClose, onAdd }: AddTimesta
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-2">
               <div className="flex-1">
                 <label htmlFor="add-ts-hours" className="sr-only">Hours</label>
                 <input

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export type Project = {
@@ -30,6 +31,7 @@ const todayStr = () => {
 };
 
 export default function EmployeeProjectsPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [quickFilter, setQuickFilter] = useState<string>("My Active Projects");
   const [searchQuery, setSearchQuery] = useState("");
@@ -83,6 +85,27 @@ export default function EmployeeProjectsPage() {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #5a9a3a; }
         .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #69AE44 #f3f4f6; }
       `}</style>
+      {/* Back Button */}
+      <div className="mb-4 pl-8 h-10">
+        <button
+          type="button"
+          onClick={() => router.push("/employee/dashboard")}
+          className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
       <div className="max-w-[1200px] mx-auto px-8">
         <div className="mb-6">
           <h2 className="text-2xl font-semibold text-gray-900">Projects</h2>

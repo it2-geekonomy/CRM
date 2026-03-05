@@ -33,10 +33,14 @@ export default function CreateTaskModal({
   onCreateTask,
 }: CreateTaskModalProps) {
   // Fetch employees from API
-  const { data: employeesData, isLoading: isLoadingEmployees } = useGetEmployeesQuery({ limit: 100 });
+  const { data: employeesData, isLoading: isLoadingEmployees } = useGetEmployeesQuery({ limit: 100 }, {
+    refetchOnMountOrArgChange: true, // Force refetch when modal opens to ensure employees are available
+  });
 
   // Fetch task types from API
-  const { data: taskTypesData, isLoading: isLoadingTaskTypes } = useGetTaskTypesQuery();
+  const { data: taskTypesData, isLoading: isLoadingTaskTypes } = useGetTaskTypesQuery(undefined, {
+    refetchOnMountOrArgChange: true, // Force refetch when modal opens to ensure task types are available
+  });
 
   // Get employees list for dropdown
   const employees = employeesData?.data || [];

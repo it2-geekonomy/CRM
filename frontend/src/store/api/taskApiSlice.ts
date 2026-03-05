@@ -178,6 +178,47 @@ export type UpdateChecklistItemBody = {
   isCompleted?: boolean;
 };
 
+/** Task Activity from backend */
+export type TaskActivityApi = {
+  id: string;
+  oldStatus: BackendTaskStatus;
+  newStatus: BackendTaskStatus;
+  changeReason?: string | null;
+  changedAt: string; // ISO date string
+  changedBy: {
+    id: string;
+    name: string;
+    designation?: string;
+  };
+};
+
+/** Task File from backend */
+export type TaskFileApi = {
+  id: string;
+  name: string;
+  url: string;
+  type?: string;
+  uploadedAt: string;
+  uploadedBy?: {
+    id: string;
+    name: string;
+    designation?: string;
+  };
+};
+
+/** Task File Upload Response */
+export type TaskFileUploadResponse = {
+  message: string;
+  data: {
+    id: string;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    uploadedByName: string;
+    uploadedAt: string;
+  };
+};
+
 export type TasksResponse = TaskApi[];
 type TasksApiResponse = TaskApi[] | { data?: TaskApi[] } | { data: any[]; meta?: any };
 
@@ -311,6 +352,35 @@ export const taskApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: (_result, _err, { taskId }) => [{ type: "Task", id: taskId }, { type: "Task", id: `${taskId}-checklist` }],
     }),
+    // Activity log endpoint
+    getTaskActivity: builder.query<TaskActivityApi[], string>({
+      query: (taskId) => ({ url: `/tasks/${taskId}/activity` }),
+      providesTags: (_result, _err, taskId) => [{ type: "Task", id: taskId }, { type: "Task", id: `${taskId}-activity` }],
+    }),
+    // Task files endpoints
+    getTaskFiles: builder.query<TaskFileApi[], string>({
+      query: (taskId) => ({ url: `/tasks/${taskId}/files` }),
+      providesTags: (_result, _err, taskId) => [{ type: "Task", id: taskId }, { type: "Task", id: `${taskId}-files` }],
+    }),
+    uploadTaskFile: builder.mutation<TaskFileUploadResponse, { taskId: string; file: File }>({
+      query: ({ taskId, file }) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        return {
+          url: `/tasks/${taskId}/files`,
+          method: "POST",
+          body: formData,
+        };
+      },
+      invalidatesTags: (_result, _err, { taskId }) => [{ type: "Task", id: taskId }, { type: "Task", id: `${taskId}-files` }],
+    }),
+    deleteTaskFile: builder.mutation<{ statusCode: number; message: string }, string>({
+      query: (fileId) => ({
+        url: `/tasks/files/${fileId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _err, fileId) => [{ type: "Task", id: "LIST" }],
+    }),
   }),
 });
 
@@ -327,4 +397,8 @@ export const {
   useCreateChecklistItemMutation,
   useUpdateChecklistItemMutation,
   useDeleteChecklistItemMutation,
+  useGetTaskActivityQuery,
+  useGetTaskFilesQuery,
+  useUploadTaskFileMutation,
+  useDeleteTaskFileMutation,
 } = taskApiSlice;

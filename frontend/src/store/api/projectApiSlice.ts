@@ -1,7 +1,7 @@
 import { apiSlice } from "./apiSlice";
 
 /** Backend ProjectStatus enum values */
-export type ProjectStatus = "Draft" | "Active" | "Completed" | "Archived";
+export type ProjectStatus = "Active" | "inactive" | "Completed" | "Pipeline" |"OnHold";
 
 /** Backend ProjectType enum values */
 export type ProjectType = "Website" | "App" | "CRM" | "Internal";
@@ -20,7 +20,24 @@ export type ProjectQueryParams = {
   sortOrder?: "ASC" | "DESC";
 };
 
-/** Body for POST /projects (CreateProjectDto) */
+/** Body for PATCH /projects/:id (UpdateProjectDto) */
+export type UpdateProjectBody = {
+  id: string;
+  name?: string;
+  code?: string;
+  projectTypeId?: string;
+  clientId?: string;
+  description?: string;
+  status?: ProjectStatus;
+  startDate?: string;
+  endDate?: string;
+  estimatedHours?: number;
+  projectManagerId?: string;
+  projectLeadId?: string;
+  requireTimeTracking?: boolean;
+};
+
+
 export type CreateProjectBody = {
   name: string;
   code?: string;
@@ -102,6 +119,17 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: [{ type: "Project", id: "LIST" }],
     }),
+    updateProject: builder.mutation<ProjectApi, UpdateProjectBody>({
+      query: ({ id, ...body }) => ({
+        url: `/projects/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: "Project", id },
+        { type: "Project", id: "LIST" },
+      ],
+    }),
   }),
 });
 
@@ -110,4 +138,5 @@ export const {
   useLazyGetProjectsQuery,
   useGetProjectQuery,
   useCreateProjectMutation,
+  useUpdateProjectMutation,
 } = projectApiSlice;

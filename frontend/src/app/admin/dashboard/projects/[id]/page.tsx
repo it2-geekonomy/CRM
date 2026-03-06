@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { toast } from "react-toastify";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { useGetProjectQuery } from "@/store/api/projectApiSlice";
+import { createPortal } from "react-dom";
+import { useGetProjectQuery, useUpdateProjectMutation, type ProjectStatus } from "@/store/api/projectApiSlice";
 import {
   useGetTasksQuery,
   useCreateTaskMutation,
@@ -174,6 +175,56 @@ export default function ProjectDetailPage() {
 
   const [activeTab, setActiveTab] = useState("Project Info");
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const [updateProject, { isLoading: isUpdatingProject }] = useUpdateProjectMutation();
+
+  const ALL_PROJECT_STATUSES: ProjectStatus[] = ["Active", "inactive", "Completed", "Pipeline", "OnHold"];
+
+  const STATUS_STYLES: Record<ProjectStatus, string> = {
+    Active: "bg-green-100 text-green-700",
+    Completed: "bg-blue-100 text-blue-700",
+    inactive: "bg-gray-100 text-gray-600",
+    Pipeline: "bg-purple-100 text-purple-700",
+    OnHold: "bg-yellow-100 text-yellow-700",
+  };
+
+  const STATUS_LABELS: Record<ProjectStatus, string> = {
+    Active: "Active",
+    Completed: "Completed",
+    inactive: "Inactive",
+    Pipeline: "Pipeline",
+    OnHold: "On Hold",
+  };
+
+  const handleStatusChange = async (newStatus: ProjectStatus) => {
+    if (!projectId || newStatus === project?.status) {
+      setIsStatusDropdownOpen(false);
+      setDropdownPos(null);
+      return;
+    }
+    try {
+      await updateProject({ id: projectId, status: newStatus }).unwrap();
+      toast.success(`Status updated to ${STATUS_LABELS[newStatus]}`);
+    } catch {
+      toast.error("Failed to update status");
+    }
+    setIsStatusDropdownOpen(false);
+    setDropdownPos(null);
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setIsStatusDropdownOpen(false);
+        setDropdownPos(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
   
   // Initialize with empty array - will be populated from backend task types
   const [departments, setDepartments] = useState<TaskDepartment[]>([]);
@@ -674,19 +725,62 @@ export default function ProjectDetailPage() {
               Duplicate Task
             </button>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 relative" ref={statusDropdownRef}>
               <span className="text-sm text-gray-500">Status:</span>
-              <span
-                className={`px-3 py-1 rounded-lg text-xs font-medium ${
-                  project.status === "Active"
-                    ? "bg-green-100 text-green-700"
-                    : project.status === "Completed"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-yellow-100 text-yellow-700"
-                }`}
+              <button
+                type="button"
+                onClick={() => {
+                  if (isStatusDropdownOpen) {
+                    setIsStatusDropdownOpen(false);
+                    setDropdownPos(null);
+                  } else {
+                    const rect = statusDropdownRef.current?.getBoundingClientRect();
+                    if (rect) {
+                      setDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX });
+                    }
+                    setIsStatusDropdownOpen(true);
+                  }
+                }}
+                disabled={isUpdatingProject}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium border border-transparent hover:border-gray-300 transition-all ${
+                  STATUS_STYLES[project.status as ProjectStatus] ?? "bg-gray-100 text-gray-600"
+                } ${isUpdatingProject ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
               >
-                {project.status}
-              </span>
+                {STATUS_LABELS[project.status as ProjectStatus] ?? project.status}
+                <svg
+                  className={`w-3 h-3 transition-transform ${isStatusDropdownOpen ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isStatusDropdownOpen && dropdownPos && createPortal(
+                <div
+                  style={{ position: "absolute", top: dropdownPos.top, left: dropdownPos.left, zIndex: 9999 }}
+                  className="w-40 bg-white border border-gray-200 rounded-lg shadow-xl p-1.5 flex flex-col gap-1"
+                >
+                  {ALL_PROJECT_STATUSES.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => handleStatusChange(s)}
+                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs font-medium transition-opacity ${STATUS_STYLES[s]} ${
+                        s === project.status ? "opacity-50 cursor-default" : "hover:opacity-80"
+                      }`}
+                    >
+                      {STATUS_LABELS[s]}
+                      {s === project.status && (
+                        <svg className="w-3 h-3 ml-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>,
+                document.body
+              )}
             </div>
 
             <button

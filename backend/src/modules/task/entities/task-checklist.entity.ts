@@ -24,6 +24,18 @@ export class TaskChecklist {
   @Column({ name: 'is_completed', default: false })
   isCompleted: boolean;
 
+  @Column({ type: 'date', nullable: true }) 
+  date?: string;
+
+  @Column({ name: 'duration_hours', type: 'int', default: 0, nullable: true })
+  durationHours?: number;
+
+  @Column({ name: 'duration_minutes', type: 'int', default: 0, nullable: true })
+  durationMinutes?: number;
+
+  @Column({ type: 'text', nullable: true }) 
+  notes?: string;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 

@@ -4,10 +4,10 @@ export class CreateEmployeeProfiles1770438756319 implements MigrationInterface {
   name = 'CreateEmployeeProfiles1770438756319';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Ensure UUID extension exists
+    // 1️⃣ Ensure UUID extension exists
     await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
 
-    // Create enums
+    // 2️⃣ Create enum types
     await queryRunner.query(`
       CREATE TYPE "public"."employee_profiles_employment_type_enum"
       AS ENUM ('FULL_TIME', 'INTERN', 'CONTRACT')
@@ -18,7 +18,7 @@ export class CreateEmployeeProfiles1770438756319 implements MigrationInterface {
       AS ENUM ('ACTIVE', 'INACTIVE', 'ON_NOTICE', 'EXITED')
     `);
 
-    // Create table
+    // 3️⃣ Create employee_profiles table
     await queryRunner.query(`
       CREATE TABLE "employee_profiles" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -38,23 +38,33 @@ export class CreateEmployeeProfiles1770438756319 implements MigrationInterface {
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
 
         CONSTRAINT "PK_employee_profiles" PRIMARY KEY ("id"),
-        CONSTRAINT "UQ_employee_profiles_user_id" UNIQUE ("user_id"),
-
-        CONSTRAINT "FK_employee_profiles_users"
-          FOREIGN KEY ("user_id")
-          REFERENCES "users"("id")
-          ON DELETE CASCADE,
-
-        CONSTRAINT "FK_employee_profiles_departments"
-          FOREIGN KEY ("department_id")
-          REFERENCES "departments"("id")
-          ON DELETE SET NULL
+        CONSTRAINT "UQ_employee_profiles_user_id" UNIQUE ("user_id")
       )
+    `);
+
+    // 4️⃣ Add foreign key constraints
+    await queryRunner.query(`
+      ALTER TABLE "employee_profiles"
+      ADD CONSTRAINT "FK_employee_profiles_users"
+      FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
+    `);
+
+    await queryRunner.query(`
+      ALTER TABLE "employee_profiles"
+      ADD CONSTRAINT "FK_employee_profiles_departments"
+      FOREIGN KEY ("department_id") REFERENCES "departments"("id") ON DELETE SET NULL
     `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    // Drop foreign keys first
+    await queryRunner.query(`ALTER TABLE "employee_profiles" DROP CONSTRAINT IF EXISTS "FK_employee_profiles_departments"`);
+    await queryRunner.query(`ALTER TABLE "employee_profiles" DROP CONSTRAINT IF EXISTS "FK_employee_profiles_users"`);
+
+    // Drop table
     await queryRunner.query(`DROP TABLE IF EXISTS "employee_profiles"`);
+
+    // Drop enums
     await queryRunner.query(`DROP TYPE IF EXISTS "public"."employee_profiles_employment_status_enum"`);
     await queryRunner.query(`DROP TYPE IF EXISTS "public"."employee_profiles_employment_type_enum"`);
   }

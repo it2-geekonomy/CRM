@@ -24,11 +24,12 @@ import { TaskFile } from './entities/task-file.entity';
     ]),
     AuthModule,
     MulterModule.register({
-      dest: './uploads/tasks',        
-      limits: { fileSize: 25 * 1024 * 1024 }, 
+      dest: './uploads/tasks',
+      limits: { fileSize: 25 * 1024 * 1024 },
     }),
   ],
   controllers: [TaskController],
   providers: [TaskService],
+  exports: [TaskService],
 })
 export class TaskModule { }

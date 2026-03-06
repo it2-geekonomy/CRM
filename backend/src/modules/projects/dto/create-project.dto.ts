@@ -7,6 +7,8 @@ import {
     IsEnum,
     IsString,
     MaxLength,
+    ArrayUnique,
+    IsArray,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectStatus } from '../../../shared/enum/project/project-status.enum';
@@ -16,7 +18,7 @@ export class CreateProjectDto {
     @MaxLength(150)
     name: string;
 
-    @ApiProperty({ example: '6eff1312-88fe-4dd0-a93c-37aff05b5fc7',})
+    @ApiProperty({ example: '6eff1312-88fe-4dd0-a93c-37aff05b5fc7', })
     @IsUUID()
     projectTypeId: string;
 
@@ -63,10 +65,17 @@ export class CreateProjectDto {
     @ApiProperty({ example: '6edc4986-11fa-4747-b47e-b3c95041bffb' })
     @IsUUID()
     projectLeadId: string;
-    
+
 
     @ApiPropertyOptional({ example: true })
     @IsOptional()
     @IsBoolean()
     requireTimeTracking?: boolean;
+
+    @ApiPropertyOptional({ example: ['6edc4986-11fa-4747-b47e-b3c95041bffb'] })
+    @IsOptional()
+    @IsArray()
+    @ArrayUnique()
+    @IsUUID('4', { each: true })
+    teamMembers?: string[];
 }

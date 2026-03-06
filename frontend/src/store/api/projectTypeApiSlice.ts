@@ -23,6 +23,15 @@ export type ProjectTypeApi = {
 };
 
 export type ProjectTypesResponse = ProjectTypeApi[];
+
+/** Request body for POST /project-types (matches backend CreateProjectTypeDto). */
+export type CreateProjectTypeBody = {
+  name: string;
+  departmentIds: string[];
+  description?: string;
+  isActive?: boolean;
+};
+
 type ProjectTypesApiResponse = ProjectTypeApi[] | { data?: ProjectTypeApi[] };
 
 export const projectTypeApiSlice = apiSlice.injectEndpoints({
@@ -45,4 +54,4 @@ export const projectTypeApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useGetProjectTypesQuery } = projectTypeApiSlice;
+export const { useGetProjectTypesQuery, useCreateProjectTypeMutation } = projectTypeApiSlice;

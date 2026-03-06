@@ -493,13 +493,11 @@ export default function EmployeeProjectDetailPage() {
         return;
       }
 
-      // Parse due date and set start/end dates
-      const dueDate = new Date(formData.dueDate);
-      const startDate = new Date(dueDate);
-      startDate.setDate(startDate.getDate() - 1); // Start 1 day before due date
-
-      const startDateStr = startDate.toISOString().split("T")[0];
-      const endDateStr = dueDate.toISOString().split("T")[0];
+      // Use the provided start and end dates/times directly
+      const startDateStr = formData.startDate;
+      const startTimeStr = formData.startTime;
+      const endDateStr = formData.endDate;
+      const endTimeStr = formData.endTime;
 
       // Map priority string to backend enum value
       const priorityMap: Record<string, "Low" | "Medium" | "High"> = {
@@ -525,9 +523,9 @@ export default function EmployeeProjectDetailPage() {
           name: formData.taskName, // Backend expects 'name'
           description: taskDescription, // Includes user description and metadata
           startDate: startDateStr,
-          startTime: "09:00",
+          startTime: startTimeStr,
           endDate: endDateStr,
-          endTime: "18:00",
+          endTime: endTimeStr,
           assignedToId: employee.id,
           projectId: projectId,
           priority: priority,

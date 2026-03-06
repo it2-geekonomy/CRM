@@ -13,6 +13,7 @@ import { TaskStatus } from '../../../shared/enum/task/task-status.enum';
 import { Project } from '../../projects/entities/project.entity';
 import { TaskPriority } from '../../../shared/enum/task/task-priority.enum';
 import { TaskType } from '../../task-type/entities/task-type.entity';
+import { TaskChecklist } from './task-checklist.entity';
 @Entity('tasks')
 export class Task {
   @PrimaryGeneratedColumn('uuid')
@@ -85,5 +86,8 @@ export class Task {
   @ManyToOne(() => TaskType, (taskType) => taskType.tasks)
   @JoinColumn({ name: 'task_type_id' })
   taskType: TaskType;
+
+  @OneToMany(() => TaskChecklist, (checklist) => checklist.task)
+  checklists: TaskChecklist[];
 
 }

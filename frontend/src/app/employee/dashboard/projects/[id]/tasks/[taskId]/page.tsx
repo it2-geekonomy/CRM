@@ -146,7 +146,7 @@ function getTaskFromStorage(taskId: string): Task | null {
   return null;
 }
 
-export default function TaskDetailPage() {
+export default function EmployeeTaskDetailPage() {
   const params = useParams();
   const projectId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const taskId = Array.isArray(params?.taskId) ? params.taskId[0] : params?.taskId;
@@ -208,13 +208,6 @@ export default function TaskDetailPage() {
   // Transform backend task data to frontend format
   useEffect(() => {
     if (backendTaskData) {
-      // Debug: Log the backend task data to see what fields are available
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Backend Task Data:', backendTaskData);
-        console.log('Description field:', (backendTaskData as any).description);
-        console.log('task_taskDescription field:', backendTaskData.task_taskDescription);
-        console.log('task_taskdescription field:', backendTaskData.task_taskdescription);
-      }
       setBackendTask(backendTaskData);
       const transformedTask = transformBackendTaskToFrontend(backendTaskData);
       setTask(transformedTask);
@@ -406,7 +399,7 @@ export default function TaskDetailPage() {
     return (
       <div className="bg-gray-100 min-h-screen py-10 flex items-center justify-center">
         <p className="text-gray-600">Invalid URL</p>
-        <Link href={`/admin/dashboard/projects/${projectId}`} className="ml-4 text-green-600 hover:underline">
+        <Link href={`/employee/dashboard/projects/${projectId}`} className="ml-4 text-green-600 hover:underline">
           ← Back to Project
         </Link>
       </div>
@@ -431,7 +424,7 @@ export default function TaskDetailPage() {
             {(taskError as { data?: { message?: string } })?.data?.message || "Task not found"}
           </p>
           <Link
-            href={`/admin/dashboard/projects/${projectId}`}
+            href={`/employee/dashboard/projects/${projectId}`}
             className="mt-4 inline-block text-green-600 hover:underline"
           >
             ← Back to Project
@@ -455,7 +448,7 @@ export default function TaskDetailPage() {
             <div className="bg-white rounded-2xl border border-gray-200 p-4">
               <div className="flex items-center justify-between gap-4 mb-2">
                 <Link
-                  href={`/admin/dashboard/projects/${projectId}`}
+                  href={`/employee/dashboard/projects/${projectId}`}
                   className="text-sm text-green-600 hover:text-green-700 shrink-0 inline-flex items-center gap-1"
                 >
                   <span>←</span>

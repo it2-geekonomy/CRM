@@ -7,6 +7,8 @@ import {
     ManyToOne,
     JoinColumn,
     OneToMany,
+    JoinTable,
+    ManyToMany,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { ProjectStatus } from '../../../shared/enum/project/project-status.enum';
@@ -103,4 +105,12 @@ export class Project {
     @ManyToOne(() => Client, (client) => client.projects, { onDelete: 'SET NULL' })
     @JoinColumn({ name: 'client_id' })
     client: Client;
+
+    @ManyToMany(() => EmployeeProfile, (employee) => employee.projects)
+    @JoinTable({
+        name: 'project_team_members',
+        joinColumn: { name: 'project_id', referencedColumnName: 'id' },
+        inverseJoinColumn: { name: 'employee_id', referencedColumnName: 'id' },
+    })
+    teamMembers: EmployeeProfile[];
 }

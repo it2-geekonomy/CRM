@@ -36,7 +36,7 @@ export class CreateProjectsTable1770792048680 implements MigrationInterface {
             )
         `);
 
-        // 3️⃣ Foreign Keys
+        // 3️⃣ Foreign Keys for Projects
         await queryRunner.query(`
             ALTER TABLE "projects" 
             ADD CONSTRAINT "FK_project_type" 
@@ -71,17 +71,45 @@ export class CreateProjectsTable1770792048680 implements MigrationInterface {
             FOREIGN KEY ("client_id") 
             REFERENCES "clients"("id") ON DELETE SET NULL
         `);
+
+        // 4️⃣ Create join table for project team members
+        await queryRunner.query(`
+            CREATE TABLE "project_team_members" (
+                "project_id" uuid NOT NULL,
+                "employee_id" uuid NOT NULL,
+                PRIMARY KEY ("project_id", "employee_id")
+            )
+        `);
+
+        // 5️⃣ Add foreign keys for join table
+        await queryRunner.query(`
+            ALTER TABLE "project_team_members"
+            ADD CONSTRAINT "FK_project_team_project"
+            FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE
+        `);
+
+        await queryRunner.query(`
+            ALTER TABLE "project_team_members"
+            ADD CONSTRAINT "FK_project_team_employee"
+            FOREIGN KEY ("employee_id") REFERENCES "employee_profiles"("id") ON DELETE CASCADE
+        `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
+        // 1️⃣ Drop join table first
+        await queryRunner.query(`DROP TABLE "project_team_members"`);
+
+        // 2️⃣ Drop foreign keys for projects
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_client"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_creator"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_lead"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_manager"`);
         await queryRunner.query(`ALTER TABLE "projects" DROP CONSTRAINT "FK_project_type"`);
 
+        // 3️⃣ Drop projects table
         await queryRunner.query(`DROP TABLE "projects"`);
 
+        // 4️⃣ Drop enum type
         await queryRunner.query(`DROP TYPE "public"."projects_status_enum"`);
     }
 }

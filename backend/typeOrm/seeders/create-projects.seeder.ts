@@ -28,22 +28,32 @@ async function seedProjects() {
     const clientRepo = dataSource.getRepository(Client);
 
     const existingCount = await projectRepo.count();
+
     if (existingCount > 0) {
       console.log('⚠️ Projects already exist. Skipping seeder.');
       return;
     }
 
-    const projectType = await typeRepo.findOneBy({ name: 'Website Development' });
-    const manager = (await adminRepo.find({ take: 1 }))[0];
-    const lead = (await employeeRepo.find({ take: 1 }))[0];
-    const client = (await clientRepo.find({ take: 1 }))[0];
+    const projectType = await typeRepo.findOne({
+      where: { name: 'Website Development' },
+    });
 
-    if (!projectType || !manager || !lead) {
+    const manager = await adminRepo.find({ take: 1 });
+    const lead = await employeeRepo.find({ take: 1 });
+    const client = await clientRepo.find({ take: 1 });
+
+    const managerData = manager[0];
+    const leadData = lead[0];
+    const clientData = client[0];
+
+    const employees = await employeeRepo.find({
+      take: 3,
+    });
+
+    if (!projectType || !managerData || !leadData) {
       console.error('❌ Required relations missing. Run dependency seeders first.');
       return;
     }
-
-    const projectsToCreate: Project[] = [];
 
     const projectData = [
       {
@@ -72,23 +82,25 @@ async function seedProjects() {
       },
     ];
 
+    const projects: Project[] = [];
+
     for (const data of projectData) {
       const project = projectRepo.create({
         ...data,
         projectType,
-        projectManager: manager,
-        projectLead: lead,
-        client: client ?? null,
-        createdBy: manager.id,
+        projectManager: managerData,
+        projectLead: leadData,
+        client: clientData ?? null,
+        createdBy: managerData.id,
+        teamMembers: employees,
       });
 
-      projectsToCreate.push(project);
+      projects.push(project);
     }
 
-    await projectRepo.save(projectsToCreate);
+    await projectRepo.save(projects);
 
-    console.log('✅ Projects seeded successfully');
-
+    console.log('✅ Projects seeded successfully with team members');
   } catch (error) {
     console.error('❌ Error running Project seeder:', error);
     throw error;

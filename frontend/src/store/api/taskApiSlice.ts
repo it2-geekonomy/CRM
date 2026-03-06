@@ -264,6 +264,14 @@ export const taskApiSlice = apiSlice.injectEndpoints({
     }),
     getTask: builder.query<TaskApi, string>({
       query: (id) => ({ url: `/tasks/${id}` }),
+      transformResponse: (response: any): TaskApi => {
+        // Backend findOne returns { task: Task } format (wrapped)
+        // We need to unwrap it to get the actual task entity object
+        if (response && typeof response === 'object' && response.task) {
+          return response.task;
+        }
+        return response;
+      },
       providesTags: (_result, _err, id) => [{ type: "Task", id }],
     }),
     getCalendarTasks: builder.query<CalendarTaskApi[], CalendarQueryParams | void>({
@@ -342,8 +350,9 @@ export const taskApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: (_result, _err, { taskId }) => [{ type: "Task", id: taskId }, { type: "Task", id: `${taskId}-checklist` }],
     }),
     updateChecklistItem: builder.mutation<ChecklistItemApi, { taskId: string; itemId: string; body: UpdateChecklistItemBody }>({
-      query: ({ taskId, itemId, body }) => ({
-        url: `/tasks/${taskId}/checklist/${itemId}`,
+      query: ({ itemId, body }) => ({
+        // Backend route is PATCH /tasks/checklist/:id (not /tasks/:taskId/checklist/:itemId)
+        url: `/tasks/checklist/${itemId}`,
         method: "PATCH",
         body,
       }),

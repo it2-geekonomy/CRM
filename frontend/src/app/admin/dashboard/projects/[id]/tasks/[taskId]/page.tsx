@@ -15,6 +15,7 @@ import {
   useGetTaskFilesQuery,
   useUploadTaskFileMutation,
   useDeleteTaskFileMutation,
+  useGetTaskActivityQuery,
   mapFrontendToBackendStatus,
   type TaskApi,
   type ChecklistItemApi,
@@ -67,12 +68,6 @@ const DEFAULT_CHECKLIST: ChecklistItem[] = [
 const DEFAULT_DESCRIPTION =
   "Create pixel-perfect homepage UI design for all breakpoints (desktop, tablet, mobile). Ensure design follows the approved moodboard and style guide. Include all interactive states for buttons, forms, and navigation elements. Design should be responsive and optimized for handoff to frontend developers using Figma's developer mode.";
 
-const DEFAULT_DELIVERABLES = [
-  "Figma file with all breakpoints (1920px, 1440px, 768px, 375px)",
-  "Component library for reusable elements",
-  "Design system documentation",
-  "Exported assets (SVG, PNG as needed)",
-];
 
 const TASK_STORAGE_KEY = "crm_selected_task";
 
@@ -194,6 +189,12 @@ export default function TaskDetailPage() {
   const [uploadTaskFile, { isLoading: isUploadingFile }] = useUploadTaskFileMutation();
   const [deleteTaskFile, { isLoading: isDeletingFile }] = useDeleteTaskFileMutation();
 
+  // Fetch activity log to get "Updated By" information
+  const { data: activityData } = useGetTaskActivityQuery(taskId ?? "", {
+    skip: !taskId,
+    refetchOnMountOrArgChange: true,
+  });
+
   const [task, setTask] = useState<Task | null>(null);
   const [backendTask, setBackendTask] = useState<TaskApi | null>(null);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
@@ -259,32 +260,29 @@ export default function TaskDetailPage() {
       const item = checklist.find((i) => i.id === id);
       if (!item) return;
 
-      // Backend doesn't have PATCH endpoint for checklist items yet
-      // Show message to user
-      toast.info("Checklist item update is not supported yet. Backend API endpoint needs to be added.");
-      return;
-
-      // TODO: Uncomment when backend PATCH endpoint is available
       // Optimistically update UI
-      // setChecklist((prev) =>
-      //   prev.map((i) => (i.id === id ? { ...i, completed: !i.completed } : i))
-      // );
+      setChecklist((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, completed: !i.completed } : i))
+      );
 
-      // try {
-      //   await updateChecklistItem({
-      //     taskId,
-      //     itemId: id,
-      //     body: { isCompleted: !item.completed },
-      //   }).unwrap();
-      // } catch (error: any) {
-      //   // Revert on error
-      //   setChecklist((prev) =>
-      //     prev.map((i) => (i.id === id ? { ...i, completed: item.completed } : i))
-      //   );
-      //   toast.error(error?.data?.message || "Failed to update checklist item");
-      // }
+      try {
+        await updateChecklistItem({
+          taskId,
+          itemId: id,
+          body: { isCompleted: !item.completed },
+        }).unwrap();
+        
+        // Refetch checklist to ensure sync with backend
+        await refetchChecklist();
+      } catch (error: any) {
+        // Revert on error
+        setChecklist((prev) =>
+          prev.map((i) => (i.id === id ? { ...i, completed: item.completed } : i))
+        );
+        toast.error(error?.data?.message || "Failed to update checklist item");
+      }
     },
-    [taskId, checklist]
+    [taskId, checklist, updateChecklistItem, refetchChecklist]
   );
 
   const startAddingSubtask = useCallback(() => {
@@ -726,14 +724,7 @@ export default function TaskDetailPage() {
               </p>
             </div>
 
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Deliverables:</h3>
-              <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
-                {DEFAULT_DELIVERABLES.map((d, i) => (
-                  <li key={i}>{d}</li>
-                ))}
-              </ul>
-            </div>
+           
 
             <div className="mb-6 border-2 border-dashed border-gray-200 rounded-lg p-6">
                 <button
@@ -798,7 +789,29 @@ export default function TaskDetailPage() {
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Time Spent</p>
-                <p className="text-sm text-gray-900 mt-1">—</p>
+                <p className="text-sm text-gray-900 mt-1">
+                  {(() => {
+                    // Calculate total time from timestamps (when backend API is ready)
+                    // For now, show placeholder
+                    if (timestamps.length > 0) {
+                      const totalMinutes = timestamps.reduce((sum, ts) => {
+                        const hours = ts.hours || 0;
+                        const minutes = ts.minutes || 0;
+                        return sum + (hours * 60) + minutes;
+                      }, 0);
+                      const hours = Math.floor(totalMinutes / 60);
+                      const mins = totalMinutes % 60;
+                      if (hours > 0 && mins > 0) {
+                        return `${hours}h ${mins}m`;
+                      } else if (hours > 0) {
+                        return `${hours}h`;
+                      } else if (mins > 0) {
+                        return `${mins}m`;
+                      }
+                    }
+                    return "—";
+                  })()}
+                </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Last Updated</p>
@@ -814,7 +827,20 @@ export default function TaskDetailPage() {
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Updated By</p>
-                <p className="text-sm text-gray-900 mt-1">—</p>
+                <p className="text-sm text-gray-900 mt-1">
+                  {(() => {
+                    // Get "Updated By" from the most recent activity log entry
+                    if (activityData && activityData.length > 0) {
+                      // Sort by changedAt descending to get most recent
+                      const sorted = [...activityData].sort((a, b) => 
+                        new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+                      );
+                      const lastActivity = sorted[0];
+                      return lastActivity.changedBy?.name || "—";
+                    }
+                    return "—";
+                  })()}
+                </p>
               </div>
             </div>
           </div>

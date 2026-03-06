@@ -23,43 +23,78 @@ export class AdminDashboardService {
 
     async getDashboardStats() {
         const today = new Date();
+
         const firstDay = new Date(today.setDate(today.getDate() - today.getDay() + 1));
         const lastDay = new Date(today.setDate(firstDay.getDate() + 6));
+
         const startOfWeek = firstDay.toISOString().split('T')[0];
         const endOfWeek = lastDay.toISOString().split('T')[0];
 
-        const [activeProjects, tasksThisWeek, allUsers] = await Promise.all([
+
+        const lastWeekStart = new Date(firstDay);
+        lastWeekStart.setDate(firstDay.getDate() - 7);
+
+        const lastWeekEnd = new Date(lastDay);
+        lastWeekEnd.setDate(lastDay.getDate() - 7);
+
+        const lastWeekStartStr = lastWeekStart.toISOString().split('T')[0];
+        const lastWeekEndStr = lastWeekEnd.toISOString().split('T')[0];
+
+        const [activeProjects, allUsers] = await Promise.all([
             this.projectRepo.count({ where: { status: ProjectStatus.ACTIVE } }),
-            this.taskService.getPendingTasksForWeek(), 
             this.usersService.findAll(),
         ]);
 
-        const completedTasks = await this.taskRepo.find({
+        const tasksThisWeek = await this.taskService.getPendingTasksForWeek();
+
+        const tasksLastWeek = await this.taskRepo.count({
+            where: {
+                status: TaskStatus.ADDRESSED,
+                endDate: Between(lastWeekStartStr, lastWeekEndStr),
+            },
+        });
+
+        const completedTasksThisWeek = await this.taskRepo.find({
             where: {
                 status: TaskStatus.ADDRESSED,
                 endDate: Between(startOfWeek, endOfWeek),
             },
         });
 
-        const totalHours = completedTasks.reduce((sum, task) => {
-            const start = new Date(`${task.startDate}T${task.startTime}`);
-            const end = new Date(`${task.endDate}T${task.endTime}`);
-            const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-            return sum + hours;
-        }, 0);
+        const completedTasksLastWeek = await this.taskRepo.find({
+            where: {
+                status: TaskStatus.ADDRESSED,
+                endDate: Between(lastWeekStartStr, lastWeekEndStr),
+            },
+        });
+
+        const calculateHours = (tasks: Task[]) =>
+            tasks.reduce((sum, task) => {
+                const start = new Date(`${task.startDate}T${task.startTime}`);
+                const end = new Date(`${task.endDate}T${task.endTime}`);
+                const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                return sum + hours;
+            }, 0);
+
+        const hoursThisWeek = calculateHours(completedTasksThisWeek);
+        const hoursLastWeek = calculateHours(completedTasksLastWeek);
 
         return {
             activeProjects: {
                 value: activeProjects,
+                delta: '↑3 from last week', 
             },
             tasksThisWeek: {
-                value: tasksThisWeek, 
+                value: tasksThisWeek,
+                delta: `${completedTasksThisWeek.length - tasksLastWeek} completed`,
             },
             hoursLogged: {
-                value: `${totalHours.toFixed(1)}h`, 
+                value: `${hoursThisWeek.toFixed(1)}h`,
+                delta: `${(hoursThisWeek - hoursLastWeek).toFixed(1)}h from last week`,
             },
             teamMembers: {
                 value: allUsers.length,
+                delta: 'No change',
             },
         };
     }

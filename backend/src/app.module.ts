@@ -17,6 +17,7 @@ import { TaskTypeModule } from './modules/task-type/task-type.module';
 import { ClientModule } from './modules/client/client.module';
 import { ConfigurationModule } from './modules/configuration/configuration.module';
 import { ProjectTypeModule } from './modules/project-type/project-type.module';
+import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
 
 @Module({
   imports: [
@@ -41,6 +42,8 @@ import { ProjectTypeModule } from './modules/project-type/project-type.module';
     ClientModule,
 
     ProjectTypeModule,
+
+    AdminDashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

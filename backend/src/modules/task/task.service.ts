@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { DataSource, Repository, SelectQueryBuilder, Not, Between } from 'typeorm';
 
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -49,6 +49,7 @@ export class TaskService {
       .select([
         'task.id',
         'task.name',
+        'task.description',
         'task.status',
         'task.startDate',
         'task.startTime',
@@ -386,8 +387,30 @@ export class TaskService {
       where: { id },
       relations: ['task'],
     });
+
     if (!item) throw new NotFoundException(`Checklist item not found`);
-    return item;
+
+    return {
+      id: item.id,
+      itemName: item.itemName,
+      isCompleted: item.isCompleted,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      taskId: item.task.id,
+    };
+  }
+
+  async updateChecklist(id: string, dto: { itemName?: string; isCompleted?: boolean }) {
+    const item = await this.checklistRepo.findOne({ where: { id } });
+    if (!item) throw new NotFoundException(`Checklist item not found`);
+    if (dto.itemName !== undefined) item.itemName = dto.itemName;
+    if (dto.isCompleted !== undefined) item.isCompleted = dto.isCompleted;
+
+    const saved = await this.checklistRepo.save(item);
+    return {
+      message: 'Checklist item updated successfully',
+      data: saved,
+    };
   }
 
   async removeChecklist(id: string) {
@@ -445,8 +468,46 @@ export class TaskService {
       where: { id },
       relations: ['task', 'uploadedBy'],
     });
+
     if (!file) throw new NotFoundException(`File not found`);
-    return file;
+
+    return {
+      id: file.id,
+      name: file.name,
+      url: file.url,
+      type: file.type,
+      uploadedAt: file.uploadedAt,
+      taskId: file.task?.id,
+      uploadedBy: {
+        id: file.uploadedBy?.id,
+        name: file.uploadedBy?.name,
+      },
+    };
+  }
+
+  async updateFile(id: string, name: string) {
+    if (!name) {
+      throw new BadRequestException('File name is required');
+    }
+
+    const file = await this.taskFileRepo.findOne({ where: { id } });
+
+    if (!file) {
+      throw new NotFoundException('File not found');
+    }
+
+    file.name = name;
+
+    const saved = await this.taskFileRepo.save(file);
+
+    return {
+      message: 'File renamed successfully',
+      data: {
+        id: saved.id,
+        newName: saved.name,
+        url: saved.url,
+      },
+    };
   }
 
   async removeFile(id: string) {
@@ -456,5 +517,35 @@ export class TaskService {
       statusCode: 200,
       message: 'File deleted successfully'
     };
+  }
+
+  // async getPendingTasksForWeek() {
+  //   const today = new Date().toISOString().split('T')[0];
+  //   const nextWeek = new Date();
+  //   nextWeek.setDate(nextWeek.getDate() + 7);
+  //   const endOfWeek = nextWeek.toISOString().split('T')[0];
+
+  //   return await this.taskRepo.find({
+  //     where: {
+  //       status: Not(TaskStatus.ADDRESSED),
+  //       endDate: Between(today, endOfWeek),
+  //     },
+  //     order: { endDate: 'ASC' },
+  //   });
+  // }
+  async getPendingTasksForWeek(): Promise<number> {
+    const today = new Date();
+    const endOfWeek = new Date();
+    endOfWeek.setDate(today.getDate() + 7);
+
+    const startStr = today.toISOString().split('T')[0];       
+    const endStr = endOfWeek.toISOString().split('T')[0];     
+
+    return await this.taskRepo.count({
+      where: {
+        status: Not(TaskStatus.ADDRESSED),
+        endDate: Between(startStr, endStr),
+      },
+    });
   }
 }

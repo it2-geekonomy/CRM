@@ -35,6 +35,7 @@ import { TaskQueryDto } from './dto/task-query.dto';
 import { CreateTaskChecklistDto } from './dto/create-task-checklist.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateTaskFileDto } from './dto/create-task-file.dto';
+import { UpdateTaskChecklistDto } from './dto/update-task-checklist.dto';
 
 @ApiTags('Tasks')
 @ApiBearerAuth('JWT-auth')
@@ -178,6 +179,17 @@ export class TaskController {
     return this.taskService.findOneChecklist(id);
   }
 
+  @Patch('checklist/:id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Update checklist item' })
+  @ApiBody({ type: UpdateTaskChecklistDto })
+  updateChecklist(
+    @Param('id') id: string,
+    @Body() dto: UpdateTaskChecklistDto
+  ) {
+    return this.taskService.updateChecklist(id, dto);
+  }
+
   @Delete('checklist/:id')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Delete checklist item' })
@@ -211,6 +223,17 @@ export class TaskController {
   @ApiParam({ name: 'id', type: 'string' })
   findOneFile(@Param('id') id: string) {
     return this.taskService.findOneFile(id);
+  }
+
+  @Patch('files/:id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Rename a task file' })
+  @ApiParam({ name: 'id', type: 'string' })
+  updateFile(
+    @Param('id') id: string,
+    @Query('name') name: string
+  ) {
+    return this.taskService.updateFile(id, name);
   }
 
   @Delete('files/:id')

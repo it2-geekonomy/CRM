@@ -49,6 +49,7 @@ export class TaskService {
       .select([
         'task.id',
         'task.name',
+        'task.description',
         'task.status',
         'task.startDate',
         'task.startTime',

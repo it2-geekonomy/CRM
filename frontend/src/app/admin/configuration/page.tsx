@@ -3,106 +3,28 @@
 import { useEffect, useState } from "react";
 import DepartmentTaskTypeAccordion from "@/shared/constants/components/configuration/DepartmentTaskTypeAccordion";
 import ProjectTypeAccordion from "@/shared/constants/components/configuration/ProjectTypeAccordion";
-import { Department, TaskType, ProjectType } from "./types";
+import { TaskType } from "./types";
+import type { ProjectTypeApi } from "@/store/api/projectTypeApiSlice";
+import { useGetProjectTypesQuery } from "@/store/api/projectTypeApiSlice";
+import type { DepartmentWithTaskTypesApi } from "@/store/api/departmentApiSlice";
+import { useGetDepartmentsWithTaskTypesQuery } from "@/store/api/departmentApiSlice";
 
 export default function ConfigPage() {
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
+  const [departments, setDepartments] = useState<DepartmentWithTaskTypesApi[]>([]);
+  const [projectTypes, setProjectTypes] = useState<ProjectTypeApi[]>([]);
   const [deptExpandedIds, setDeptExpandedIds] = useState<Set<string>>(new Set());
   const [projectExpandedIds, setProjectExpandedIds] = useState<Set<string>>(new Set());
 
-  // Replace with real API call when ready:
-  // fetch("/api/departments").then(r => r.json()).then(setDepartments)
-  useEffect(() => {
-    setDepartments([
-      {
-        id: "1",
-        name: "Sales",
-        configurations: [
-          {
-            id: "c1",
-            name: "Lead Qualification",
-            description: "Qualify incoming leads",
-            billable: true,
-            slaHours: "24",
-            status: "Active",
-            tasks: "Call, Email",
-          },
-          {
-            id: "c2",
-            name: "Client Follow-up",
-            description: "Follow up with potential clients",
-            billable: false,
-            slaHours: "48",
-            status: "Active",
-            tasks: "Email reminder",
-          },
-        ],
-      },
-      {
-        id: "2",
-        name: "Design",
-        configurations: [
-          {
-            id: "c3",
-            name: "UI Design",
-            description: "Create UI mockups",
-            billable: true,
-            slaHours: "72",
-            status: "Active",
-            tasks: "Figma draft",
-          },
-        ],
-      },
-      {
-        id: "3",
-        name: "Development",
-        configurations: [],
-      },
-      {
-        id: "4",
-        name: "Social Media",
-        configurations: [],
-      },
-    ]);
+  const { data: departmentsData, isLoading: departmentsLoading } = useGetDepartmentsWithTaskTypesQuery();
+  const { data: projectTypesData, isLoading: projectTypesLoading } = useGetProjectTypesQuery();
 
-    setProjectTypes([
-      {
-        id: "p1",
-        name: "Web Development",
-        description: "Building responsive web applications with modern technologies",
-        departments: [
-          { id: "1", name: "Design", configurations: [] },
-          { id: "3", name: "Development", configurations: [] },
-        ],
-      },
-      {
-        id: "p2",
-        name: "UI/UX Design",
-        description: "Designing user interfaces and experiences for digital products",
-        departments: [
-          { id: "2", name: "Design", configurations: [] },
-        ],
-      },
-      {
-        id: "p3",
-        name: "Mobile App Development",
-        description: "Developing native and cross-platform mobile applications",
-        departments: [
-          { id: "3", name: "Development", configurations: [] },
-        ],
-      },
-      {
-        id: "p4",
-        name: "API Development",
-        description: "Building scalable RESTful and GraphQL APIs",
-        departments: [
-          { id: "3", name: "Development", configurations: [] },
-          { id: "1", name: "Design", configurations: [] },
-        ],
-      },
-    ]);
-  }, []);
+  useEffect(() => {
+    if (departmentsData) setDepartments(departmentsData);
+  }, [departmentsData]);
+
+  useEffect(() => {
+    if (projectTypesData) setProjectTypes(projectTypesData);
+  }, [projectTypesData]);
 
   const toggleDept  = (id: string) => {
     setDeptExpandedIds((prev) => {
@@ -142,11 +64,20 @@ export default function ConfigPage() {
     });
   };
 
-  const addDepartmentToProject = (projectId: string, department: Department) => {
+  const addDepartmentToProject = (projectId: string, department: { id: string; name: string }) => {
+    const deptToAdd = {
+      id: department.id,
+      name: department.name,
+      code: null as string | null,
+      description: null as string | null,
+      projectTypeId: projectId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
     setProjectTypes((prev) =>
       prev.map((project) =>
         project.id === projectId
-          ? { ...project, departments: [...project.departments, department] }
+          ? { ...project, departments: [...(project.departments ?? []), deptToAdd] }
           : project
       )
     );
@@ -156,17 +87,25 @@ export default function ConfigPage() {
     setProjectTypes((prev) =>
       prev.map((project) =>
         project.id === projectId
-          ? { ...project, departments: project.departments.filter((d) => d.id !== departmentId) }
+          ? { ...project, departments: (project.departments ?? []).filter((d) => d.id !== departmentId) }
           : project
       )
     );
   };
 
   const addConfiguration = (departmentId: string, config: TaskType) => {
+    const newTaskType = {
+      id: crypto.randomUUID(),
+      name: config.name,
+      description: config.description || undefined,
+      billable: config.billable,
+      slaHours: config.slaHours !== "" ? Number(config.slaHours) : undefined,
+      status: config.status,
+    };
     setDepartments((prev) =>
       prev.map((dept) =>
         dept.id === departmentId
-          ? { ...dept, configurations: [...dept.configurations, config] }
+          ? { ...dept, taskTypes: [...(dept.taskTypes ?? []), newTaskType] }
           : dept
       )
     );
@@ -176,31 +115,13 @@ export default function ConfigPage() {
     setDepartments((prev) =>
       prev.map((dept) =>
         dept.id === departmentId
-          ? { ...dept, configurations: dept.configurations.filter((c) => c.id !== configId) }
+          ? { ...dept, taskTypes: (dept.taskTypes ?? []).filter((t) => t.id !== configId) }
           : dept
       )
     );
   };
 
-  // Adapt local Department shape → DepartmentWithTaskTypesApi shape expected by the accordion.
-  // slaHours is stored as string locally but DepartmentTaskTypeApi expects number | undefined.
-  const toApiShape = (dept: Department) => ({
-    id: dept.id,
-    name: dept.name,
-    code: "",
-    description: "",
-    projectTypeId: "",
-    createdAt: "",
-    updatedAt: "",
-    taskTypes: dept.configurations.map((c) => ({
-      id: c.id,
-      name: c.name,
-      description: c.description || undefined,
-      billable: c.billable,
-      slaHours: c.slaHours !== "" ? Number(c.slaHours) : undefined,
-      status: c.status,
-    })),
-  });
+  const allDepartmentsForProjects = departments.map((d) => ({ id: d.id, name: d.name }));
 
   return (
     <div className="w-full h-full overflow-y-auto bg-white">
@@ -234,11 +155,12 @@ export default function ConfigPage() {
           </div>
         </div>
 
+        {departmentsLoading && <p className="text-sm text-gray-500 py-2">Loading departments…</p>}
         <div className="space-y-4 mb-10">
-          {departments.map((dept, index) => (
+          {!departmentsLoading && departments.map((dept, index) => (
             <DepartmentTaskTypeAccordion
               key={dept.id}
-              department={toApiShape(dept)}
+              department={dept}
               colorIndex={index}
               isExpanded={deptExpandedIds.has(dept.id)}
               onToggle={() => toggleDept(dept.id)}
@@ -273,12 +195,13 @@ export default function ConfigPage() {
           </div>
         </div>
 
+        {projectTypesLoading && <p className="text-sm text-gray-500 py-2">Loading project types…</p>}
         <div className="space-y-4">
-          {projectTypes.map((project, index) => (
+          {!projectTypesLoading && projectTypes.map((project, index) => (
             <ProjectTypeAccordion
               key={project.id}
               projectType={project}
-              allDepartments={departments}
+              allDepartments={allDepartmentsForProjects}
               colorIndex={index}
               isExpanded={projectExpandedIds.has(project.id)}
               onToggle={() => toggleProject(project.id)}

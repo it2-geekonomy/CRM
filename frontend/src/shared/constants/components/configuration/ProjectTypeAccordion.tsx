@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ProjectType, Department } from "@/app/admin/configuration/types";
+import type { ProjectTypeApi } from "@/store/api/projectTypeApiSlice";
 import ConfirmDialog from "./ConfirmDialog";
 
 const PROJECT_COLORS = [
@@ -14,13 +14,13 @@ const PROJECT_COLORS = [
 ];
 
 interface Props {
-  projectType: ProjectType;
-  allDepartments: Department[];
+  projectType: ProjectTypeApi;
+  allDepartments: { id: string; name: string }[];
   colorIndex: number;
   isExpanded: boolean;
   onToggle: () => void;
   onDelete: () => void;
-  onAddDepartment: (projectId: string, department: Department) => void;
+  onAddDepartment: (projectId: string, department: { id: string; name: string }) => void;
   onRemoveDepartment: (projectId: string, departmentId: string) => void;
 }
 
@@ -38,11 +38,12 @@ export default function ProjectTypeAccordion({
   const [showAddDept, setShowAddDept] = useState(false);
 
   const color = PROJECT_COLORS[colorIndex % PROJECT_COLORS.length];
-  const deptCount = projectType.departments.length;
+  const deptList = projectType.departments ?? [];
+  const deptCount = deptList.length;
 
   // Get departments not yet added to this project
   const availableDepartments = allDepartments.filter(
-    (dept) => !projectType.departments.some((d) => d.id === dept.id)
+    (dept) => !deptList.some((d) => d.id === dept.id)
   );
 
   const handleAddDepartment = (departmentId: string) => {
@@ -81,9 +82,11 @@ export default function ProjectTypeAccordion({
           <span className="font-medium text-gray-800 text-sm sm:text-base block text-wrap">
             {projectType.name}
           </span>
-          <span className="text-xs text-gray-400 block text-wrap">
-            {projectType.description}
-          </span>
+          {projectType.description != null && projectType.description !== "" && (
+            <span className="text-xs text-gray-400 block text-wrap">
+              {projectType.description}
+            </span>
+          )}
           <span className="text-xs text-gray-500 sm:hidden mt-0.5 block">
             {deptCount} {deptCount === 1 ? "department" : "departments"}
           </span>
@@ -119,7 +122,7 @@ export default function ProjectTypeAccordion({
 
             {deptCount > 0 ? (
               <div className="space-y-2">
-                {projectType.departments.map((dept) => (
+                {deptList.map((dept) => (
                   <div
                     key={dept.id}
                     className="flex items-center justify-between p-2.5 sm:p-3 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition"
@@ -186,6 +189,8 @@ export default function ProjectTypeAccordion({
           )}
         </div>
       )}
+
+      
 
       {/* Delete Confirmation Dialog */}
       {confirmDelete && (

@@ -35,7 +35,7 @@ export class DepartmentController {
   @ApiResponse({ status: 409, description: 'Department code already exists' })
   @ApiBody({ type: CreateDepartmentDto })
   create(@Body() dto: CreateDepartmentDto) {
-    return this.departmentService.create(dto);
+    return this.departmentService.create(dto);  
   }
 
   @Get('list/with-task-types')

@@ -71,6 +71,9 @@ export class CreateRolesAndAlterUsersRoleId1737744500000
   public async down(queryRunner: QueryRunner): Promise<void> {
     // --- 1. Recreate users.role enum and column, backfill from role_id ---
     await queryRunner.query(`
+      DROP TYPE IF EXISTS "public"."users_role_enum"
+    `);
+    await queryRunner.query(`
       CREATE TYPE "public"."users_role_enum" AS ENUM('admin', 'employee')
     `);
     await queryRunner.query(`

@@ -3,6 +3,7 @@
 import { useAppSelector } from "@/store/hooks";
 import { useGetProjectsQuery, type ProjectStatus } from "@/store/api/projectApiSlice";
 import { useGetClientsQuery } from "@/store/api/clientApiSlice";
+import { useGetTasksQuery, type TaskApi } from "@/store/api/taskApiSlice";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useEffect } from "react";
 import EmployeesPage from "@/app/admin/employees/page";
@@ -113,6 +114,95 @@ export default function EmployeeDashboardPage() {
         client.clientCode?.toLowerCase().includes(search)
     );
   }, [clients, clientSearchInput]);
+
+  // Get today's date in YYYY-MM-DD format
+  const todayDate = useMemo(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  // Fetch all tasks for today
+  const { data: todayTasksData, isLoading: isLoadingTodayTasks } = useGetTasksQuery(
+    {
+      date: todayDate,
+      limit: 50,
+      sortBy: "startDate",
+      sortOrder: "ASC",
+    },
+    {
+      skip: isProjectsView || isClientsView || isEmployeesView,
+    }
+  );
+
+  // Format time from HH:mm to 12-hour format
+  const formatTime = (timeStr: string | undefined): string => {
+    if (!timeStr) return "";
+    try {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      const period = hours >= 12 ? "PM" : "AM";
+      const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+      return `${displayHours}:${String(minutes).padStart(2, "0")} ${period}`;
+    } catch {
+      return timeStr;
+    }
+  };
+
+  // Format task for schedule display
+  const formatTaskForSchedule = (task: TaskApi) => {
+    const taskName = task.task_taskName || task.task_taskname || (task as any).name || "Untitled Task";
+    const startDate = task.task_startDate || task.task_startdate || (task as any).startDate || "";
+    const startTime = task.task_startTime || task.task_starttime || (task as any).startTime || "";
+    const endTime = task.task_endTime || task.task_endtime || (task as any).endTime || "";
+    const projectName = task.project_projectName || task.project_projectname || (task as any).project?.name || "";
+    const assignedToName = task.assignedTo_name || task.assignedto_name || (task as any).assignedTo?.name || "";
+    const priority = (task as any).priority || (task as any).task_priority || "Medium";
+
+    // Format time range
+    let timeDisplay = "";
+    if (startTime && endTime) {
+      const start = formatTime(startTime);
+      const end = formatTime(endTime);
+      timeDisplay = `${start} - ${end}`;
+    } else if (startTime) {
+      timeDisplay = formatTime(startTime);
+    } else {
+      timeDisplay = "All Day";
+    }
+
+    // Format details line
+    const details = [projectName, assignedToName].filter(Boolean).join(" • ") || "Task";
+
+    return {
+      id: task.task_id || (task as any).id,
+      time: timeDisplay,
+      title: taskName,
+      details,
+      projectId: task.project_projectId || task.project_projectid || (task as any).project?.id,
+      priority: priority as "High" | "Medium" | "Low",
+    };
+  };
+
+  // Sort tasks by priority: High > Medium > Low, then by start time
+  const todayTasks = useMemo(() => {
+    if (!todayTasksData || todayTasksData.length === 0) return [];
+    
+    const formatted = todayTasksData.map(formatTaskForSchedule);
+    
+    // Priority order: High = 0, Medium = 1, Low = 2
+    const priorityOrder = { High: 0, Medium: 1, Low: 2 };
+    
+    return formatted.sort((a, b) => {
+      // First sort by priority
+      const priorityDiff = (priorityOrder[a.priority] || 1) - (priorityOrder[b.priority] || 1);
+      if (priorityDiff !== 0) return priorityDiff;
+      
+      // If same priority, sort by time
+      return a.time.localeCompare(b.time);
+    });
+  }, [todayTasksData]);
 
   return (
     <div className="bg-gray-100 min-h-screen py-8">
@@ -421,34 +511,44 @@ export default function EmployeeDashboardPage() {
                 </button>
               </div>
               <div className="space-y-4">
-                <div className="flex gap-4 p-5 border-t border-r border-b border-gray-200 border-l-4 border-l-green-500 rounded-xl transition-colors cursor-pointer hover:bg-gray-50 hover:border-l-green-700">
-                  <div>
-                    <p className="text-sm text-gray-500">09:00 - 10:00 AM</p>
-                    <p className="font-medium text-gray-900 mt-1">Design Review - ABC Corp Website</p>
-                    <p className="text-sm text-gray-500 mt-1">Conference Room A • 3 participants</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 p-5 border-t border-r border-b border-gray-200 border-l-4 border-l-green-500 rounded-xl transition-colors cursor-pointer hover:bg-gray-50 hover:border-l-green-700">
-                  <div>
-                    <p className="text-sm text-gray-500">11:30 AM - 12:30 PM</p>
-                    <p className="font-medium text-gray-900 mt-1">Client Presentation - Fashion Brand</p>
-                    <p className="text-sm text-gray-500 mt-1">Video Call • 5 participants</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 p-5 border-t border-r border-b border-gray-200 border-l-4 border-l-green-500 rounded-xl transition-colors cursor-pointer hover:bg-gray-50 hover:border-l-green-700">
-                  <div>
-                    <p className="text-sm text-gray-500">05:00 PM</p>
-                    <p className="font-medium text-gray-900 mt-1">Homepage Design Mockup Deadline</p>
-                    <p className="text-sm text-gray-500 mt-1">Design Task • High Priority</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 p-5 border-t border-r border-b border-gray-200 border-l-4 border-l-green-500 rounded-xl transition-colors cursor-pointer hover:bg-gray-50 hover:border-l-green-700">
-                  <div>
-                    <p className="text-sm text-gray-500">06:00 PM</p>
-                    <p className="font-medium text-gray-900 mt-1">Brand Guidelines Review</p>
-                    <p className="text-sm text-gray-500 mt-1">XYZ Corp • 1 hour</p>
-                  </div>
-                </div>
+                {isLoadingTodayTasks ? (
+                  <div className="text-center py-8 text-gray-500">Loading tasks...</div>
+                ) : todayTasks.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">No tasks scheduled for today</div>
+                ) : (
+                  todayTasks.map((task) => {
+                    // Determine border color based on priority
+                    const borderColorClass = 
+                      task.priority === "High" ? "border-l-red-500 hover:border-l-red-700" :
+                      task.priority === "Medium" ? "border-l-amber-500 hover:border-l-amber-700" :
+                      "border-l-green-500 hover:border-l-green-700";
+                    
+                    // Priority label
+                    const priorityLabel = 
+                      task.priority === "High" ? "High Priority" :
+                      task.priority === "Medium" ? "Medium Priority" :
+                      "Low Priority";
+                    
+                    return (
+                      <button
+                        key={task.id}
+                        type="button"
+                        onClick={() => {
+                          if (task.projectId && task.id) {
+                            router.push(`/employee/dashboard/projects/${task.projectId}/tasks/${task.id}`);
+                          }
+                        }}
+                        className={`w-full text-left flex gap-4 p-5 border-t border-r border-b border-gray-200 border-l-4 ${borderColorClass} rounded-xl transition-colors cursor-pointer hover:bg-gray-50`}
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-500">{task.time}</p>
+                          <p className="font-medium text-gray-900 mt-1">{task.title}</p>
+                          <p className="text-sm text-gray-500 mt-1">{task.details} • {priorityLabel}</p>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

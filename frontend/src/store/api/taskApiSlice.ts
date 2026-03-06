@@ -80,6 +80,8 @@ export type TaskQueryParams = {
   search?: string;
   sortBy?: "createdAt" | "taskName" | "startDate" | "endDate" | "taskStatus";
   sortOrder?: "ASC" | "DESC";
+  priority?: TaskPriority;
+  date?: string; // Filter tasks active on a specific date (YYYY-MM-DD)
 };
 
 /** Query params for GET /tasks/calendar */
@@ -234,6 +236,8 @@ export const taskApiSlice = apiSlice.injectEndpoints({
         if (params?.search) searchParams.set("search", params.search);
         if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
         if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+        if (params?.priority) searchParams.set("priority", params.priority);
+        if (params?.date) searchParams.set("date", params.date);
         const qs = searchParams.toString();
         return { url: `/tasks${qs ? `?${qs}` : ""}` };
       },

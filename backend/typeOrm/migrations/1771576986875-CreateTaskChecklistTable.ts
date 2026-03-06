@@ -13,6 +13,10 @@ export class CreateTaskChecklistTable1771576986875 implements MigrationInterface
         "task_id" uuid NOT NULL,
         "item_name" varchar(255) NOT NULL,
         "is_completed" boolean NOT NULL DEFAULT false,
+        "date" date,
+        "duration_hours" int DEFAULT 0,
+        "duration_minutes" int DEFAULT 0,
+        "notes" text,
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
 

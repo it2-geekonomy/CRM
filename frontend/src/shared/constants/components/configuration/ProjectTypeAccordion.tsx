@@ -38,7 +38,7 @@ export default function ProjectTypeAccordion({
   const [confirmDeleteType, setConfirmDeleteType] = useState(false);
 
   // Confirm state for removing a department — stores the dept to be removed
-  const [confirmRemoveDept, setConfirmRemoveDept] = useState<Department | null>(null);
+  const [confirmRemoveDept, setConfirmRemoveDept] = useState<{ id: string; name: string } | null>(null);
 
   const [showAddDept, setShowAddDept] = useState(false);
 

@@ -342,7 +342,7 @@ export default function TaskCalendarPage() {
           if (taskCount > 0) {
             const countEl = document.createElement('span');
             countEl.className = 'task-count-indicator';
-            countEl.textContent = `+${taskCount}`;
+            countEl.textContent = `${taskCount}`;
             countEl.style.cssText = `
               position: absolute;
               bottom: 2px;
@@ -467,11 +467,6 @@ export default function TaskCalendarPage() {
           </h1>
 
           <div className="flex gap-4">
-            <select className="px-4 py-2 border border-[#69AE44] rounded-lg bg-[#69AE44]/5 focus:ring-2 focus:ring-[#69AE44] outline-none">
-              <option>Admin View</option>
-              <option>Employee</option>
-            </select>
-
             <button 
               type="button"
               onClick={() => setIsModalOpen(true)}

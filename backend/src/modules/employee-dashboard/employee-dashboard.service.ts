@@ -24,7 +24,7 @@ export class EmployeeDashboardService {
 
     @InjectRepository(TaskActivity)
     private readonly taskActivityRepo: Repository<TaskActivity>,
-  ) {}
+  ) { }
 
   async getStats(userId: string) {
     const now = new Date();
@@ -32,55 +32,38 @@ export class EmployeeDashboardService {
     startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
 
-    // Fetch employee with department
     const employee = await this.employeeRepo.findOne({
       where: { user: { id: userId }, isActive: true },
       relations: ['department'],
     });
 
     if (!employee) throw new NotFoundException('Employee not found');
-    const employeeId = employee.id;
 
-    // Fetch active projects count
     const activeProjectsCount = await this.projectRepo.count({
-      where: {
-        projectLead: { id: employeeId },
-        status: ProjectStatus.ACTIVE,
-      },
+      where: { status: ProjectStatus.ACTIVE },
     });
 
-    // Fetch tasks created this week and completed tasks
     const tasksThisWeek = await this.taskRepo.find({
-      where: {
-        assignedTo: { id: employeeId },
-        createdAt: MoreThanOrEqual(startOfWeek),
-      },
+      where: { createdAt: MoreThanOrEqual(startOfWeek) },
     });
 
     const completedTasksCount = await this.taskRepo.count({
-      where: {
-        assignedTo: { id: employeeId },
-        status: TaskStatus.ADDRESSED,
-      },
+      where: { status: TaskStatus.ADDRESSED },
     });
 
-    // Calculate total hours based on startDate/startTime and endDate/endTime
     let totalHours = 0;
     tasksThisWeek.forEach((task) => {
       if (task.startDate && task.startTime && task.endDate && task.endTime) {
         const start = new Date(`${task.startDate}T${task.startTime}`);
         const end = new Date(`${task.endDate}T${task.endTime}`);
         const diffMs = end.getTime() - start.getTime();
-        if (diffMs > 0) totalHours += diffMs / (1000 * 60 * 60); // convert ms -> hours
+        if (diffMs > 0) totalHours += diffMs / (1000 * 60 * 60); 
       }
     });
 
-    // Count team members
-    const teamMembers = employee.department
-      ? await this.employeeRepo.count({
-          where: { department: { id: employee.department.id }, isActive: true },
-        })
-      : 0;
+    const teamMembers = await this.employeeRepo.count({
+      where: { isActive: true },
+    });
 
     return {
       activeProjects: {

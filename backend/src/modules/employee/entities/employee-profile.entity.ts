@@ -8,6 +8,7 @@ import {
     OneToOne,
     JoinColumn,
     OneToMany,
+    ManyToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Department } from '../../department/entities/department.entity';
@@ -81,4 +82,8 @@ export class EmployeeProfile {
 
     @OneToMany(() => Client, (client) => client.salesManager)
     managedClients: Client[];
+
+    @ManyToMany(() => Project, (project) => project.teamMembers)
+    projects: Project[];
+
 }

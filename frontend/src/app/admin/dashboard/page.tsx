@@ -19,7 +19,6 @@ function getDisplayName(email: string | undefined): string {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [activeBtn, setActiveBtn] = useState("My Active Projects");
   const [searchFilter, setSearchFilter] = useState<string | null>(null);
   const [previousFilter, setPreviousFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,12 +67,6 @@ export default function AdminDashboardPage() {
       setClientSearchInput(searchQuery.trim());
     }
   };
-  const buttons = [
-    "My Active Projects",
-    "Due This Week",
-    "My Clients",
-    "Open Deals",
-  ];
   const projectQuery = useMemo(() => {
     const params: { status?: ProjectStatus; search?: string; limit: number; page: number } = {
       limit: 100,
@@ -283,24 +276,6 @@ export default function AdminDashboardPage() {
               Search
             </button>
           </div>
-
-          {/* Quick Buttons */}
-          <div className="flex gap-4 mt-5">
-      {buttons.map((btn) => (
-        <button
-          key={btn}
-          onClick={() => {
-            setActiveBtn(btn);
-            if (btn === "My Clients") {
-              router.push("/admin/dashboard/clients");
-            }
-          }}
-          className="px-6 py-3 rounded-xl text-base transition-all duration-200 border border-gray-200 bg-white text-gray-700 hover:border-green-500 hover:text-green-700"
-        >
-          {btn}
-        </button>
-      ))}
-    </div>
         </div>
 
         {/* Stats Cards - Hide when Projects, Clients, or Employees view is active */}

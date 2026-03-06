@@ -80,6 +80,8 @@ export type TaskQueryParams = {
   search?: string;
   sortBy?: "createdAt" | "taskName" | "startDate" | "endDate" | "taskStatus";
   sortOrder?: "ASC" | "DESC";
+  priority?: TaskPriority;
+  date?: string; // Filter tasks active on a specific date (YYYY-MM-DD)
 };
 
 /** Query params for GET /tasks/calendar */
@@ -234,6 +236,8 @@ export const taskApiSlice = apiSlice.injectEndpoints({
         if (params?.search) searchParams.set("search", params.search);
         if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
         if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+        if (params?.priority) searchParams.set("priority", params.priority);
+        if (params?.date) searchParams.set("date", params.date);
         const qs = searchParams.toString();
         return { url: `/tasks${qs ? `?${qs}` : ""}` };
       },
@@ -260,6 +264,14 @@ export const taskApiSlice = apiSlice.injectEndpoints({
     }),
     getTask: builder.query<TaskApi, string>({
       query: (id) => ({ url: `/tasks/${id}` }),
+      transformResponse: (response: any): TaskApi => {
+        // Backend findOne returns { task: Task } format (wrapped)
+        // We need to unwrap it to get the actual task entity object
+        if (response && typeof response === 'object' && response.task) {
+          return response.task;
+        }
+        return response;
+      },
       providesTags: (_result, _err, id) => [{ type: "Task", id }],
     }),
     getCalendarTasks: builder.query<CalendarTaskApi[], CalendarQueryParams | void>({
@@ -338,8 +350,9 @@ export const taskApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: (_result, _err, { taskId }) => [{ type: "Task", id: taskId }, { type: "Task", id: `${taskId}-checklist` }],
     }),
     updateChecklistItem: builder.mutation<ChecklistItemApi, { taskId: string; itemId: string; body: UpdateChecklistItemBody }>({
-      query: ({ taskId, itemId, body }) => ({
-        url: `/tasks/${taskId}/checklist/${itemId}`,
+      query: ({ itemId, body }) => ({
+        // Backend route is PATCH /tasks/checklist/:id (not /tasks/:taskId/checklist/:itemId)
+        url: `/tasks/checklist/${itemId}`,
         method: "PATCH",
         body,
       }),

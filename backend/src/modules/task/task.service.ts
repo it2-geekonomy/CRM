@@ -46,6 +46,7 @@ export class TaskService {
       .leftJoin('task.project', 'project')
       .leftJoin('task.taskType', 'taskType')
       .leftJoin('taskType.department', 'department')
+      .leftJoin('task.checklists', 'checklists')
       .select([
         'task.id',
         'task.name',
@@ -69,6 +70,9 @@ export class TaskService {
         'taskType.name',
         'department.id',
         'department.name',
+        'checklists.id',
+        'checklists.itemName',
+        'checklists.isCompleted',
       ]);
   }
 
@@ -216,7 +220,14 @@ export class TaskService {
       .getOne();
 
     if (!task) throw new NotFoundException('Task not found');
-    return task;
+
+    const total = task.checklists?.length || 0;
+    const completed = task.checklists?.filter(c => c.isCompleted).length || 0;
+
+    return {
+      task,
+     
+    };
   }
 
   async findCalendar(query: GetCalendarDto, userId: string, userRole: string) {
@@ -538,8 +549,8 @@ export class TaskService {
     const endOfWeek = new Date();
     endOfWeek.setDate(today.getDate() + 7);
 
-    const startStr = today.toISOString().split('T')[0];       
-    const endStr = endOfWeek.toISOString().split('T')[0];     
+    const startStr = today.toISOString().split('T')[0];
+    const endStr = endOfWeek.toISOString().split('T')[0];
 
     return await this.taskRepo.count({
       where: {

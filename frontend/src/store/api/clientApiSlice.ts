@@ -36,6 +36,11 @@ export type ClientApi = {
   billingNotes?: string;
   clientSince?: string;
   salesManagerId?: string; // Backend uses salesManagerId
+  salesManager?: {
+    id: string;
+    name: string;
+    designation?: string;
+  }; // Backend may return populated salesManager relation
   internalNotes?: string;
   contacts?: Array<{
     name?: string;

@@ -18,6 +18,7 @@ import { ClientModule } from './modules/client/client.module';
 import { ConfigurationModule } from './modules/configuration/configuration.module';
 import { ProjectTypeModule } from './modules/project-type/project-type.module';
 import { EmployeeDashboardModule } from './modules/employee-dashboard/employee-dashboard.module';
+import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { EmployeeDashboardModule } from './modules/employee-dashboard/employee-d
     ProjectTypeModule,
 
     EmployeeDashboardModule,
+    AdminDashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

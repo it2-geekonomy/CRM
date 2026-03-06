@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, usePathname } from "next/navigation";
 import { toast } from "react-toastify";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useGetProjectQuery } from "@/store/api/projectApiSlice";
@@ -36,6 +36,7 @@ function formatDate(s: string | undefined): string {
 
 export default function ProjectDetailPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const params = useParams();
   const idParam = params?.id;
   const projectId = Array.isArray(idParam) ? idParam?.[0] : idParam;
@@ -53,7 +54,10 @@ export default function ProjectDetailPage() {
     refetch: refetchTasks,
   } = useGetTasksQuery(
     projectId ? { projectId, limit: 1000 } : undefined,
-    { skip: !projectId }
+    { 
+      skip: !projectId,
+      refetchOnMountOrArgChange: true, // Force refetch when component mounts or projectId changes
+    }
   );
 
   // Transform tasks to handle both entity objects and raw query results
@@ -160,7 +164,9 @@ export default function ProjectDetailPage() {
   const { data: employeesData } = useGetEmployeesQuery({ limit: 100 });
 
   // Fetch task types for task creation
-  const { data: taskTypesData } = useGetTaskTypesQuery();
+  const { data: taskTypesData } = useGetTaskTypesQuery(undefined, {
+    refetchOnMountOrArgChange: true, // Force refetch when component mounts to ensure task types are available for transformation
+  });
 
   // Task mutations
   const [createTask, { isLoading: isCreatingTask }] = useCreateTaskMutation();
@@ -215,22 +221,38 @@ export default function ProjectDetailPage() {
   // Track previous tasks data to prevent unnecessary updates
   const prevTasksDataRef = useRef<any[] | undefined>(undefined);
   const prevTasksDataLengthRef = useRef<number>(0);
+  const prevTaskTypesDataRef = useRef<any[] | undefined>(undefined);
+  const prevProjectIdRef = useRef<string | undefined>(undefined);
+  const prevPathnameRef = useRef<string | undefined>(undefined);
+
+  // Reset refs when projectId changes or pathname changes (to handle navigation back)
+  useEffect(() => {
+    // If projectId changed or pathname changed (navigation occurred), reset refs to force transformation
+    if (prevProjectIdRef.current !== projectId || prevPathnameRef.current !== pathname) {
+      prevTasksDataRef.current = undefined;
+      prevTasksDataLengthRef.current = 0;
+      prevTaskTypesDataRef.current = undefined;
+      prevProjectIdRef.current = projectId;
+      prevPathnameRef.current = pathname;
+    }
+  }, [projectId, pathname]);
 
   // Transform backend tasks to frontend format when tasks data or taskTypes change
   useEffect(() => {
-    // Skip if tasksData hasn't actually changed (reference equality check)
-    if (tasksData === prevTasksDataRef.current) {
+    // Check if taskTypesData changed - if so, we need to retransform even if tasksData didn't change
+    const taskTypesChanged = taskTypesData !== prevTaskTypesDataRef.current;
+    const taskTypesLengthChanged = (taskTypesData?.length ?? 0) !== (prevTaskTypesDataRef.current?.length ?? 0);
+    
+    // Skip if tasksData hasn't actually changed AND taskTypesData hasn't changed (reference equality check)
+    if (tasksData === prevTasksDataRef.current && !taskTypesChanged && !taskTypesLengthChanged) {
       return;
     }
     
     // Also check if length changed (simple check to prevent unnecessary updates)
     const currentLength = tasksData?.length ?? 0;
-    if (tasksData === undefined && prevTasksDataRef.current === undefined) {
+    if (tasksData === undefined && prevTasksDataRef.current === undefined && !taskTypesChanged) {
       return;
     }
-    
-    prevTasksDataRef.current = tasksData;
-    prevTasksDataLengthRef.current = currentLength;
 
     if (tasksData && tasksData.length > 0) {
       // Only transform if taskTypes are loaded and departments are initialized
@@ -238,8 +260,14 @@ export default function ProjectDetailPage() {
         if (process.env.NODE_ENV === 'development') {
           console.warn('TaskTypes not loaded yet, skipping transformation. Will retry when taskTypes are available.');
         }
+        // DON'T update refs if we're returning early - this ensures transformation runs when taskTypes load
         return;
       }
+      
+      // Update refs only after we've confirmed both tasksData and taskTypesData are available
+      prevTasksDataRef.current = tasksData;
+      prevTasksDataLengthRef.current = currentLength;
+      prevTaskTypesDataRef.current = taskTypesData;
       
       // Ensure departments are built from task types (not hardcoded)
       // Always rebuild from backend task types to ensure we have the latest data
@@ -341,10 +369,16 @@ export default function ProjectDetailPage() {
     } else if (tasksData && tasksData.length === 0) {
       // No tasks, but still use departments built from backend task types
       if (taskTypesData && taskTypesData.length > 0) {
+        // Update refs when we successfully process empty tasks
+        prevTasksDataRef.current = tasksData;
+        prevTasksDataLengthRef.current = 0;
+        prevTaskTypesDataRef.current = taskTypesData;
+        
         const emptyDepartments = buildDepartmentsFromTaskTypes(taskTypesData);
         setDepartments(emptyDepartments);
         departmentsRef.current = emptyDepartments;
       }
+      // If taskTypes not available yet, don't update refs - wait for them to load
     }
   }, [tasksData, taskTypesData]); // Also depend on taskTypesData
 

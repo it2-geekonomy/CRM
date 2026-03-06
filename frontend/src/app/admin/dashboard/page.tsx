@@ -404,7 +404,7 @@ export default function AdminDashboardPage() {
                       if (typeof window !== "undefined" && searchFilter) {
                         sessionStorage.setItem("dashboardFilter", searchFilter);
                       }
-                      router.push(`/admin/dashboard/clients/${client.id}/configuration`);
+                      router.push(`/admin/dashboard/clients/${client.id}`);
                     }}
                     className="w-full text-left rounded-xl border border-gray-200 p-5 hover:border-green-500 transition-colors group relative"
                   >

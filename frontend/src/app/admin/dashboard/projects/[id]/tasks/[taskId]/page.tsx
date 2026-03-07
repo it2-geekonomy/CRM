@@ -38,6 +38,8 @@ type Timestamp = {
   hours?: number;
   minutes?: number;
   note: string;
+  checklistItemId?: string;
+  checklistItemName?: string;
 };
 
 function formatTimestamp(date: Date | string): string {
@@ -354,7 +356,19 @@ export default function TaskDetailPage() {
     const [y, m, d] = data.date.split("-").map(Number);
     const date = new Date(y, (m ?? 1) - 1, d ?? 1);
     const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    setTimestamps((prev) => [...prev, { id: `ts-${Date.now()}`, dateTime: dateStr, hours: data.hours, minutes: data.minutes, note: data.notes }]);
+    setTimestamps((prev) => [
+      ...prev,
+      {
+        id: `ts-${Date.now()}`,
+        dateTime: dateStr,
+        hours: data.hours,
+        minutes: data.minutes,
+        note: data.notes,
+        ...(data.checklistItemId && data.checklistItemName
+          ? { checklistItemId: data.checklistItemId, checklistItemName: data.checklistItemName }
+          : {}),
+      },
+    ]);
   }, []);
 
   const handleAddFilesClick = useCallback(() => { fileInputRef.current?.click(); }, []);
@@ -640,11 +654,16 @@ export default function TaskDetailPage() {
               {timestamps.length > 0 && (
                 <div className="mt-4 space-y-2 border-t border-gray-100 pt-4">
                   {timestamps.map((ts) => (
-                    <div key={ts.id} className="flex items-start gap-3 text-left text-sm bg-gray-50 rounded-lg p-3">
+                    <div key={ts.id} className="flex flex-wrap items-start gap-3 text-left text-sm bg-gray-50 rounded-lg p-3">
                       <span className="text-green-600 font-medium shrink-0">
                         {ts.dateTime}
                         {(ts.hours != null && ts.hours > 0) || (ts.minutes != null && ts.minutes > 0) ? ` • ${ts.hours ?? 0}h ${ts.minutes ?? 0}m` : ""}
                       </span>
+                      {ts.checklistItemName && (
+                        <span className="shrink-0 px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">
+                          {ts.checklistItemName}
+                        </span>
+                      )}
                       {ts.note && <span className="text-gray-600">{ts.note}</span>}
                     </div>
                   ))}
@@ -659,7 +678,12 @@ export default function TaskDetailPage() {
       </div>
 
       <ActivityLogModal isOpen={isActivityLogOpen} onClose={() => setIsActivityLogOpen(false)} taskId={taskId ?? ""} />
-      <AddTimestampModal isOpen={isAddTimestampModalOpen} onClose={() => setIsAddTimestampModalOpen(false)} onAdd={addTimestampFromModal} />
+      <AddTimestampModal
+        isOpen={isAddTimestampModalOpen}
+        onClose={() => setIsAddTimestampModalOpen(false)}
+        onAdd={addTimestampFromModal}
+        checklistItems={checklist.map((c) => ({ id: c.id, itemName: c.label }))}
+      />
     </div>
   );
 }

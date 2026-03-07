@@ -3,4 +3,5 @@ export enum ProjectStatus {
   INACTIVE = 'Inactive',
   PIPELINE = 'Pipeline',
   COMPLETED = 'Completed',
+  ON_HOLD = 'On Hold',
 }

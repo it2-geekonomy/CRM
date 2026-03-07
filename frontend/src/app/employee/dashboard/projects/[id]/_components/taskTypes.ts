@@ -32,7 +32,10 @@ export type CreateTaskFormData = {
   department: string;
   taskType: string;
   assignTo: string;
-  dueDate: string;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
   status: TaskStatus;
   priority: TaskPriority;
 };

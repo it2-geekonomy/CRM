@@ -27,6 +27,7 @@ import { TaskFile } from '../modules/task/entities/task-file.entity';
 import { TaskType } from '../modules/task-type/entities/task-type.entity';
 import { Client } from '../modules/client/entities/client.entity';
 import { ProjectType } from '../modules/project-type/entities/project-type.entity';
+import { TaskChecklistTimestamp } from '../modules/task/entities/task-checklist-timestamp.entity';
 
 
 
@@ -48,4 +49,5 @@ export const models = [
   TaskType,
   Client,
   ProjectType,
+  TaskChecklistTimestamp,
 ];

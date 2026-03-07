@@ -5,9 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Task } from './task.entity';
+import { TaskChecklistTimestamp } from './task-checklist-timestamp.entity';
 
 @Entity('task_checklist')
 export class TaskChecklist {
@@ -24,7 +26,7 @@ export class TaskChecklist {
   @Column({ name: 'is_completed', default: false })
   isCompleted: boolean;
 
-  @Column({ type: 'date', nullable: true }) 
+  @Column({ type: 'date', nullable: true })
   date?: string;
 
   @Column({ name: 'duration_hours', type: 'int', default: 0, nullable: true })
@@ -33,7 +35,7 @@ export class TaskChecklist {
   @Column({ name: 'duration_minutes', type: 'int', default: 0, nullable: true })
   durationMinutes?: number;
 
-  @Column({ type: 'text', nullable: true }) 
+  @Column({ type: 'text', nullable: true })
   notes?: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
@@ -41,5 +43,11 @@ export class TaskChecklist {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
   updatedAt: Date;
+
+  @OneToMany(
+    () => TaskChecklistTimestamp,
+    (timestamp) => timestamp.checklist,
+  )
+  timestamps: TaskChecklistTimestamp[];
 }
 

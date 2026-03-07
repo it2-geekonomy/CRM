@@ -21,6 +21,8 @@ import { TaskPriority } from 'src/shared/enum/task/task-priority.enum';
 import { CreateTaskChecklistDto } from './dto/create-task-checklist.dto';
 import { Project } from 'src/modules/projects/entities/project.entity';
 import { TaskType } from 'src/modules/task-type/entities/task-type.entity';
+import { TaskChecklistTimestamp } from './entities/task-checklist-timestamp.entity';
+import { CreateChecklistTimestampDto } from './dto/create-checklist-timestamp.dto';
 
 @Injectable()
 export class TaskService {
@@ -35,6 +37,8 @@ export class TaskService {
     private readonly checklistRepo: Repository<TaskChecklist>,
     @InjectRepository(TaskFile)
     private readonly taskFileRepo: Repository<TaskFile>,
+    @InjectRepository(TaskChecklistTimestamp)
+    private timestampRepo: Repository<TaskChecklistTimestamp>,
     private readonly dataSource: DataSource,
   ) { }
 
@@ -226,7 +230,7 @@ export class TaskService {
 
     return {
       task,
-     
+
     };
   }
 
@@ -558,5 +562,25 @@ export class TaskService {
         endDate: Between(startStr, endStr),
       },
     });
+  }
+
+  async addChecklistTimestamp(dto: CreateChecklistTimestampDto) {
+    const checklist = await this.checklistRepo.findOne({
+      where: { id: dto.checklistId },
+    });
+
+    if (!checklist) {
+      throw new Error('Checklist item not found');
+    }
+
+    const timestamp = this.timestampRepo.create({
+      date: dto.date,
+      hours: dto.hours,
+      minutes: dto.minutes,
+      notes: dto.notes,
+      checklist: checklist,
+    });
+
+    return await this.timestampRepo.save(timestamp);
   }
 }

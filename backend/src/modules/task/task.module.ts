@@ -11,6 +11,7 @@ import { Project } from '../projects/entities/project.entity';
 import { TaskChecklist } from './entities/task-checklist.entity';
 import { MulterModule } from '@nestjs/platform-express';
 import { TaskFile } from './entities/task-file.entity';
+import { TaskChecklistTimestamp } from './entities/task-checklist-timestamp.entity';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TaskFile } from './entities/task-file.entity';
       TaskFile,
       EmployeeProfile,
       Project,
+      TaskChecklistTimestamp,
     ]),
     AuthModule,
     MulterModule.register({

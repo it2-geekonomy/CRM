@@ -36,6 +36,7 @@ import { CreateTaskChecklistDto } from './dto/create-task-checklist.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateTaskFileDto } from './dto/create-task-file.dto';
 import { UpdateTaskChecklistDto } from './dto/update-task-checklist.dto';
+import { CreateChecklistTimestampDto } from './dto/create-checklist-timestamp.dto';
 
 @ApiTags('Tasks')
 @ApiBearerAuth('JWT-auth')
@@ -242,5 +243,14 @@ export class TaskController {
   @ApiParam({ name: 'id', type: 'string' })
   removeFile(@Param('id') id: string) {
     return this.taskService.removeFile(id);
+  }
+
+  @Post('checklist/timestamp')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Add timestamp for a checklist item' })
+  async addChecklistTimestamp(
+    @Body() dto: CreateChecklistTimestampDto,
+  ) {
+    return this.taskService.addChecklistTimestamp(dto);
   }
 }

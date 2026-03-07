@@ -180,12 +180,12 @@ export default function ProjectDetailPage() {
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const [updateProject, { isLoading: isUpdatingProject }] = useUpdateProjectMutation();
 
-  const ALL_PROJECT_STATUSES: ProjectStatus[] = ["Active", "inactive", "Completed", "Pipeline", "OnHold"];
+  const ALL_PROJECT_STATUSES: ProjectStatus[] = ["Active", "Inactive", "Completed", "Pipeline", "OnHold"];
 
   const STATUS_STYLES: Record<ProjectStatus, string> = {
     Active: "bg-green-100 text-green-700",
     Completed: "bg-blue-100 text-blue-700",
-    inactive: "bg-gray-100 text-gray-600",
+    Inactive: "bg-gray-100 text-gray-600",
     Pipeline: "bg-purple-100 text-purple-700",
     OnHold: "bg-yellow-100 text-yellow-700",
   };
@@ -193,7 +193,7 @@ export default function ProjectDetailPage() {
   const STATUS_LABELS: Record<ProjectStatus, string> = {
     Active: "Active",
     Completed: "Completed",
-    inactive: "Inactive",
+    Inactive: "Inactive",
     Pipeline: "Pipeline",
     OnHold: "On Hold",
   };

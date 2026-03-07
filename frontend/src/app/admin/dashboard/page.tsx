@@ -4,6 +4,7 @@ import { useAppSelector } from "@/store/hooks";
 import { useGetProjectsQuery, type ProjectStatus } from "@/store/api/projectApiSlice";
 import { useGetClientsQuery } from "@/store/api/clientApiSlice";
 import { useGetTasksQuery, type TaskApi } from "@/store/api/taskApiSlice";
+import { useGetAdminDashboardStatsQuery } from "@/store/api/adminDashboardApiSlice";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useEffect } from "react";
 import EmployeesPage from "@/app/admin/employees/page";
@@ -67,6 +68,12 @@ export default function AdminDashboardPage() {
       setClientSearchInput(searchQuery.trim());
     }
   };
+  // Fetch all projects for counts (no status filter)
+  const { data: allProjectsData } = useGetProjectsQuery(
+    { limit: 1000, page: 1 },
+    { skip: !isProjectsView }
+  );
+
   const projectQuery = useMemo(() => {
     const params: { status?: ProjectStatus; search?: string; limit: number; page: number } = {
       limit: 100,
@@ -75,9 +82,10 @@ export default function AdminDashboardPage() {
     const hasSearch = projectSearchInput.trim().length > 0;
     if (!hasSearch) {
       if (quickFilter === "Active") params.status = "Active";
-      else if (quickFilter === "Inactive") params.status = "Draft";
+      else if (quickFilter === "Inactive") params.status = "Inactive";
       else if (quickFilter === "Completed") params.status = "Completed";
-      else if (quickFilter === "Pipeline") params.status = "Draft";
+      else if (quickFilter === "Pipeline") params.status = "Pipeline";
+      // "Total" - no status filter, fetch all
     }
     if (hasSearch) params.search = projectSearchInput.trim();
     return params;
@@ -85,9 +93,18 @@ export default function AdminDashboardPage() {
   const { data, isLoading, isError } = useGetProjectsQuery(projectQuery, {
     skip: !isProjectsView,
   });
-  const activeCount = data?.data?.filter((p) => p.status === "Active").length ?? 0;
-  const draftCount = data?.data?.filter((p) => p.status === "Draft").length ?? 0;
-  const totalCount = data?.meta?.totalItems ?? data?.data?.length ?? 0;
+  
+  // Calculate counts from all projects (not filtered)
+  const activeCount = allProjectsData?.data?.filter((p) => p.status === "Active").length ?? 0;
+  const inactiveCount = allProjectsData?.data?.filter((p) => p.status === "Inactive").length ?? 0;
+  const pipelineCount = allProjectsData?.data?.filter((p) => p.status === "Pipeline").length ?? 0;
+  const completedCount = allProjectsData?.data?.filter((p) => p.status === "Completed").length ?? 0;
+  const totalCount = allProjectsData?.meta?.totalItems ?? allProjectsData?.data?.length ?? 0;
+
+  // Fetch admin dashboard stats
+  const { data: dashboardStats, isLoading: isLoadingStats } = useGetAdminDashboardStatsQuery(undefined, {
+    skip: isProjectsView || isClientsView || isEmployeesView,
+  });
 
   // Fetch clients data
   const { data: clientsData, isLoading: isLoadingClients, isError: isErrorClients } = useGetClientsQuery(undefined, {
@@ -284,39 +301,41 @@ export default function AdminDashboardPage() {
             <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
               <p className="text-base text-gray-500">Active Projects</p>
               <h3 className="text-3xl font-semibold text-gray-900 mt-3">
-                12
+                {isLoadingStats ? "..." : dashboardStats?.activeProjects?.value ?? 0}
               </h3>
               <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">
-                ↑ 3 from last week
+                {isLoadingStats ? "Loading..." : dashboardStats?.activeProjects?.delta ?? "—"}
               </p>
             </div>
 
             <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
               <p className="text-base text-gray-500">Tasks This Week</p>
               <h3 className="text-3xl font-semibold text-gray-900 mt-3">
-                24
+                {isLoadingStats ? "..." : dashboardStats?.tasksThisWeek?.value ?? 0}
               </h3>
               <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">
-                ↑ 8 completed
+                {isLoadingStats ? "Loading..." : dashboardStats?.tasksThisWeek?.delta ?? "—"}
               </p>
             </div>
 
             <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
               <p className="text-base text-gray-500">Hours Logged</p>
               <h3 className="text-3xl font-semibold text-gray-900 mt-3">
-                32h
+                {isLoadingStats ? "..." : dashboardStats?.hoursLogged?.value ?? "0h"}
               </h3>
               <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">
-                ↑ 4h from last week
+                {isLoadingStats ? "Loading..." : dashboardStats?.hoursLogged?.delta ?? "—"}
               </p>
             </div>
 
             <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
               <p className="text-base text-gray-500">Team Members</p>
               <h3 className="text-3xl font-semibold text-gray-900 mt-3">
-                8
+                {isLoadingStats ? "..." : dashboardStats?.teamMembers?.value ?? 0}
               </h3>
-              <p className="text-sm text-gray-500 mt-2">No change</p>
+              <p className="text-sm text-gray-500 mt-2">
+                {isLoadingStats ? "Loading..." : dashboardStats?.teamMembers?.delta ?? "No change"}
+              </p>
             </div>
           </div>
         )}
@@ -374,19 +393,19 @@ export default function AdminDashboardPage() {
               </div>
               <div className="rounded-xl border border-gray-200 p-4">
                 <p className="text-sm text-gray-500">Inactive</p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">{draftCount}</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">{inactiveCount}</p>
               </div>
               <div className="rounded-xl border border-gray-200 p-4">
                 <p className="text-sm text-gray-500">Pipeline</p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">{totalCount}</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">{pipelineCount}</p>
               </div>
               <div className="rounded-xl border border-gray-200 p-4">
                 <p className="text-sm text-gray-500">Completed</p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">—</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">{completedCount}</p>
               </div>
               <div className="rounded-xl border border-gray-200 p-4">
                 <p className="text-sm text-gray-500">Total</p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">—</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">{totalCount}</p>
               </div>
             </div>
 

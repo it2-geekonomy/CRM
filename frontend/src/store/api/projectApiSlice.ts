@@ -1,7 +1,7 @@
 import { apiSlice } from "./apiSlice";
 
 /** Backend ProjectStatus enum values */
-export type ProjectStatus = "Active" | "inactive" | "Completed" | "Pipeline" |"OnHold";
+export type ProjectStatus = "Active" | "Inactive" | "Completed" | "Pipeline" |"OnHold";
 
 /** Backend ProjectType enum values */
 export type ProjectType = "Website" | "App" | "CRM" | "Internal";

@@ -576,7 +576,7 @@ export default function EmployeeTaskCalendarPage() {
               {calendarTasks.length === 0 && !isLoading && (
                 <div className="mt-4 text-center text-gray-500 text-sm">
                   No tasks found. Click "+ Add Task" to create one.
-                </div>
+          </div>
               )}
             </>
           )}
@@ -588,9 +588,9 @@ export default function EmployeeTaskCalendarPage() {
               <p className="text-gray-500">No tasks assigned</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="border-b text-gray-600">
-                    <tr>
+              <table className="w-full text-sm">
+                <thead className="border-b text-gray-600">
+                  <tr>
                       <th className="py-3 text-left px-2">Title</th>
                       <th className="text-left px-2">Project</th>
                       <th className="text-left px-2">Task Type</th>
@@ -602,10 +602,10 @@ export default function EmployeeTaskCalendarPage() {
                       <th className="text-left px-2">End Time</th>
                       <th className="text-left px-2">Priority</th>
                       <th className="text-left px-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tasksForSelectedDate.map((task) => (
+                  </tr>
+                </thead>
+                <tbody>
+                  {tasksForSelectedDate.map((task) => (
                       <tr key={task.id} className="border-b hover:bg-gray-50">
                         <td className="py-3 px-2 font-medium">{task.title}</td>
                         <td className="px-2">{task.project}</td>
@@ -641,11 +641,11 @@ export default function EmployeeTaskCalendarPage() {
                           >
                             {task.status}
                           </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
               </div>
             )}
           </div>

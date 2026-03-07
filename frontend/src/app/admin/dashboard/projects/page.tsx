@@ -20,7 +20,7 @@ export type Project = {
   endDate: string;
 };
 
-const QUICK_FILTERS = ["Active", "Inactive","Pipeline","Completed", "Total"];
+const QUICK_FILTERS = ["Active", "Inactive","Pipeline","Completed", "On Hold", "Total"];
 
 function toListProject(p: ProjectApi): Project {
   const start = typeof p.startDate === "string" ? p.startDate : (p.startDate as unknown as string)?.slice?.(0, 10) ?? "";
@@ -47,6 +47,12 @@ export default function ProjectsPage() {
     if (q != null) setSearchInput(q);
   }, [searchParams]);
 
+  // Fetch all projects for counts (no status filter)
+  const { data: allProjectsData } = useGetProjectsQuery(
+    { limit: 1000, page: 1 },
+    { skip: false }
+  );
+
   const queryParams = useMemo(() => {
     const params: { status?: ProjectStatus; search?: string; limit: number; page: number } = {
       limit: 100,
@@ -56,9 +62,11 @@ export default function ProjectsPage() {
     // When user is searching, fetch all projects (no status filter) so we can find matches in any status
     if (!hasSearch) {
       if (quickFilter === "Active") params.status = "Active";
-      else if (quickFilter === "Inactive") params.status = "Draft";
+      else if (quickFilter === "Inactive") params.status = "Inactive";
       else if (quickFilter === "Completed") params.status = "Completed";
-      else if (quickFilter === "Pipeline") params.status = "Draft";
+      else if (quickFilter === "Pipeline") params.status = "Pipeline";
+      else if (quickFilter === "On Hold") params.status = "On Hold";
+      // "Total" - no status filter, fetch all
     }
     if (hasSearch) params.search = searchInput.trim();
     return params;
@@ -77,9 +85,14 @@ export default function ProjectsPage() {
         (p.projectType && p.projectType.toLowerCase().includes(term))
     );
   }, [allProjects, searchInput]);
-  const activeCount = data?.data?.filter((p) => p.status === "Active").length ?? 0;
-  const draftCount = data?.data?.filter((p) => p.status === "Draft").length ?? 0;
-  const totalCount = data?.meta?.totalItems ?? projects.length;
+  
+  // Calculate counts from all projects (not filtered)
+  const activeCount = allProjectsData?.data?.filter((p) => p.status === "Active").length ?? 0;
+  const inactiveCount = allProjectsData?.data?.filter((p) => p.status === "Inactive").length ?? 0;
+  const pipelineCount = allProjectsData?.data?.filter((p) => p.status === "Pipeline").length ?? 0;
+  const completedCount = allProjectsData?.data?.filter((p) => p.status === "Completed").length ?? 0;
+  const onHoldCount = allProjectsData?.data?.filter((p) => p.status === "On Hold").length ?? 0;
+  const totalCount = allProjectsData?.meta?.totalItems ?? allProjectsData?.data?.length ?? 0;
 
   return (
     <div className="bg-gray-100 min-h-screen py-10">
@@ -160,27 +173,31 @@ export default function ProjectsPage() {
   </div>
 </div>
 
-        {/* KPI cards – project reference */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8 mb-8">
-          <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
-            <p className="text-base text-gray-500">Active Projects</p>
-            <h3 className="text-3xl font-semibold text-gray-900 mt-3">{activeCount}</h3>
-            <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">{totalCount} total</p>
+        {/* Status Count Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mt-6 mb-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-sm text-gray-500">Active</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">{activeCount}</p>
           </div>
-          <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
-            <p className="text-base text-gray-500">Draft Projects</p>
-            <h3 className="text-3xl font-semibold text-gray-900 mt-3">{draftCount}</h3>
-            <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">Pending setup</p>
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-sm text-gray-500">Inactive</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">{inactiveCount}</p>
           </div>
-          <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
-            <p className="text-base text-gray-500">Total Projects</p>
-            <h3 className="text-3xl font-semibold text-gray-900 mt-3">{totalCount}</h3>
-            <p className="text-sm text-gray-500 mt-2 group-hover:text-green-600">All time</p>
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-sm text-gray-500">Pipeline</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">{pipelineCount}</p>
           </div>
-          <div className="group bg-white p-7 rounded-2xl border border-gray-200 transition-colors hover:border-green-500">
-            <p className="text-base text-gray-500">Team Members</p>
-            <h3 className="text-3xl font-semibold text-gray-900 mt-3">—</h3>
-            <p className="text-sm text-gray-500 mt-2">No change</p>
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-sm text-gray-500">Completed</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">{completedCount}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-sm text-gray-500">On Hold</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">{onHoldCount}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-sm text-gray-500">Total</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">{totalCount}</p>
           </div>
         </div>
 

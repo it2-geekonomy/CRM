@@ -7,6 +7,7 @@ import { UsersService } from '../users/users.service';
 import { TaskService } from '../task/task.service';
 import { ProjectStatus } from '../../shared/enum/project/project-status.enum';
 import { TaskStatus } from '../../shared/enum/task/task-status.enum';
+import { TaskQueryDto } from '../task/dto/task-query.dto';
 
 @Injectable()
 export class AdminDashboardService {
@@ -82,7 +83,7 @@ export class AdminDashboardService {
         return {
             activeProjects: {
                 value: activeProjects,
-                delta: '↑3 from last week', 
+                delta: '↑3 from last week',
             },
             tasksThisWeek: {
                 value: tasksThisWeek,
@@ -97,5 +98,9 @@ export class AdminDashboardService {
                 delta: 'No change',
             },
         };
+    }
+
+    async getAllTasks(query: TaskQueryDto) {
+        return this.taskService.findAll(query);
     }
 }

@@ -4,105 +4,74 @@ import { useEffect, useState } from "react";
 import DepartmentTaskTypeAccordion from "@/shared/constants/components/configuration/DepartmentTaskTypeAccordion";
 import ProjectTypeAccordion from "@/shared/constants/components/configuration/ProjectTypeAccordion";
 import { Department, TaskType, ProjectType } from "./types";
+import type { DepartmentWithTaskTypesApi, DepartmentTaskTypeApi } from "@/store/api/departmentApiSlice";
+import type { ProjectTypeApi, CreateProjectTypeRequest } from "@/store/api/projectTypeApiSlice";
+import { useGetDepartmentsWithTaskTypesQuery } from "@/store/api/departmentApiSlice";
+import { useGetProjectTypesQuery, useCreateProjectTypeMutation, useUpdateProjectTypeMutation, useDeleteProjectTypeMutation } from "@/store/api/projectTypeApiSlice";
+import { useCreateTaskTypeMutation } from "@/store/api/taskTypeApiSlice";
+import CreateProjectTypeModal from "@/shared/constants/components/configuration/CreateProjectTypeModal";
+
+/** Map API task type to local config shape (slaHours as string, optional tasks). */
+function taskTypeToConfig(t: DepartmentTaskTypeApi): TaskType {
+  return {
+    id: t.id,
+    name: t.name,
+    description: t.description,
+    billable: t.billable,
+    slaHours: t.slaHours != null ? String(t.slaHours) : "",
+    status: t.status as TaskType["status"],
+    tasks: "",
+  };
+}
+
+/** Map API department (with task types) to local Department shape (configurations). */
+function apiDepartmentToLocal(api: DepartmentWithTaskTypesApi): Department {
+  return {
+    id: api.id,
+    name: api.name,
+    configurations: (api.taskTypes ?? []).map(taskTypeToConfig),
+  };
+}
+
+/** Map API project type to local ProjectType shape (all project types and their departments). */
+function apiProjectTypeToLocal(api: ProjectTypeApi): ProjectType {
+  return {
+    id: api.id,
+    name: api.name,
+    description: api.description ?? "",
+    departments: (api.departments ?? []).map((d) => ({
+      id: d.id,
+      name: d.name,
+      configurations: [] as TaskType[],
+    })),
+  };
+}
 
 export default function ConfigPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [deptExpandedIds, setDeptExpandedIds] = useState<Set<string>>(new Set());
   const [projectExpandedIds, setProjectExpandedIds] = useState<Set<string>>(new Set());
+  const [showAddProjectTypeModal, setShowAddProjectTypeModal] = useState(false);
 
-  // Replace with real API call when ready:
-  // fetch("/api/departments").then(r => r.json()).then(setDepartments)
+  const { data: departmentsData, isLoading: departmentsLoading } = useGetDepartmentsWithTaskTypesQuery();
+  const { data: projectTypesData, isLoading: projectTypesLoading } = useGetProjectTypesQuery();
+  const [createProjectType, { isLoading: isCreatingProjectType }] = useCreateProjectTypeMutation();
+  const [updateProjectTypeMutation] = useUpdateProjectTypeMutation();
+  const [deleteProjectTypeMutation, { isLoading: isDeletingProjectType }] = useDeleteProjectTypeMutation();
+  const [createTaskType] = useCreateTaskTypeMutation();
+
   useEffect(() => {
-    setDepartments([
-      {
-        id: "1",
-        name: "Sales",
-        configurations: [
-          {
-            id: "c1",
-            name: "Lead Qualification",
-            description: "Qualify incoming leads",
-            billable: true,
-            slaHours: "24",
-            status: "Active",
-            tasks: "Call, Email",
-          },
-          {
-            id: "c2",
-            name: "Client Follow-up",
-            description: "Follow up with potential clients",
-            billable: false,
-            slaHours: "48",
-            status: "Active",
-            tasks: "Email reminder",
-          },
-        ],
-      },
-      {
-        id: "2",
-        name: "Design",
-        configurations: [
-          {
-            id: "c3",
-            name: "UI Design",
-            description: "Create UI mockups",
-            billable: true,
-            slaHours: "72",
-            status: "Active",
-            tasks: "Figma draft",
-          },
-        ],
-      },
-      {
-        id: "3",
-        name: "Development",
-        configurations: [],
-      },
-      {
-        id: "4",
-        name: "Social Media",
-        configurations: [],
-      },
-    ]);
+    if (!departmentsData) return;
+    setDepartments(departmentsData.map(apiDepartmentToLocal));
+  }, [departmentsData]);
 
-    setProjectTypes([
-      {
-        id: "p1",
-        name: "Web Development",
-        description: "Building responsive web applications with modern technologies",
-        departments: [
-          { id: "1", name: "Design", configurations: [] },
-          { id: "3", name: "Development", configurations: [] },
-        ],
-      },
-      {
-        id: "p2",
-        name: "UI/UX Design",
-        description: "Designing user interfaces and experiences for digital products",
-        departments: [
-          { id: "2", name: "Design", configurations: [] },
-        ],
-      },
-      {
-        id: "p3",
-        name: "Mobile App Development",
-        description: "Developing native and cross-platform mobile applications",
-        departments: [
-          { id: "3", name: "Development", configurations: [] },
-        ],
-      },
-      {
-        id: "p4",
-        name: "API Development",
-        description: "Building scalable RESTful and GraphQL APIs",
-        departments: [
-          { id: "3", name: "Development", configurations: [] },
-          { id: "1", name: "Design", configurations: [] },
-        ],
-      },
-    ]);
-  }, []);
+  useEffect(() => {
+    if (!projectTypesData) return;
+    // Show all project types and their departments; exclude soft-deleted
+    const active = projectTypesData.filter((pt) => !pt.deletedAt);
+    setProjectTypes(active.map(apiProjectTypeToLocal));
+  }, [projectTypesData]);
 
   const toggleDept  = (id: string) => {
     setDeptExpandedIds((prev) => {
@@ -133,43 +102,57 @@ export default function ConfigPage() {
     });
   };
 
-  const deleteProjectType = (id: string) => {
-    setProjectTypes((prev) => prev.filter((p) => p.id !== id));
-    setProjectExpandedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
+  const deleteProjectType = async (id: string) => {
+    try {
+      await deleteProjectTypeMutation(id).unwrap();
+      setProjectExpandedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    } catch (err) {
+      console.error("Failed to delete project type:", err);
+    }
   };
 
-  const addDepartmentToProject = (projectId: string, department: Department) => {
-    setProjectTypes((prev) =>
-      prev.map((project) =>
-        project.id === projectId
-          ? { ...project, departments: [...project.departments, department] }
-          : project
-      )
-    );
+  const addDepartmentToProject = async (projectId: string, department: Department) => {
+    const project = projectTypes.find((p) => p.id === projectId);
+    if (!project) return;
+    const currentIds = (project.departments ?? []).map((d) => d.id);
+    if (currentIds.includes(department.id)) return;
+    const departmentIds = [...currentIds, department.id];
+    try {
+      await updateProjectTypeMutation({ id: projectId, body: { departmentIds } }).unwrap();
+    } catch (err) {
+      console.error("Failed to add department to project type:", err);
+    }
   };
 
-  const removeDepartmentFromProject = (projectId: string, departmentId: string) => {
-    setProjectTypes((prev) =>
-      prev.map((project) =>
-        project.id === projectId
-          ? { ...project, departments: project.departments.filter((d) => d.id !== departmentId) }
-          : project
-      )
-    );
+  const removeDepartmentFromProject = async (projectId: string, departmentId: string) => {
+    const project = projectTypes.find((p) => p.id === projectId);
+    if (!project) return;
+    const departmentIds = (project.departments ?? []).filter((d) => d.id !== departmentId).map((d) => d.id);
+    try {
+      await updateProjectTypeMutation({ id: projectId, body: { departmentIds } }).unwrap();
+    } catch (err) {
+      console.error("Failed to remove department from project type:", err);
+    }
   };
 
-  const addConfiguration = (departmentId: string, config: TaskType) => {
-    setDepartments((prev) =>
-      prev.map((dept) =>
-        dept.id === departmentId
-          ? { ...dept, configurations: [...dept.configurations, config] }
-          : dept
-      )
-    );
+  const addConfiguration = async (departmentId: string, config: TaskType) => {
+    try {
+      await createTaskType({
+        name: config.name,
+        description: config.description || undefined,
+        departmentId,
+        billable: config.billable,
+        slaHours: config.slaHours !== "" ? Number(config.slaHours) : undefined,
+        status: config.status,
+      }).unwrap();
+    } catch (err) {
+      console.error("Failed to create task type:", err);
+      throw err;
+    }
   };
 
   const deleteConfiguration = (departmentId: string, configId: string) => {
@@ -180,6 +163,15 @@ export default function ConfigPage() {
           : dept
       )
     );
+  };
+
+  const handleCreateProjectType = async (body: CreateProjectTypeRequest) => {
+    try {
+      await createProjectType(body).unwrap();
+      setShowAddProjectTypeModal(false);
+    } catch (err) {
+      console.error("Failed to create project type:", err);
+    }
   };
 
   // Adapt local Department shape → DepartmentWithTaskTypesApi shape expected by the accordion.
@@ -234,8 +226,11 @@ export default function ConfigPage() {
           </div>
         </div>
 
+        {departmentsLoading && (
+          <p className="text-sm text-gray-500 py-2">Loading departments…</p>
+        )}
         <div className="space-y-4 mb-10">
-          {departments.map((dept, index) => (
+          {!departmentsLoading && departments.map((dept, index) => (
             <DepartmentTaskTypeAccordion
               key={dept.id}
               department={toApiShape(dept)}
@@ -267,14 +262,21 @@ export default function ConfigPage() {
             >
               Collapse All
             </button>
-            <button className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition font-medium whitespace-nowrap">
+            <button
+              type="button"
+              onClick={() => setShowAddProjectTypeModal(true)}
+              className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition font-medium whitespace-nowrap"
+            >
               + Add Project Type
             </button>
           </div>
         </div>
 
+        {projectTypesLoading && (
+          <p className="text-sm text-gray-500 py-2">Loading project types…</p>
+        )}
         <div className="space-y-4">
-          {projectTypes.map((project, index) => (
+          {!projectTypesLoading && projectTypes.map((project, index) => (
             <ProjectTypeAccordion
               key={project.id}
               projectType={project}
@@ -289,6 +291,14 @@ export default function ConfigPage() {
           ))}
         </div>
 
+        {showAddProjectTypeModal && (
+          <CreateProjectTypeModal
+            departments={departments.map((d) => ({ id: d.id, name: d.name }))}
+            onSubmit={handleCreateProjectType}
+            onClose={() => setShowAddProjectTypeModal(false)}
+            isSubmitting={isCreatingProjectType}
+          />
+        )}
       </div>
     </div>
   );

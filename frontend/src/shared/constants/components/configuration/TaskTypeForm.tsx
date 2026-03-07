@@ -6,7 +6,7 @@ import type { DepartmentWithTaskTypesApi } from "@/store/api/departmentApiSlice"
 
 interface Props {
   department: DepartmentWithTaskTypesApi;
-  onSubmit: (config: TaskType) => void;
+  onSubmit: (config: TaskType) => void | Promise<void>;
   onClose: () => void;
 }
 
@@ -37,18 +37,25 @@ export default function TaskTypeForm({ department, onSubmit, onClose }: Props) {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
     if (!form.name.trim()) return;
-    onSubmit({
-      id: Date.now().toString(),
-      name: form.name,
-      description: form.description,
-      billable: form.billable,
-      slaHours: form.slaHours,
-      status: form.status,
-      tasks: form.tasks,
-    });
-    onClose();
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        id: Date.now().toString(),
+        name: form.name,
+        description: form.description,
+        billable: form.billable,
+        slaHours: form.slaHours,
+        status: form.status,
+        tasks: form.tasks,
+      });
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const ChevronDown = () => (
@@ -165,10 +172,12 @@ export default function TaskTypeForm({ department, onSubmit, onClose }: Props) {
           Cancel
         </button>
         <button
+          type="button"
           onClick={handleSubmit}
-          className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+          disabled={isSubmitting}
+          className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
         >
-          Create
+          {isSubmitting ? "Creating…" : "Create"}
         </button>
       </div>
     </div>

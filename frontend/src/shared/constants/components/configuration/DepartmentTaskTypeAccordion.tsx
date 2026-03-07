@@ -26,7 +26,7 @@ interface Props {
   isExpanded: boolean;
   onToggle: () => void;
   onDelete: () => void;
-  onAddConfiguration: (departmentId: string, config: TaskType) => void;
+  onAddConfiguration: (departmentId: string, config: TaskType) => void | Promise<void>;
   onDeleteConfiguration: (departmentId: string, configId: string) => void;
 }
 
@@ -294,7 +294,7 @@ export default function DepartmentTaskTypeAccordion({
       {openModal && (
         <CreateTaskTypeModal
           department={department}
-          onSubmit={(config: TaskType) => { onAddConfiguration(department.id, config); }}
+          onSubmit={(config: TaskType) => onAddConfiguration(department.id, config)}
           onClose={() => setOpenModal(false)}
         />
       )}

@@ -1,12 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual } from 'typeorm';
-
+import { Repository, MoreThanOrEqual, In } from 'typeorm';
 import { Project } from '../projects/entities/project.entity';
 import { Task } from '../task/entities/task.entity';
 import { EmployeeProfile } from '../employee/entities/employee-profile.entity';
-import { TaskActivity } from '../task/entities/task-activity.entity';
-
 import { TaskStatus } from 'src/shared/enum/task/task-status.enum';
 import { ProjectStatus } from 'src/shared/enum/project/project-status.enum';
 
@@ -21,34 +18,30 @@ export class EmployeeDashboardService {
 
     @InjectRepository(EmployeeProfile)
     private readonly employeeRepo: Repository<EmployeeProfile>,
-
-    @InjectRepository(TaskActivity)
-    private readonly taskActivityRepo: Repository<TaskActivity>,
   ) { }
 
   async getStats(userId: string) {
+
+    const employee = await this.employeeRepo.findOne({
+      where: { user: { id: userId }, isActive: true },
+    });
+    if (!employee) throw new NotFoundException('Employee not found');
+
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const employee = await this.employeeRepo.findOne({
-      where: { user: { id: userId }, isActive: true },
-      relations: ['department'],
-    });
-
-    if (!employee) throw new NotFoundException('Employee not found');
-
-    const activeProjectsCount = await this.projectRepo.count({
-      where: { status: ProjectStatus.ACTIVE },
-    });
-
     const tasksThisWeek = await this.taskRepo.find({
-      where: { createdAt: MoreThanOrEqual(startOfWeek) },
+      where: {
+        assignedTo: { id: employee.id },
+        createdAt: MoreThanOrEqual(startOfWeek),
+      },
+      relations: ['project'],
     });
 
     const completedTasksCount = await this.taskRepo.count({
-      where: { status: TaskStatus.ADDRESSED },
+      where: { assignedTo: { id: employee.id }, status: TaskStatus.ADDRESSED },
     });
 
     let totalHours = 0;
@@ -57,30 +50,68 @@ export class EmployeeDashboardService {
         const start = new Date(`${task.startDate}T${task.startTime}`);
         const end = new Date(`${task.endDate}T${task.endTime}`);
         const diffMs = end.getTime() - start.getTime();
-        if (diffMs > 0) totalHours += diffMs / (1000 * 60 * 60); 
+        if (diffMs > 0) totalHours += diffMs / (1000 * 60 * 60);
       }
     });
 
-    const teamMembers = await this.employeeRepo.count({
-      where: { isActive: true },
-    });
+    const projectIds = Array.from(
+      new Set(tasksThisWeek.map((t) => t.project?.id).filter(Boolean))
+    );
+    const activeProjectsCount =
+      projectIds.length > 0
+        ? await this.projectRepo.count({
+          where: { id: In(projectIds), status: ProjectStatus.ACTIVE },
+        })
+        : 0;
+
 
     return {
-      activeProjects: {
-        value: activeProjectsCount,
-        delta: '↑ 3 from last week',
-      },
-      tasksThisWeek: {
-        value: tasksThisWeek.length,
-        delta: `↑ ${completedTasksCount} completed`,
-      },
-      hoursLogged: {
-        value: `${totalHours.toFixed(1)}h`,
-        delta: '↑ 4h from last week',
-      },
-      teamMembers: {
-        value: teamMembers,
-        delta: 'No change',
+      activeProjects: { value: activeProjectsCount, delta: '↑ 0 from last week' },
+      tasksThisWeek: { value: tasksThisWeek.length, delta: `↑ ${completedTasksCount} completed` },
+      hoursLogged: { value: `${totalHours.toFixed(1)}h`, delta: '↑ 0h from last week' },
+      teamMembers: { value: 1, delta: 'No change' },
+    };
+  }
+
+  async getTasksPaginated(
+    userId: string,
+    page = 1,
+    limit = 10,
+    search?: string,
+    sortBy = 'startDate',
+    sortOrder: 'ASC' | 'DESC' = 'DESC',
+  ): Promise<{ data: Task[]; meta: any }> {
+
+    const employee = await this.employeeRepo.findOne({
+      where: { user: { id: userId }, isActive: true },
+    });
+    if (!employee) throw new NotFoundException('Employee not found');
+
+    const whereCondition: any = {
+      assignedTo: { id: employee.id },
+    };
+
+    if (search) {
+      whereCondition.name = search;
+    }
+
+    const [tasks, total] = await this.taskRepo.findAndCount({
+      where: whereCondition,
+      relations: ['project', 'assignedBy', 'taskType'],
+      order: { [sortBy]: sortOrder },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: tasks,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
       },
     };
   }

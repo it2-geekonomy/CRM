@@ -39,7 +39,7 @@ export class ProjectsService {
 
     @InjectRepository(ProjectType)
     private readonly projectTypeRepository: Repository<ProjectType>,
-  ) {}
+  ) { }
 
   async create(dto: CreateProjectDto, userId: string) {
     try {
@@ -68,8 +68,8 @@ export class ProjectsService {
 
       const projectType = dto.projectTypeId
         ? await this.projectTypeRepository.findOne({
-            where: { id: dto.projectTypeId },
-          })
+          where: { id: dto.projectTypeId },
+        })
         : null;
 
       if (dto.projectTypeId && !projectType)
@@ -77,8 +77,8 @@ export class ProjectsService {
 
       const manager = dto.projectManagerId
         ? await this.adminProfileRepository.findOne({
-            where: { id: dto.projectManagerId },
-          })
+          where: { id: dto.projectManagerId },
+        })
         : null;
 
       if (dto.projectManagerId && !manager)
@@ -86,8 +86,8 @@ export class ProjectsService {
 
       const lead = dto.projectLeadId
         ? await this.employeeProfileRepository.findOne({
-            where: { id: dto.projectLeadId },
-          })
+          where: { id: dto.projectLeadId },
+        })
         : null;
 
       if (dto.projectLeadId && !lead)
@@ -127,7 +127,7 @@ export class ProjectsService {
   }
 
   async findAll(filterDto: ProjectQueryDto) {
-    const { page = 1, limit = 10, sortOrder = 'ASC', search } = filterDto;
+    const { page = 1, limit = 10, sortOrder = 'ASC', search, status } = filterDto;
 
     const skip = (page - 1) * limit;
 
@@ -142,12 +142,15 @@ export class ProjectsService {
       .loadRelationCountAndMap('project.taskCount', 'project.tasks')
       .loadRelationCountAndMap('project.documentCount', 'project.documents');
 
+    // Search filter
     if (search) {
       query.andWhere('project.name ILIKE :search', {
         search: `%${search}%`,
       });
     }
-
+    if (status) {
+      query.andWhere('project.status = :status', { status });
+    }
     query.skip(skip).take(limit).orderBy('project.createdAt', sortOrder);
 
     const [projects, total] = await query.getManyAndCount();

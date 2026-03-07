@@ -20,7 +20,7 @@ export type Project = {
   endDate: string;
 };
 
-const QUICK_FILTERS = ["Active", "Inactive","Pipeline","Completed", "Total"];
+const QUICK_FILTERS = ["Active", "Inactive","Pipeline","Completed", "On Hold", "Total"];
 
 function toListProject(p: ProjectApi): Project {
   const start = typeof p.startDate === "string" ? p.startDate : (p.startDate as unknown as string)?.slice?.(0, 10) ?? "";
@@ -65,6 +65,7 @@ export default function ProjectsPage() {
       else if (quickFilter === "Inactive") params.status = "Inactive";
       else if (quickFilter === "Completed") params.status = "Completed";
       else if (quickFilter === "Pipeline") params.status = "Pipeline";
+      else if (quickFilter === "On Hold") params.status = "On Hold";
       // "Total" - no status filter, fetch all
     }
     if (hasSearch) params.search = searchInput.trim();
@@ -90,6 +91,7 @@ export default function ProjectsPage() {
   const inactiveCount = allProjectsData?.data?.filter((p) => p.status === "Inactive").length ?? 0;
   const pipelineCount = allProjectsData?.data?.filter((p) => p.status === "Pipeline").length ?? 0;
   const completedCount = allProjectsData?.data?.filter((p) => p.status === "Completed").length ?? 0;
+  const onHoldCount = allProjectsData?.data?.filter((p) => p.status === "On Hold").length ?? 0;
   const totalCount = allProjectsData?.meta?.totalItems ?? allProjectsData?.data?.length ?? 0;
 
   return (
@@ -172,7 +174,7 @@ export default function ProjectsPage() {
 </div>
 
         {/* Status Count Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mt-6 mb-6">
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-sm text-gray-500">Active</p>
             <p className="text-2xl font-semibold text-gray-900 mt-1">{activeCount}</p>
@@ -188,6 +190,10 @@ export default function ProjectsPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-sm text-gray-500">Completed</p>
             <p className="text-2xl font-semibold text-gray-900 mt-1">{completedCount}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-sm text-gray-500">On Hold</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">{onHoldCount}</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-sm text-gray-500">Total</p>
